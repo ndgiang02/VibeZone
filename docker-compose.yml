@@ -1,0 +1,283 @@
+# VibeZone local development dependencies.
+#
+# Only PostgreSQL starts by default. Other dependencies are opt-in profiles so
+# each milestone runs only what it needs:
+#   docker compose up -d                          # postgres
+#   docker compose --profile media up -d          # + MinIO (private bucket, app user)
+#   docker compose --profile cache up -d          # + Redis
+#   docker compose --profile mail up -d           # + Mailpit
+#   docker compose --profile app up -d --build    # full stack: migrations, API, worker, web, proxy (+ MinIO, Mailpit)
+#   docker compose --profile "*" up -d            # everything
+#
+# All ports bind to 127.0.0.1. Credentials come from .env (see .env.example).
+# This file is for local development only; it is not a production topology.
+
+name: vibezone
+
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: local
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  postgres:
+    <<: *hardening
+    image: postgres:18.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-vibezone}
+      POSTGRES_USER: ${POSTGRES_USER:-vibezone}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # PostgreSQL 18+ images keep PGDATA under /var/lib/postgresql/<major>/docker.
+      - postgres-data:/var/lib/postgresql
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    <<: *hardening
+    profiles: ["cache"]
+    image: redis:8.8.3-alpine
+    restart: unless-stopped
+    # Ephemeral cache/coordination only: no persistence, bounded memory.
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - volatile-lru
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "[ \"$$(redis-cli ping)\" = PONG ]"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  minio:
+    <<: *hardening
+    profiles: ["media", "app"]
+    # Community build of MinIO; upstream no longer publishes images. See docs/adr/0003.
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set in .env}
+    ports:
+      - "127.0.0.1:${MINIO_API_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  # One-shot, idempotent: private media bucket + least-privilege app user.
+  minio-init:
+    <<: *hardening
+    profiles: ["media", "app"]
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["bash", "/init/init-minio.sh"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET_MEDIA: ${S3_BUCKET_MEDIA:-vibezone-media}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY must be set in .env}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY must be set in .env}
+    volumes:
+      - ./infra/minio:/init:ro
+
+  mailpit:
+    <<: *hardening
+    profiles: ["mail", "app"]
+    image: axllent/mailpit:v1.31.6
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # --- Application (profile: app) ---------------------------------------------
+  # Full stack in containers: migrate (one-shot) -> api -> web.
+  #   docker compose --profile app up -d --build --wait
+
+  migrate:
+    <<: *hardening
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: src/VibeZone.Api/Dockerfile
+      target: migrator
+    image: vibezone-migrator:local
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Database: Host=postgres;Database=${POSTGRES_DB:-vibezone};Username=${POSTGRES_USER:-vibezone};Password=${POSTGRES_PASSWORD}
+
+  api:
+    <<: *hardening
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: src/VibeZone.Api/Dockerfile
+    image: vibezone-api:local
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      ConnectionStrings__Database: Host=postgres;Database=${POSTGRES_DB:-vibezone};Username=${POSTGRES_USER:-vibezone};Password=${POSTGRES_PASSWORD}
+      ASPNETCORE_ENVIRONMENT: ${API_ENVIRONMENT:-Production}
+      # Links in emails point at the web app as the browser sees it.
+      App__PublicBaseUrl: http://localhost:${WEB_PORT:-3000}
+      Email__SmtpHost: mailpit
+      Email__SmtpPort: "1025"
+      Email__SmtpSecurity: None
+      # Local stack is plain HTTP on localhost: antiforgery won't issue Secure cookies without HTTPS.
+      # Never set this to false behind a real domain — terminate TLS instead (see docs/adr/0002).
+      Security__SecureCookies: "false"
+      Storage__ServiceUrl: http://minio:9000
+      Storage__Bucket: ${S3_BUCKET_MEDIA:-vibezone-media}
+      Storage__AccessKey: ${S3_ACCESS_KEY}
+      Storage__SecretKey: ${S3_SECRET_KEY}
+    ports:
+      - "127.0.0.1:${API_PORT:-5080}:8080"
+    # The runtime image has no curl/wget; probe readiness over bash's /dev/tcp.
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - |-
+          exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && head -n1 <&3 | grep -q ' 200 '
+      interval: 5s
+      timeout: 8s   # > the API's own 5 s database check timeout
+      retries: 3
+      start_period: 30s
+
+  # Media processing (FFmpeg). Parses untrusted uploads: non-root, bounded CPU/memory, no ports.
+  worker:
+    <<: *hardening
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: src/VibeZone.Worker/Dockerfile
+    image: vibezone-worker:local
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      ConnectionStrings__Database: Host=postgres;Database=${POSTGRES_DB:-vibezone};Username=${POSTGRES_USER:-vibezone};Password=${POSTGRES_PASSWORD}
+      Storage__ServiceUrl: http://minio:9000
+      Storage__Bucket: ${S3_BUCKET_MEDIA:-vibezone-media}
+      Storage__AccessKey: ${S3_ACCESS_KEY}
+      Storage__SecretKey: ${S3_SECRET_KEY}
+      Media__MaxConcurrentJobs: "2"
+    # Scratch files stay on disk (/tmp): tmpfs would count against mem_limit and risk OOM on large uploads.
+    cpus: 2
+    mem_limit: 1g
+
+  web:
+    <<: *hardening
+    profiles: ["app"]
+    build:
+      context: apps/web
+      args:
+        API_INTERNAL_URL: http://api:8080
+    image: vibezone-web:local
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      API_INTERNAL_URL: http://api:8080
+    # No host port: browsers reach the web app through the proxy (single origin, like production).
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Edge reverse proxy (ADR-0002): /api/* and /hubs/* stream straight to the API, the rest goes to web.
+  # Uploads and audio never pass through Next.js, so nothing is buffered in the web server.
+  proxy:
+    <<: *hardening
+    profiles: ["app"]
+    image: caddy:2.11.7-alpine
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    user: "65534:65534"
+    read_only: true
+    cap_drop: ["ALL"]
+    # The official binary carries a file capability (cap_net_bind_service); exec fails unless it stays
+    # in the bounding set. Still non-root and listening on 8080, so it grants nothing in practice.
+    cap_add: ["NET_BIND_SERVICE"]
+    environment:
+      # Caddy keeps state under XDG dirs; point them at the tmpfs (admin and auto-HTTPS are off).
+      XDG_CONFIG_HOME: /tmp/caddy/config
+      XDG_DATA_HOME: /tmp/caddy/data
+    tmpfs:
+      - /tmp:size=16m,uid=65534,gid=65534,mode=0700
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  postgres-data:
+  minio-data:

@@ -1,0 +1,1327 @@
+{
+  "info": {
+    "name": "VibeZone API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": [
+      "VibeZone REST API v1 for native apps (Flutter) — see docs/api/README.md and docs/adr/0007-native-app-token-auth.md.",
+      "",
+      "Quick start (local Docker stack, `docker compose --profile app up -d`):",
+      "1. Set the collection variables `email`, `password`, `handle` (or keep the defaults).",
+      "2. Auth (app) → Register → \"DEV: read verification email (Mailpit)\" → Verify email → Sign in (token).",
+      "3. Every other request then sends `Authorization: Bearer {{accessToken}}` (collection auth).",
+      "   The collection pre-request script refreshes the access token automatically when it is about to expire.",
+      "",
+      "Rules the app must follow:",
+      "- Access token: 15 min. On 401 with `WWW-Authenticate: Bearer error=\"invalid_token\"` → refresh once, retry.",
+      "- Refresh token: single use, rotates every refresh. Run at most ONE refresh at a time (single-flight);",
+      "  reusing an old refresh token signs the device out. On 401 `invalid_refresh_token` → go to the login screen.",
+      "- Store the refresh token in secure storage (flutter_secure_storage). Never log tokens.",
+      "- Errors are RFC 9457 Problem Details with a stable `code` (and `errors[field] = [code]` for validation).",
+      "- Bearer requests need no CSRF token. Cookie/CSRF requests in the \"Web (cookie) only\" folder are for browsers."
+    ]
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-refresh: if the access token expires within 30 s and we have a refresh token, rotate first.",
+          "const url = pm.request.url.toString();",
+          "const refresh = pm.collectionVariables.get(\"refreshToken\");",
+          "const expiresAt = Number(pm.collectionVariables.get(\"accessTokenExpiresAt\") || 0);",
+          "if (refresh && !url.includes(\"/auth/\") && Date.now() > expiresAt - 30000) {",
+          "  pm.sendRequest({",
+          "    url: pm.collectionVariables.get(\"baseUrl\") + \"/api/v1/auth/token/refresh\",",
+          "    method: \"POST\",",
+          "    header: { \"Content-Type\": \"application/json\" },",
+          "    body: { mode: \"raw\", raw: JSON.stringify({ refreshToken: refresh }) },",
+          "  }, (err, res) => {",
+          "    if (!err && res.code === 200) {",
+          "      const t = res.json();",
+          "      pm.collectionVariables.set(\"accessToken\", t.accessToken);",
+          "      pm.collectionVariables.set(\"refreshToken\", t.refreshToken);",
+          "      pm.collectionVariables.set(\"accessTokenExpiresAt\", String(Date.now() + t.expiresIn * 1000));",
+          "    } else {",
+          "      console.warn(\"Refresh failed — sign in again\", err || res.code);",
+          "      pm.collectionVariables.set(\"accessToken\", \"\");",
+          "      pm.collectionVariables.set(\"refreshToken\", \"\");",
+          "    }",
+          "  });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "description": "Caddy proxy of the local stack. Android emulator: http://10.0.2.2:3000 (from the app)."
+    },
+    {
+      "key": "mailpitUrl",
+      "value": "http://localhost:8025",
+      "description": "Local Mailpit (dev only) to read verification/reset emails."
+    },
+    {
+      "key": "email",
+      "value": "app-user@example.test"
+    },
+    {
+      "key": "password",
+      "value": "correct horse battery staple"
+    },
+    {
+      "key": "handle",
+      "value": "appuser"
+    },
+    {
+      "key": "deviceName",
+      "value": "Postman"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "accessTokenExpiresAt",
+      "value": "0"
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "verifyToken",
+      "value": ""
+    },
+    {
+      "key": "resetToken",
+      "value": ""
+    },
+    {
+      "key": "newPassword",
+      "value": "another long passphrase 2"
+    },
+    {
+      "key": "artistSlug",
+      "value": "appuser"
+    },
+    {
+      "key": "trackId",
+      "value": ""
+    },
+    {
+      "key": "sessionId",
+      "value": ""
+    },
+    {
+      "key": "uploadLength",
+      "value": "0",
+      "description": "Exact size in bytes of the file selected in 'Upload audio'."
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth (app)",
+      "description": "Account + token endpoints. No cookies, no CSRF.",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"202 Accepted\", () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"handle\": \"{{handle}}\",\n  \"password\": \"{{password}}\",\n  \"displayName\": \"App User\",\n  \"locale\": \"vi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "202 for any valid input (anti-enumeration): a verification email — or an 'account exists' email — follows. handle: 3–30 chars a-z 0-9 _ -; password ≥ 10 chars; locale vi|en."
+          }
+        },
+        {
+          "name": "DEV: read verification email (Mailpit)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const list = pm.response.json().messages || [];",
+                  "pm.test(\"email found\", () => pm.expect(list.length).to.be.above(0));",
+                  "if (list.length) {",
+                  "  pm.sendRequest(pm.collectionVariables.get(\"mailpitUrl\") + \"/api/v1/message/\" + list[0].ID, (err, res) => {",
+                  "    // The Postman sandbox has no URL global: read the query values with a regex.",
+                  "    const link = res.json().Text.match(/https?:\\/\\/\\S+/)[0];",
+                  "    const param = (name) => { const m = link.match(new RegExp(\"[?&]\" + name + \"=([^&\\\\s]+)\")); return m ? decodeURIComponent(m[1]) : \"\"; };",
+                  "    if (param(\"userId\")) pm.collectionVariables.set(\"userId\", param(\"userId\"));",
+                  "    if (link.includes(\"verify-email\")) pm.collectionVariables.set(\"verifyToken\", param(\"token\"));",
+                  "    if (link.includes(\"reset-password\")) pm.collectionVariables.set(\"resetToken\", param(\"token\"));",
+                  "    pm.test(\"link parsed\", () => pm.expect(param(\"token\")).to.not.be.empty);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{mailpitUrl}}/api/v1/search?query=to:\"{{email}}\"",
+              "host": [
+                "{{mailpitUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "to:\"{{email}}\""
+                }
+              ]
+            },
+            "description": "Local development helper only: finds the newest email to {{email}} in Mailpit and stores userId + token. In the app the user taps the link in the email (https://<web>/{locale}/verify-email?userId=…&token=…) — handle it as a deep link and call Verify email."
+          }
+        },
+        {
+          "name": "Verify email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"token\": \"{{verifyToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "verify-email"
+              ]
+            },
+            "description": "204. Idempotent. 400 token_invalid."
+          }
+        },
+        {
+          "name": "Resend verification",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/resend-verification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "resend-verification"
+              ]
+            },
+            "description": "Always 202."
+          }
+        },
+        {
+          "name": "Sign in (token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const t = pm.response.json();",
+                  "  pm.collectionVariables.set(\"accessToken\", t.accessToken);",
+                  "  pm.collectionVariables.set(\"refreshToken\", t.refreshToken);",
+                  "  pm.collectionVariables.set(\"accessTokenExpiresAt\", String(Date.now() + t.expiresIn * 1000));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"deviceName\": \"{{deviceName}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "token"
+              ]
+            },
+            "description": "200 → {accessToken, tokenType: 'Bearer', expiresIn: 900, refreshToken, refreshTokenExpiresAt}. 401 invalid_credentials (wrong email/password or locked out — indistinguishable). 403 email_not_confirmed. 429 too many attempts. deviceName is shown in the signed-in devices list."
+          }
+        },
+        {
+          "name": "Refresh token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const t = pm.response.json();",
+                  "  pm.collectionVariables.set(\"accessToken\", t.accessToken);",
+                  "  pm.collectionVariables.set(\"refreshToken\", t.refreshToken);",
+                  "  pm.collectionVariables.set(\"accessTokenExpiresAt\", String(Date.now() + t.expiresIn * 1000));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/token/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "token",
+                "refresh"
+              ]
+            },
+            "description": "Returns a NEW pair; the old refresh token stops working. 401 invalid_refresh_token → sign in again. Never run two refreshes in parallel."
+          }
+        },
+        {
+          "name": "Sign out (revoke refresh token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204\", () => pm.response.to.have.status(204));",
+                  "pm.collectionVariables.set(\"accessToken\", \"\");",
+                  "pm.collectionVariables.set(\"refreshToken\", \"\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/token/revoke",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "token",
+                "revoke"
+              ]
+            },
+            "description": "204, idempotent. Ends the session; the access token stops working within seconds. Then delete both tokens on the device."
+          }
+        },
+        {
+          "name": "Sign out (bearer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Alternative sign-out using the access token. 204, idempotent."
+          }
+        },
+        {
+          "name": "Forgot password",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "Always 202. The email links to https://<web>/{locale}/reset-password?email=…&token=… (1 h). Use the Mailpit helper above to grab resetToken locally."
+          }
+        },
+        {
+          "name": "Reset password",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "204. Signs out ALL sessions (web and app). 400 token_invalid, password_too_short, password_too_long."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Account",
+      "description": "Requires Authorization: Bearer.",
+      "item": [
+        {
+          "name": "Me",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me"
+              ]
+            },
+            "description": "{id, email, handle, displayName, locale, emailConfirmed, roles[]}. 401 when not signed in."
+          }
+        },
+        {
+          "name": "Update profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"New name\",\n  \"locale\": \"en\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Change password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "password"
+              ]
+            },
+            "description": "204. Signs out every OTHER session (including other app devices); this one stays valid."
+          }
+        },
+        {
+          "name": "List sessions (devices)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const other = (pm.response.json().items || []).find((s) => !s.isCurrent);",
+                  "if (other) pm.collectionVariables.set(\"sessionId\", other.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "sessions"
+              ]
+            },
+            "description": "items[]: {id, createdAt, lastSeenAt, userAgent (deviceName for apps), isCurrent}."
+          }
+        },
+        {
+          "name": "Revoke a session",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/sessions/{{sessionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "sessions",
+                "{{sessionId}}"
+              ]
+            },
+            "description": "204; 404 session_not_found."
+          }
+        },
+        {
+          "name": "Revoke other sessions",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/sessions/revoke-others",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "sessions",
+                "revoke-others"
+              ]
+            },
+            "description": "200 {revoked: n}."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {
+          "name": "Genres",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/genres",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "genres"
+              ]
+            },
+            "description": "Public reference data: items[] {id, slug, name}."
+          }
+        },
+        {
+          "name": "New releases",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks?limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Public, ready tracks, newest first."
+          }
+        },
+        {
+          "name": "Track by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}"
+              ]
+            },
+            "description": "Public/unlisted tracks for everyone; private/processing tracks only for the owner (else 404). Includes status, durationMs, playable."
+          }
+        },
+        {
+          "name": "Artist by slug",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/artists/{{artistSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "artists",
+                "{{artistSlug}}"
+              ]
+            },
+            "description": "Artist profile + public tracks. 404 if unknown."
+          }
+        },
+        {
+          "name": "My artist profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/artist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "artist"
+              ]
+            },
+            "description": "404 if the user has not created one yet."
+          }
+        },
+        {
+          "name": "Become an artist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"{{artistSlug}}\",\n  \"name\": \"App Artist\",\n  \"bio\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/artist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "artist"
+              ]
+            },
+            "description": "201. Grants the Artist role (needed to create tracks). 409 if the slug is taken or the user already has one."
+          }
+        },
+        {
+          "name": "My tracks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/tracks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "tracks"
+              ]
+            },
+            "description": "All the artist's own tracks, any status."
+          }
+        },
+        {
+          "name": "Create track",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"trackId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"My first track\",\n  \"description\": null,\n  \"genreSlug\": \"ambient\",\n  \"visibility\": \"Private\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks"
+              ]
+            },
+            "description": "201 → track in status Draft; then upload audio. visibility: Public | Unlisted | Private. 403 if the user is not an artist."
+          }
+        },
+        {
+          "name": "Update track",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Renamed track\",\n  \"description\": \"Plain text\",\n  \"genreSlug\": \"ambient\",\n  \"visibility\": \"Public\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}"
+              ]
+            },
+            "description": "Owner only (others get 404). Send the full object."
+          }
+        },
+        {
+          "name": "Delete track",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}"
+              ]
+            },
+            "description": "204. Owner only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Media",
+      "item": [
+        {
+          "name": "Upload audio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/octet-stream"
+              },
+              {
+                "key": "X-Upload-Length",
+                "value": "{{uploadLength}}",
+                "description": "Exact file size in bytes (required)"
+              },
+              {
+                "key": "X-File-Name",
+                "value": "song.mp3",
+                "description": "Optional, URL-encoded; display only"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "upload"
+              ]
+            },
+            "description": "Raw request body = the audio file (NOT multipart). Pick the file under Body → binary and set {{uploadLength}} to its size in bytes.\nMP3/WAV/FLAC/AAC/M4A/OGG/Opus, ≤ 200 MB, 1 s–2 h. 202 → processing starts (track status Processing → Ready/Failed).\nErrors: upload_length_required, file_too_large, upload_incomplete (size mismatch / connection dropped), unsupported_file_type, track_not_uploadable / upload_in_progress (409). Processing failures (unsupported_format, no_audio_stream, duration_too_short|long, processing_*) appear in track.processingError.\nFlutter (dio): dio.put(url, data: file.openRead(), options: Options(headers: {'Content-Type': 'application/octet-stream', 'X-Upload-Length': await file.length(), 'X-File-Name': Uri.encodeComponent(name)}), onSendProgress: …).\nRate limit: 30 uploads/hour per IP."
+          }
+        },
+        {
+          "name": "Upload status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "upload"
+              ]
+            },
+            "description": "Owner only: status (Uploaded / Processing / Completed / Failed / Cancelled), attempts, error code. Poll every 2–5 s, or poll the track."
+          }
+        },
+        {
+          "name": "Cancel upload",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "upload"
+              ]
+            },
+            "description": "204 while queued/processing; 409 if already finished."
+          }
+        },
+        {
+          "name": "Stream audio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Range",
+                "value": "bytes=0-",
+                "description": "Players send ranges; 206 Partial Content / 416"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/stream",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "stream"
+              ]
+            },
+            "description": "AAC (audio/mp4) with HTTP Range support. Public tracks need no auth; private ones need the owner's bearer token — with just_audio pass headers: {'Authorization': 'Bearer …'} on AudioSource.uri. 404 when not visible or not ready."
+          }
+        },
+        {
+          "name": "Waveform",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/waveform",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "waveform"
+              ]
+            },
+            "description": "{version, durationMs, peaks: float[~1000] in 0..1}. Same visibility rules as streaming."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Web (cookie) only",
+      "description": "Browser flow, for reference. Apps should use the token endpoints instead. Postman keeps the cookies automatically.",
+      "item": [
+        {
+          "name": "CSRF token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"csrfToken\", pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/csrf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "csrf"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login (cookie)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"rememberMe\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "204 + session cookie. Fetch a new CSRF token afterwards (tokens are bound to the identity)."
+          }
+        },
+        {
+          "name": "Logout (cookie)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Live",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5080/health/live",
+              "host": [
+                "http://localhost:5080"
+              ],
+              "path": [
+                "health",
+                "live"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ready",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5080/health/ready",
+              "host": [
+                "http://localhost:5080"
+              ],
+              "path": [
+                "health",
+                "ready"
+              ]
+            },
+            "description": "Only reachable on the API port (5080) — the proxy routes /api only."
+          }
+        }
+      ]
+    }
+  ]
+}

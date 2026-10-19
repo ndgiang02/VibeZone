@@ -1,0 +1,314 @@
+{
+  "metadata": {
+    "description": "Discover, stream and share music from independent artists."
+  },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Try again",
+    "save": "Save",
+    "saving": "Saving…",
+    "skipToContent": "Skip to content",
+    "homeLink": "VibeZone home"
+  },
+  "nav": {
+    "primary": "Primary",
+    "home": "Home",
+    "settings": "Settings",
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "signOut": "Sign out",
+    "account": "Account menu",
+    "language": "Language",
+    "languages": {
+      "vi": "Tiếng Việt",
+      "en": "English"
+    },
+    "studio": "Studio"
+  },
+  "home": {
+    "eyebrow": "VibeZone",
+    "title": "Where independent sound finds its people.",
+    "subtitle": "Discover, stream and share music straight from the artists who make it.",
+    "genres": {
+      "title": "Browse by genre",
+      "loading": "Loading genres",
+      "errorTitle": "Couldn't load genres",
+      "errorBody": "The catalog service didn't respond. Check your connection and try again.",
+      "emptyTitle": "No genres yet",
+      "emptyBody": "Genres will appear here once the catalog is set up."
+    },
+    "newReleases": {
+      "title": "New releases",
+      "errorTitle": "Couldn't load new releases",
+      "emptyTitle": "No tracks yet",
+      "emptyBody": "New public tracks appear here as soon as artists publish them."
+    }
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to keep listening.",
+      "rememberMe": "Keep me signed in on this device",
+      "submit": "Sign in",
+      "forgot": "Forgot password?",
+      "noAccount": "New to VibeZone?",
+      "signUp": "Create an account",
+      "resend": "Resend verification email",
+      "resent": "If the address needs confirming, a new link is on its way."
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Join VibeZone to follow artists and build playlists.",
+      "handle": "Username",
+      "handleHint": "3–30 characters: lowercase letters, numbers, _ or -. This is your public profile address.",
+      "displayName": "Display name",
+      "displayNameHint": "Shown on your profile. You can change it later.",
+      "passwordHint": "At least 10 characters. A memorable phrase works well.",
+      "submit": "Create account",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "successTitle": "Check your inbox",
+      "successBody": "We've sent a confirmation link to {email}. Open it to activate your account. The link expires in 24 hours.",
+      "successHint": "Didn't get it? Check spam, or request a new link from the sign-in page."
+    },
+    "verify": {
+      "title": "Confirm your email",
+      "verifying": "Confirming your email address…",
+      "successTitle": "Email confirmed",
+      "successBody": "Your account is active. You can sign in now.",
+      "successCta": "Sign in",
+      "failedTitle": "This link doesn't work",
+      "failedBody": "It may have expired or already been used. Request a new one from the sign-in page.",
+      "missing": "This confirmation link is incomplete."
+    },
+    "forgot": {
+      "title": "Reset your password",
+      "subtitle": "Enter your account email and we'll send you a reset link.",
+      "submit": "Send reset link",
+      "successTitle": "Check your inbox",
+      "successBody": "If an account exists for {email}, a password reset link is on its way. It expires in 1 hour.",
+      "back": "Back to sign in"
+    },
+    "reset": {
+      "title": "Choose a new password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Update password",
+      "successTitle": "Password updated",
+      "successBody": "You've been signed out of all devices. Sign in with your new password.",
+      "successCta": "Sign in",
+      "missing": "This reset link is incomplete. Request a new one."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your profile, password and signed-in devices.",
+    "profile": {
+      "title": "Profile",
+      "handle": "Username",
+      "email": "Email",
+      "displayName": "Display name",
+      "language": "Language",
+      "languageHint": "Used for the interface and the emails we send you.",
+      "saved": "Profile saved."
+    },
+    "password": {
+      "title": "Password",
+      "current": "Current password",
+      "new": "New password",
+      "submit": "Change password",
+      "changed": "Password changed. Your other devices were signed out."
+    },
+    "sessions": {
+      "title": "Signed-in devices",
+      "subtitle": "Sign out of devices you don't recognize.",
+      "current": "This device",
+      "unknownDevice": "Unknown device",
+      "lastActive": "Last active {time}",
+      "signedIn": "Signed in {date}",
+      "revoke": "Sign out",
+      "revokeOthers": "Sign out all other devices",
+      "revokedOthers": "{count, plural, =0 {No other devices were signed in.} one {Signed out # device.} other {Signed out # devices.}}",
+      "errorTitle": "Couldn't load your devices"
+    }
+  },
+  "validation": {
+    "required": "This field is required.",
+    "email": "Enter a valid email address.",
+    "passwordMin": "Use at least {min} characters.",
+    "passwordMax": "Use at most {max} characters.",
+    "handle": "3–30 characters: lowercase letters, numbers, _ or -, starting and ending with a letter or number.",
+    "displayName": "Use 1–60 characters.",
+    "passwordsMismatch": "Passwords don't match."
+  },
+  "errors": {
+    "invalid_credentials": "Email or password is incorrect.",
+    "invalid_refresh_token": "Your sign-in has expired. Please sign in again.",
+    "email_not_confirmed": "Confirm your email address before signing in. Check your inbox for the link.",
+    "handle_taken": "This username is already taken.",
+    "handle_invalid": "This username isn't valid.",
+    "handle_reserved": "This username is reserved. Choose another.",
+    "email_invalid": "Enter a valid email address.",
+    "password_too_short": "Password must be at least 10 characters.",
+    "password_too_long": "Password must be at most 128 characters.",
+    "password_invalid": "This password doesn't meet the requirements.",
+    "token_invalid": "This link is invalid or has expired. Request a new one.",
+    "current_password_incorrect": "Your current password is incorrect.",
+    "display_name_invalid": "Display name must be 1–60 characters.",
+    "locale_unsupported": "This language isn't supported.",
+    "registration_failed": "We couldn't create your account. Please try again.",
+    "session_not_found": "That device is already signed out.",
+    "rate_limited": "Too many attempts. Wait a minute and try again.",
+    "network": "Can't reach VibeZone. Check your connection.",
+    "unknown": "Something went wrong. Please try again.",
+    "track_not_found": "Track not found.",
+    "artist_not_found": "Artist not found.",
+    "artist_exists": "You already have an artist profile.",
+    "artist_slug_taken": "This profile URL is taken.",
+    "artist_slug_invalid": "Use 3–40 lowercase letters, numbers and single hyphens.",
+    "artist_name_invalid": "Artist name must be 1–80 characters.",
+    "artist_bio_too_long": "Bio must be at most 1000 characters.",
+    "artist_required": "Create an artist profile first.",
+    "track_title_invalid": "Title must be 1–120 characters.",
+    "track_description_too_long": "Description must be at most 2000 characters.",
+    "track_visibility_invalid": "Choose a visibility.",
+    "genre_unknown": "Unknown genre.",
+    "track_not_uploadable": "This track already has audio or is being processed.",
+    "upload_in_progress": "This track is already being processed.",
+    "upload_length_required": "The upload size is missing. Try again.",
+    "file_too_large": "The file is too large.",
+    "upload_incomplete": "The upload was interrupted. Try again.",
+    "unsupported_file_type": "This doesn't look like a supported audio file.",
+    "no_active_upload": "There's no upload in progress.",
+    "media_not_ready": "Audio isn't available yet.",
+    "no_audio_stream": "The file contains no audio.",
+    "unsupported_format": "This audio format isn't supported.",
+    "duration_too_short": "The audio is too short.",
+    "duration_too_long": "The audio is longer than 2 hours.",
+    "corrupt_file": "The file is damaged or not a real audio file.",
+    "transcode_failed": "The audio couldn't be converted.",
+    "processing_timeout": "Processing took too long.",
+    "processing_error": "Processing failed. Try uploading again.",
+    "processing_attempts_exhausted": "Processing failed several times. Try uploading again."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you're looking for doesn't exist or has moved.",
+    "back": "Back to home"
+  },
+  "routeError": {
+    "title": "Something went wrong",
+    "body": "This page failed to load. You can try again — if it keeps happening, please come back later."
+  },
+  "player": {
+    "label": "Player",
+    "play": "Play",
+    "pause": "Pause",
+    "next": "Next track",
+    "previous": "Previous track",
+    "shuffle": "Shuffle",
+    "repeat": {
+      "off": "Repeat: off",
+      "all": "Repeat: all",
+      "one": "Repeat: one"
+    },
+    "seek": "Seek",
+    "position": "{current} of {total}",
+    "volume": "Volume",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "queue": "Queue",
+    "closeQueue": "Close queue",
+    "clearQueue": "Clear",
+    "queueEmpty": "Your queue is empty.",
+    "removeFromQueue": "Remove {title} from queue",
+    "addToQueue": "Add {title} to queue",
+    "addToQueueShort": "Add to queue",
+    "playTrack": "Play {title}",
+    "pauseTrack": "Pause {title}",
+    "retry": "Retry playback",
+    "error": "This track couldn't be played."
+  },
+  "track": {
+    "pageTitle": "Track",
+    "genre": "Genre",
+    "duration": "Duration",
+    "published": "Published",
+    "about": "About this track",
+    "waveformSection": "Waveform",
+    "waveformLabel": "Waveform of {title}. Click to play from that point.",
+    "waveformUnavailable": "Waveform not available.",
+    "notPlayable": "This track isn't playable yet.",
+    "notFoundTitle": "Track not found",
+    "notFoundBody": "It may be private, removed, or the link is wrong.",
+    "status": {
+      "Draft": "Draft — upload audio",
+      "Processing": "Processing…",
+      "Ready": "Ready",
+      "Failed": "Processing failed",
+      "Cancelled": "Upload cancelled"
+    },
+    "visibility": {
+      "Public": "Public",
+      "Unlisted": "Unlisted",
+      "Private": "Private"
+    }
+  },
+  "artist": {
+    "label": "Artist",
+    "tracks": "Tracks",
+    "noTracksTitle": "No tracks yet",
+    "noTracksBody": "This artist hasn't published anything public yet.",
+    "notFoundTitle": "Artist not found",
+    "notFoundBody": "Check the link and try again."
+  },
+  "studio": {
+    "title": "Studio",
+    "subtitle": "Create tracks, upload audio and follow processing.",
+    "signedInAs": "Publishing as",
+    "myTracks": "Your tracks",
+    "emptyTitle": "No tracks yet",
+    "emptyBody": "Create your first track, then upload its audio.",
+    "processing": "Converting audio and computing the waveform… This page updates automatically.",
+    "cancelProcessing": "Cancel",
+    "delete": "Delete {title}",
+    "deleteConfirm": "Delete \"{title}\"? This can't be undone from the studio.",
+    "becomeArtist": {
+      "title": "Become an artist",
+      "subtitle": "Create your artist profile to upload and share music.",
+      "name": "Artist name",
+      "nameInvalid": "Use 1–80 characters.",
+      "slug": "Profile URL",
+      "slugHint": "3–40 characters: lowercase letters, numbers and single hyphens.",
+      "slugInvalid": "Use 3–40 lowercase letters, numbers and single hyphens.",
+      "bio": "Bio (optional)",
+      "bioTooLong": "Use at most 1000 characters.",
+      "submit": "Create artist profile"
+    },
+    "newTrack": {
+      "heading": "New track",
+      "title": "Title",
+      "titleInvalid": "Use 1–120 characters.",
+      "genre": "Genre",
+      "noGenre": "No genre",
+      "visibility": "Visibility",
+      "visibilityHint": {
+        "Public": "Anyone can find and play it once it's ready.",
+        "Unlisted": "Only people with the link can play it; not shown in lists.",
+        "Private": "Only you can play it."
+      },
+      "description": "Description (optional)",
+      "descriptionTooLong": "Use at most 2000 characters.",
+      "submit": "Create track"
+    },
+    "upload": {
+      "choose": "Choose an audio file or drop it here",
+      "hint": "MP3, WAV, FLAC, M4A/AAC, OGG/Opus or AIFF · up to {max} MB · up to 2 hours",
+      "uploading": "Uploading {name}",
+      "progress": "Upload progress",
+      "cancel": "Cancel"
+    }
+  }
+}

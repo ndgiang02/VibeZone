@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <!-- Background host: media processing (FFmpeg). Same module assemblies as the API, different composition root. -->
+  <PropertyGroup>
+    <UserSecretsId>vibezone-api-dev</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BuildingBlocks\VibeZone.Infrastructure\VibeZone.Infrastructure.csproj" />
+    <ProjectReference Include="..\VibeZone.Migrations\VibeZone.Migrations.csproj" />
+  </ItemGroup>
+</Project>

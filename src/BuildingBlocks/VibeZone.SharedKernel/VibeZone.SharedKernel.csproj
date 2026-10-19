@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Framework-free primitives shared by all modules. Must not reference EF Core, ASP.NET Core or vendor SDKs. -->
+</Project>

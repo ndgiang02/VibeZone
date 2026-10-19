@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <UserSecretsId>vibezone-api-dev</UserSecretsId>
+    <!-- Build-time OpenAPI document: the contract the web app generates its client from. -->
+    <OpenApiDocumentsDirectory>$(MSBuildThisFileDirectory)..\..\openapi</OpenApiDocumentsDirectory>
+    <OpenApiGenerateDocumentsOptions>--file-name vibezone-api</OpenApiGenerateDocumentsOptions>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BuildingBlocks\VibeZone.Infrastructure\VibeZone.Infrastructure.csproj" />
+    <ProjectReference Include="..\VibeZone.Migrations\VibeZone.Migrations.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="VibeZone.IntegrationTests" />
+  </ItemGroup>
+  <!-- The SDK target only re-runs when VibeZone.Api.dll changes, so endpoint changes inside module
+       assemblies would leave a stale contract. Drop its incremental marker so every build regenerates. -->
+  <Target Name="ForceOpenApiRegeneration" BeforeTargets="GenerateOpenApiDocuments">
+    <Delete Files="$(_OpenApiDocumentsCache)" />
+  </Target>
+</Project>

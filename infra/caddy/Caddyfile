@@ -1,0 +1,36 @@
+# Local reverse proxy — the production topology from ADR-0002, on plain HTTP for localhost:
+#   /api/*, /hubs/*  → API (streamed both ways: no request-body buffering, audio flushes immediately)
+#   everything else  → Next.js web app
+# Browsers see a single origin, so session/CSRF cookies stay first-party.
+{
+	# No admin API and no automatic HTTPS locally (TLS terminates here in real deployments).
+	admin off
+	auto_https off
+	# Caddy is the edge: it does not trust incoming X-Forwarded-* headers (none configured), so clients
+	# cannot spoof their address; it sets fresh X-Forwarded-For/Proto/Host for the upstreams.
+}
+
+:8080 {
+	# Liveness for the container healthcheck (does not depend on api/web).
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	@api path /api/* /hubs/*
+	handle @api {
+		# Media:MaxUploadBytes is 200 MB; the API enforces the exact limit while reading.
+		request_body {
+			max_size 210MB
+		}
+		reverse_proxy api:8080 {
+			# Stream responses (audio ranges, future SignalR) without buffering.
+			flush_interval -1
+		}
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+
+	header -Server
+}

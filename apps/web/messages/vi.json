@@ -1,0 +1,314 @@
+{
+  "metadata": {
+    "description": "Khám phá, nghe và chia sẻ âm nhạc từ các nghệ sĩ độc lập."
+  },
+  "common": {
+    "loading": "Đang tải…",
+    "retry": "Thử lại",
+    "save": "Lưu",
+    "saving": "Đang lưu…",
+    "skipToContent": "Bỏ qua tới nội dung",
+    "homeLink": "Trang chủ VibeZone"
+  },
+  "nav": {
+    "primary": "Điều hướng chính",
+    "home": "Trang chủ",
+    "settings": "Cài đặt",
+    "signIn": "Đăng nhập",
+    "signUp": "Tạo tài khoản",
+    "signOut": "Đăng xuất",
+    "account": "Menu tài khoản",
+    "language": "Ngôn ngữ",
+    "languages": {
+      "vi": "Tiếng Việt",
+      "en": "English"
+    },
+    "studio": "Studio"
+  },
+  "home": {
+    "eyebrow": "VibeZone",
+    "title": "Nơi âm nhạc độc lập tìm thấy người nghe.",
+    "subtitle": "Khám phá, nghe và chia sẻ âm nhạc trực tiếp từ những nghệ sĩ tạo ra nó.",
+    "genres": {
+      "title": "Duyệt theo thể loại",
+      "loading": "Đang tải thể loại",
+      "errorTitle": "Không tải được thể loại",
+      "errorBody": "Dịch vụ danh mục không phản hồi. Hãy kiểm tra kết nối và thử lại.",
+      "emptyTitle": "Chưa có thể loại nào",
+      "emptyBody": "Thể loại sẽ xuất hiện ở đây khi danh mục được thiết lập."
+    },
+    "newReleases": {
+      "title": "Mới phát hành",
+      "errorTitle": "Không tải được bài mới",
+      "emptyTitle": "Chưa có bài nào",
+      "emptyBody": "Các bài công khai mới sẽ xuất hiện ở đây ngay khi nghệ sĩ phát hành."
+    }
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Mật khẩu",
+    "login": {
+      "title": "Chào mừng trở lại",
+      "subtitle": "Đăng nhập để tiếp tục nghe nhạc.",
+      "rememberMe": "Giữ đăng nhập trên thiết bị này",
+      "submit": "Đăng nhập",
+      "forgot": "Quên mật khẩu?",
+      "noAccount": "Mới đến VibeZone?",
+      "signUp": "Tạo tài khoản",
+      "resend": "Gửi lại email xác nhận",
+      "resent": "Nếu địa chỉ cần xác nhận, liên kết mới đang được gửi tới bạn."
+    },
+    "register": {
+      "title": "Tạo tài khoản",
+      "subtitle": "Tham gia VibeZone để theo dõi nghệ sĩ và tạo playlist.",
+      "handle": "Tên người dùng",
+      "handleHint": "3–30 ký tự: chữ thường, số, _ hoặc -. Đây là địa chỉ hồ sơ công khai của bạn.",
+      "displayName": "Tên hiển thị",
+      "displayNameHint": "Hiển thị trên hồ sơ của bạn. Bạn có thể đổi sau.",
+      "passwordHint": "Ít nhất 10 ký tự. Một cụm từ dễ nhớ là lựa chọn tốt.",
+      "submit": "Tạo tài khoản",
+      "haveAccount": "Đã có tài khoản?",
+      "signIn": "Đăng nhập",
+      "successTitle": "Kiểm tra hộp thư",
+      "successBody": "Chúng tôi đã gửi liên kết xác nhận tới {email}. Mở liên kết để kích hoạt tài khoản. Liên kết hết hạn sau 24 giờ.",
+      "successHint": "Không nhận được? Hãy kiểm tra thư rác, hoặc yêu cầu liên kết mới ở trang đăng nhập."
+    },
+    "verify": {
+      "title": "Xác nhận email",
+      "verifying": "Đang xác nhận địa chỉ email…",
+      "successTitle": "Đã xác nhận email",
+      "successBody": "Tài khoản của bạn đã được kích hoạt. Bạn có thể đăng nhập ngay.",
+      "successCta": "Đăng nhập",
+      "failedTitle": "Liên kết không dùng được",
+      "failedBody": "Liên kết có thể đã hết hạn hoặc đã được sử dụng. Hãy yêu cầu liên kết mới ở trang đăng nhập.",
+      "missing": "Liên kết xác nhận không đầy đủ."
+    },
+    "forgot": {
+      "title": "Đặt lại mật khẩu",
+      "subtitle": "Nhập email tài khoản, chúng tôi sẽ gửi liên kết đặt lại mật khẩu.",
+      "submit": "Gửi liên kết đặt lại",
+      "successTitle": "Kiểm tra hộp thư",
+      "successBody": "Nếu có tài khoản với {email}, liên kết đặt lại mật khẩu đang được gửi tới. Liên kết hết hạn sau 1 giờ.",
+      "back": "Quay lại đăng nhập"
+    },
+    "reset": {
+      "title": "Chọn mật khẩu mới",
+      "newPassword": "Mật khẩu mới",
+      "confirmPassword": "Nhập lại mật khẩu mới",
+      "submit": "Cập nhật mật khẩu",
+      "successTitle": "Đã cập nhật mật khẩu",
+      "successBody": "Bạn đã được đăng xuất khỏi mọi thiết bị. Hãy đăng nhập bằng mật khẩu mới.",
+      "successCta": "Đăng nhập",
+      "missing": "Liên kết đặt lại không đầy đủ. Hãy yêu cầu liên kết mới."
+    }
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "subtitle": "Quản lý hồ sơ, mật khẩu và các thiết bị đang đăng nhập.",
+    "profile": {
+      "title": "Hồ sơ",
+      "handle": "Tên người dùng",
+      "email": "Email",
+      "displayName": "Tên hiển thị",
+      "language": "Ngôn ngữ",
+      "languageHint": "Dùng cho giao diện và các email chúng tôi gửi bạn.",
+      "saved": "Đã lưu hồ sơ."
+    },
+    "password": {
+      "title": "Mật khẩu",
+      "current": "Mật khẩu hiện tại",
+      "new": "Mật khẩu mới",
+      "submit": "Đổi mật khẩu",
+      "changed": "Đã đổi mật khẩu. Các thiết bị khác đã bị đăng xuất."
+    },
+    "sessions": {
+      "title": "Thiết bị đang đăng nhập",
+      "subtitle": "Đăng xuất khỏi những thiết bị bạn không nhận ra.",
+      "current": "Thiết bị này",
+      "unknownDevice": "Thiết bị không xác định",
+      "lastActive": "Hoạt động {time}",
+      "signedIn": "Đăng nhập {date}",
+      "revoke": "Đăng xuất",
+      "revokeOthers": "Đăng xuất mọi thiết bị khác",
+      "revokedOthers": "{count, plural, =0 {Không có thiết bị nào khác đang đăng nhập.} other {Đã đăng xuất # thiết bị.}}",
+      "errorTitle": "Không tải được danh sách thiết bị"
+    }
+  },
+  "validation": {
+    "required": "Trường này là bắt buộc.",
+    "email": "Nhập địa chỉ email hợp lệ.",
+    "passwordMin": "Dùng ít nhất {min} ký tự.",
+    "passwordMax": "Dùng tối đa {max} ký tự.",
+    "handle": "3–30 ký tự: chữ thường, số, _ hoặc -, bắt đầu và kết thúc bằng chữ hoặc số.",
+    "displayName": "Dùng 1–60 ký tự.",
+    "passwordsMismatch": "Mật khẩu không khớp."
+  },
+  "errors": {
+    "invalid_credentials": "Email hoặc mật khẩu không đúng.",
+    "invalid_refresh_token": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+    "email_not_confirmed": "Hãy xác nhận địa chỉ email trước khi đăng nhập. Kiểm tra hộp thư để lấy liên kết.",
+    "handle_taken": "Tên người dùng này đã có người dùng.",
+    "handle_invalid": "Tên người dùng không hợp lệ.",
+    "handle_reserved": "Tên người dùng này được dành riêng. Hãy chọn tên khác.",
+    "email_invalid": "Nhập địa chỉ email hợp lệ.",
+    "password_too_short": "Mật khẩu phải có ít nhất 10 ký tự.",
+    "password_too_long": "Mật khẩu tối đa 128 ký tự.",
+    "password_invalid": "Mật khẩu không đáp ứng yêu cầu.",
+    "token_invalid": "Liên kết không hợp lệ hoặc đã hết hạn. Hãy yêu cầu liên kết mới.",
+    "current_password_incorrect": "Mật khẩu hiện tại không đúng.",
+    "display_name_invalid": "Tên hiển thị phải có 1–60 ký tự.",
+    "locale_unsupported": "Ngôn ngữ này chưa được hỗ trợ.",
+    "registration_failed": "Không thể tạo tài khoản. Vui lòng thử lại.",
+    "session_not_found": "Thiết bị đó đã được đăng xuất.",
+    "rate_limited": "Bạn thử quá nhiều lần. Hãy đợi một phút rồi thử lại.",
+    "network": "Không kết nối được tới VibeZone. Hãy kiểm tra kết nối mạng.",
+    "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại.",
+    "track_not_found": "Không tìm thấy bài hát.",
+    "artist_not_found": "Không tìm thấy nghệ sĩ.",
+    "artist_exists": "Bạn đã có hồ sơ nghệ sĩ.",
+    "artist_slug_taken": "Địa chỉ hồ sơ này đã có người dùng.",
+    "artist_slug_invalid": "Dùng 3–40 ký tự gồm chữ thường, số và dấu gạch ngang đơn.",
+    "artist_name_invalid": "Tên nghệ sĩ phải có 1–80 ký tự.",
+    "artist_bio_too_long": "Giới thiệu tối đa 1000 ký tự.",
+    "artist_required": "Hãy tạo hồ sơ nghệ sĩ trước.",
+    "track_title_invalid": "Tên bài phải có 1–120 ký tự.",
+    "track_description_too_long": "Mô tả tối đa 2000 ký tự.",
+    "track_visibility_invalid": "Hãy chọn chế độ hiển thị.",
+    "genre_unknown": "Thể loại không hợp lệ.",
+    "track_not_uploadable": "Bài này đã có audio hoặc đang được xử lý.",
+    "upload_in_progress": "Bài này đang được xử lý.",
+    "upload_length_required": "Thiếu thông tin dung lượng file. Hãy thử lại.",
+    "file_too_large": "File quá lớn.",
+    "upload_incomplete": "Quá trình tải lên bị gián đoạn. Hãy thử lại.",
+    "unsupported_file_type": "File này không giống định dạng audio được hỗ trợ.",
+    "no_active_upload": "Không có lượt tải lên nào đang chạy.",
+    "media_not_ready": "Audio chưa sẵn sàng.",
+    "no_audio_stream": "File không chứa audio.",
+    "unsupported_format": "Định dạng audio này chưa được hỗ trợ.",
+    "duration_too_short": "Audio quá ngắn.",
+    "duration_too_long": "Audio dài hơn 2 giờ.",
+    "corrupt_file": "File bị hỏng hoặc không phải file audio thật.",
+    "transcode_failed": "Không chuyển đổi được audio.",
+    "processing_timeout": "Xử lý mất quá nhiều thời gian.",
+    "processing_error": "Xử lý thất bại. Hãy thử tải lên lại.",
+    "processing_attempts_exhausted": "Xử lý thất bại nhiều lần. Hãy thử tải lên lại."
+  },
+  "notFound": {
+    "title": "Không tìm thấy trang",
+    "body": "Trang bạn tìm không tồn tại hoặc đã được chuyển đi.",
+    "back": "Về trang chủ"
+  },
+  "routeError": {
+    "title": "Đã có lỗi xảy ra",
+    "body": "Trang này không tải được. Bạn có thể thử lại — nếu lỗi tiếp diễn, vui lòng quay lại sau."
+  },
+  "player": {
+    "label": "Trình phát",
+    "play": "Phát",
+    "pause": "Tạm dừng",
+    "next": "Bài tiếp theo",
+    "previous": "Bài trước",
+    "shuffle": "Phát ngẫu nhiên",
+    "repeat": {
+      "off": "Lặp: tắt",
+      "all": "Lặp: tất cả",
+      "one": "Lặp: một bài"
+    },
+    "seek": "Tua",
+    "position": "{current} / {total}",
+    "volume": "Âm lượng",
+    "mute": "Tắt tiếng",
+    "unmute": "Bật tiếng",
+    "queue": "Danh sách chờ",
+    "closeQueue": "Đóng danh sách chờ",
+    "clearQueue": "Xóa hết",
+    "queueEmpty": "Danh sách chờ đang trống.",
+    "removeFromQueue": "Xóa {title} khỏi danh sách chờ",
+    "addToQueue": "Thêm {title} vào danh sách chờ",
+    "addToQueueShort": "Thêm vào danh sách chờ",
+    "playTrack": "Phát {title}",
+    "pauseTrack": "Tạm dừng {title}",
+    "retry": "Thử phát lại",
+    "error": "Không phát được bài này."
+  },
+  "track": {
+    "pageTitle": "Bài hát",
+    "genre": "Thể loại",
+    "duration": "Thời lượng",
+    "published": "Ngày phát hành",
+    "about": "Giới thiệu",
+    "waveformSection": "Dạng sóng",
+    "waveformLabel": "Dạng sóng của {title}. Bấm để phát từ vị trí đó.",
+    "waveformUnavailable": "Chưa có dạng sóng.",
+    "notPlayable": "Bài này chưa phát được.",
+    "notFoundTitle": "Không tìm thấy bài hát",
+    "notFoundBody": "Bài có thể ở chế độ riêng tư, đã bị xóa, hoặc liên kết không đúng.",
+    "status": {
+      "Draft": "Bản nháp — hãy tải audio lên",
+      "Processing": "Đang xử lý…",
+      "Ready": "Sẵn sàng",
+      "Failed": "Xử lý thất bại",
+      "Cancelled": "Đã hủy tải lên"
+    },
+    "visibility": {
+      "Public": "Công khai",
+      "Unlisted": "Không công khai",
+      "Private": "Riêng tư"
+    }
+  },
+  "artist": {
+    "label": "Nghệ sĩ",
+    "tracks": "Bài hát",
+    "noTracksTitle": "Chưa có bài nào",
+    "noTracksBody": "Nghệ sĩ này chưa phát hành bài công khai nào.",
+    "notFoundTitle": "Không tìm thấy nghệ sĩ",
+    "notFoundBody": "Hãy kiểm tra lại liên kết."
+  },
+  "studio": {
+    "title": "Studio",
+    "subtitle": "Tạo bài hát, tải audio lên và theo dõi quá trình xử lý.",
+    "signedInAs": "Phát hành với tên",
+    "myTracks": "Bài hát của bạn",
+    "emptyTitle": "Chưa có bài nào",
+    "emptyBody": "Tạo bài đầu tiên, sau đó tải audio của bài lên.",
+    "processing": "Đang chuyển đổi audio và tính dạng sóng… Trang sẽ tự cập nhật.",
+    "cancelProcessing": "Hủy",
+    "delete": "Xóa {title}",
+    "deleteConfirm": "Xóa \"{title}\"? Bạn không thể hoàn tác trong studio.",
+    "becomeArtist": {
+      "title": "Trở thành nghệ sĩ",
+      "subtitle": "Tạo hồ sơ nghệ sĩ để tải lên và chia sẻ âm nhạc.",
+      "name": "Tên nghệ sĩ",
+      "nameInvalid": "Dùng 1–80 ký tự.",
+      "slug": "Địa chỉ hồ sơ",
+      "slugHint": "3–40 ký tự: chữ thường, số và dấu gạch ngang đơn.",
+      "slugInvalid": "Dùng 3–40 ký tự gồm chữ thường, số và dấu gạch ngang đơn.",
+      "bio": "Giới thiệu (không bắt buộc)",
+      "bioTooLong": "Dùng tối đa 1000 ký tự.",
+      "submit": "Tạo hồ sơ nghệ sĩ"
+    },
+    "newTrack": {
+      "heading": "Bài hát mới",
+      "title": "Tên bài",
+      "titleInvalid": "Dùng 1–120 ký tự.",
+      "genre": "Thể loại",
+      "noGenre": "Không chọn thể loại",
+      "visibility": "Chế độ hiển thị",
+      "visibilityHint": {
+        "Public": "Ai cũng có thể tìm và nghe khi bài sẵn sàng.",
+        "Unlisted": "Chỉ người có liên kết mới nghe được; không hiện trong danh sách.",
+        "Private": "Chỉ bạn nghe được."
+      },
+      "description": "Mô tả (không bắt buộc)",
+      "descriptionTooLong": "Dùng tối đa 2000 ký tự.",
+      "submit": "Tạo bài hát"
+    },
+    "upload": {
+      "choose": "Chọn file audio hoặc kéo thả vào đây",
+      "hint": "MP3, WAV, FLAC, M4A/AAC, OGG/Opus hoặc AIFF · tối đa {max} MB · tối đa 2 giờ",
+      "uploading": "Đang tải lên {name}",
+      "progress": "Tiến độ tải lên",
+      "cancel": "Hủy"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+# Build context for the API image (repository root).
+.git
+.env
+.env.*
+**/bin/
+**/obj/
+**/TestResults/
+apps/
+tests/
+docs/
+infra/
+openapi/
+**/node_modules/
+**/.vs/
+**/.idea/
+**/*.user

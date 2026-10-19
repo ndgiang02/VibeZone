@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="TngTech.ArchUnitNET" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\VibeZone.Api\VibeZone.Api.csproj" />
+  </ItemGroup>
+</Project>

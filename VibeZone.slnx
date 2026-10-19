@@ -1,0 +1,28 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/VibeZone.Api/VibeZone.Api.csproj" />
+    <Project Path="src/VibeZone.Migrations/VibeZone.Migrations.csproj" />
+    <Project Path="src/VibeZone.Worker/VibeZone.Worker.csproj" />
+  </Folder>
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/VibeZone.Infrastructure/VibeZone.Infrastructure.csproj" />
+    <Project Path="src/BuildingBlocks/VibeZone.SharedKernel/VibeZone.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Catalog/">
+    <Project Path="src/Modules/Catalog/VibeZone.Modules.Catalog.Contracts/VibeZone.Modules.Catalog.Contracts.csproj" />
+    <Project Path="src/Modules/Catalog/VibeZone.Modules.Catalog/VibeZone.Modules.Catalog.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/VibeZone.Modules.Identity.Contracts/VibeZone.Modules.Identity.Contracts.csproj" />
+    <Project Path="src/Modules/Identity/VibeZone.Modules.Identity/VibeZone.Modules.Identity.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Media/">
+    <Project Path="src/Modules/Media/VibeZone.Modules.Media/VibeZone.Modules.Media.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/VibeZone.ArchitectureTests/VibeZone.ArchitectureTests.csproj" />
+    <Project Path="tests/VibeZone.IntegrationTests/VibeZone.IntegrationTests.csproj" />
+    <Project Path="tests/VibeZone.UnitTests/VibeZone.UnitTests.csproj" />
+  </Folder>
+</Solution>

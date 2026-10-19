@@ -1,0 +1,44 @@
+# --- Secrets & local environment ---
+.env
+.env.*
+!.env.example
+*.pfx
+*.pem
+*.key
+secrets/
+
+# --- OS / editors ---
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# --- .NET ---
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+*.trx
+appsettings.*.local.json
+
+# --- Media scratch / local data ---
+.data/
+*.tmp

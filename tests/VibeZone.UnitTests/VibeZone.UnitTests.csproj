@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BuildingBlocks\VibeZone.SharedKernel\VibeZone.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\VibeZone.Modules.Catalog\VibeZone.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\VibeZone.Modules.Identity\VibeZone.Modules.Identity.csproj" />
+  </ItemGroup>
+</Project>
