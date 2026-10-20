@@ -37,6 +37,40 @@ internal sealed class UploadJobConfiguration : IEntityTypeConfiguration<UploadJo
     }
 }
 
+// artist_id references catalog.artists; the FK is added in SQL by the migration (ADR-0001).
+internal sealed class ArtistImageConfiguration : IEntityTypeConfiguration<ArtistImage>
+{
+    public void Configure(EntityTypeBuilder<ArtistImage> b)
+    {
+        b.ToTable("artist_images", MediaModule.Schema, t =>
+            t.HasCheckConstraint("ck_artist_images_kind", $"kind IN ({EnumCheck.Values<ArtistImageKind>()})"));
+        b.HasKey(i => i.Id);
+        b.Property(i => i.Id).ValueGeneratedNever();
+        b.Property(i => i.Kind).HasConversion(new LowerCaseEnumConverter<ArtistImageKind>()).HasMaxLength(32);
+        b.Property(i => i.ObjectKey).HasMaxLength(512);
+        b.Property(i => i.ContentType).HasMaxLength(127);
+        b.HasIndex(i => new { i.ArtistId, i.Kind }).IsUnique();
+        b.HasIndex(i => i.ObjectKey).IsUnique();
+    }
+}
+
+// user_id references identity.users; the FK is added in SQL by the migration (ADR-0001).
+internal sealed class UserImageConfiguration : IEntityTypeConfiguration<UserImage>
+{
+    public void Configure(EntityTypeBuilder<UserImage> b)
+    {
+        b.ToTable("user_images", MediaModule.Schema, t =>
+            t.HasCheckConstraint("ck_user_images_kind", $"kind IN ({EnumCheck.Values<UserImageKind>()})"));
+        b.HasKey(i => i.Id);
+        b.Property(i => i.Id).ValueGeneratedNever();
+        b.Property(i => i.Kind).HasConversion(new LowerCaseEnumConverter<UserImageKind>()).HasMaxLength(32);
+        b.Property(i => i.ObjectKey).HasMaxLength(512);
+        b.Property(i => i.ContentType).HasMaxLength(127);
+        b.HasIndex(i => new { i.UserId, i.Kind }).IsUnique();
+        b.HasIndex(i => i.ObjectKey).IsUnique();
+    }
+}
+
 internal sealed class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAsset>
 {
     public void Configure(EntityTypeBuilder<MediaAsset> b)
@@ -57,8 +91,18 @@ internal sealed class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAs
 
 internal sealed class EfMediaRepository(AppDbContext db, TimeProvider time) : IMediaRepository
 {
-    public Task<UploadJob?> FindJobAsync(Guid jobId, CancellationToken cancellationToken) =>
-        db.Set<UploadJob>().SingleOrDefaultAsync(j => j.Id == jobId, cancellationToken);
+    public async Task<UploadJob?> FindJobAsync(Guid jobId, CancellationToken cancellationToken)
+    {
+        // Always the current row: lease heartbeats update it (and its xmin) while a job is being processed.
+        if (db.Set<UploadJob>().Local.FirstOrDefault(j => j.Id == jobId) is { } tracked)
+        {
+            var entry = db.Entry(tracked);
+            await entry.ReloadAsync(cancellationToken);
+            return entry.State == EntityState.Detached ? null : tracked;
+        }
+
+        return await db.Set<UploadJob>().SingleOrDefaultAsync(j => j.Id == jobId, cancellationToken);
+    }
 
     public Task<UploadJob?> FindActiveJobAsync(Guid trackId, CancellationToken cancellationToken) =>
         db.Set<UploadJob>().SingleOrDefaultAsync(
@@ -111,5 +155,39 @@ internal sealed class EfMediaRepository(AppDbContext db, TimeProvider time) : IM
 
     public void Remove(MediaAsset asset) => db.Set<MediaAsset>().Remove(asset);
 
+    public async Task<IReadOnlyList<ArtistImage>> ListArtistImagesAsync(Guid artistId, CancellationToken cancellationToken) =>
+        await db.Set<ArtistImage>().Where(i => i.ArtistId == artistId).ToListAsync(cancellationToken);
+
+    public Task<ArtistImage?> FindArtistImageAsync(Guid artistId, ArtistImageKind kind, CancellationToken cancellationToken) =>
+        db.Set<ArtistImage>().AsNoTracking().SingleOrDefaultAsync(i => i.ArtistId == artistId && i.Kind == kind, cancellationToken);
+
+    public void Add(ArtistImage image) => db.Set<ArtistImage>().Add(image);
+
+    public void Remove(ArtistImage image) => db.Set<ArtistImage>().Remove(image);
+
+    public async Task<IReadOnlyList<UserImage>> ListUserImagesAsync(Guid userId, CancellationToken cancellationToken) =>
+        await db.Set<UserImage>().Where(i => i.UserId == userId).ToListAsync(cancellationToken);
+
+    public Task<UserImage?> FindUserImageAsync(Guid userId, UserImageKind kind, CancellationToken cancellationToken) =>
+        db.Set<UserImage>().AsNoTracking().SingleOrDefaultAsync(i => i.UserId == userId && i.Kind == kind, cancellationToken);
+
+    public void Add(UserImage image) => db.Set<UserImage>().Add(image);
+
+    public void Remove(UserImage image) => db.Set<UserImage>().Remove(image);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
+
+    public async Task<IAsyncDisposable> BeginTransactionAsync(CancellationToken cancellationToken) =>
+        new Transaction(await db.Database.BeginTransactionAsync(cancellationToken));
+
+    public Task CommitAsync(IAsyncDisposable transaction, CancellationToken cancellationToken) =>
+        ((Transaction)transaction).Inner.CommitAsync(cancellationToken);
+
+    /// <summary>Disposing without commit rolls back.</summary>
+    private sealed class Transaction(Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction inner) : IAsyncDisposable
+    {
+        public Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction Inner => inner;
+
+        public ValueTask DisposeAsync() => inner.DisposeAsync();
+    }
 }

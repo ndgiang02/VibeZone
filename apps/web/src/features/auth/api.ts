@@ -103,7 +103,7 @@ export function useChangePassword() {
 export function useSessions(enabled: boolean) {
   return useQuery({
     queryKey: authKeys.sessions,
-    queryFn: async ({ signal }) => unwrap(await api.GET("/api/v1/me/sessions", { signal })).items,
+    queryFn: async ({ signal }) => unwrap(await api.GET("/api/v1/me/sessions", { signal })),
     enabled,
   });
 }

@@ -70,6 +70,22 @@ public sealed class Track
 
     public DateTimeOffset? DeletedAt { get; private set; }
 
+    /// <summary>Version of the current cover artwork (stored by the Media module), or null if none.</summary>
+    public Guid? ArtworkId { get; private set; }
+
+    /// <summary>The album this track belongs to (same artist), if any.</summary>
+    public Guid? AlbumId { get; private set; }
+
+    /// <summary>1-based position on <see cref="AlbumId"/>.</summary>
+    public int? TrackNumber { get; private set; }
+
+    public void SetAlbum(Guid? albumId, int? trackNumber, DateTimeOffset now)
+    {
+        AlbumId = albumId;
+        TrackNumber = albumId is null ? null : trackNumber;
+        UpdatedAt = now;
+    }
+
     public bool CanStartProcessing => Status is TrackStatus.Draft or TrackStatus.Failed or TrackStatus.Cancelled;
 
     /// <summary>The single visibility rule (docs/architecture/data-model.md "Ownership and visibility").</summary>
@@ -94,6 +110,12 @@ public sealed class Track
         Description = NormalizeDescription(description);
         GenreId = genreId;
         Visibility = visibility;
+        UpdatedAt = now;
+    }
+
+    public void SetArtwork(Guid? artworkId, DateTimeOffset now)
+    {
+        ArtworkId = artworkId;
         UpdatedAt = now;
     }
 

@@ -19,6 +19,12 @@ public sealed class MinioFixture : IAsyncLifetime
         .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(r => r.ForPort(ApiPort).ForPath("/minio/health/live")))
         .Build();
 
+    public int MappedPort => _container.GetMappedPublicPort(ApiPort);
+
+    public const string AccessKey = User;
+
+    public const string SecretKey = Password;
+
     /// <summary>Settings for <see cref="ApiFactory"/> pointing the API at this container.</summary>
     public IReadOnlyDictionary<string, string> Settings => new Dictionary<string, string>
     {

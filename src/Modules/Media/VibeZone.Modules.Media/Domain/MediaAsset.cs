@@ -7,6 +7,12 @@ public enum MediaAssetKind
     Original,
     PlaybackAac,
     WaveformPeaks,
+
+    /// <summary>Cover image re-encoded by the API (square JPEG, list size).</summary>
+    ArtworkSmall,
+
+    /// <summary>Cover image re-encoded by the API (square JPEG, detail size).</summary>
+    ArtworkLarge,
 }
 
 /// <summary>A stored file belonging to a track (original upload or a derived rendition).</summary>
@@ -58,6 +64,8 @@ public sealed class MediaAsset
     public int? Channels { get; private set; }
 
     public DateTimeOffset CreatedAt { get; private set; }
+
+    public static bool IsArtwork(MediaAssetKind kind) => kind is MediaAssetKind.ArtworkSmall or MediaAssetKind.ArtworkLarge;
 
     /// <summary>Server-generated key; user input never reaches object keys.</summary>
     public static string NewKey(Guid trackId, MediaAssetKind kind, string extension) =>

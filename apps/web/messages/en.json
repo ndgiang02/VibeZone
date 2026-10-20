@@ -8,7 +8,14 @@
     "save": "Save",
     "saving": "Saving…",
     "skipToContent": "Skip to content",
-    "homeLink": "VibeZone home"
+    "homeLink": "VibeZone home",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "signInFirst": "Sign in to use this."
   },
   "nav": {
     "primary": "Primary",
@@ -23,7 +30,22 @@
       "vi": "Tiếng Việt",
       "en": "English"
     },
-    "studio": "Studio"
+    "studio": "Studio",
+    "menu": "Menu",
+    "library": "Library",
+    "playlists": "My playlists",
+    "soon": "Soon",
+    "comingSoon": "{label} — coming soon",
+    "yourFm": "Your FM",
+    "forYou": "For you",
+    "charts": "Charts",
+    "favourites": "Favourites",
+    "ranking": "My ranking",
+    "history": "History",
+    "downloads": "Downloads",
+    "back": "Go back",
+    "forward": "Go forward",
+    "discover": "Discover"
   },
   "home": {
     "eyebrow": "VibeZone",
@@ -42,6 +64,30 @@
       "errorTitle": "Couldn't load new releases",
       "emptyTitle": "No tracks yet",
       "emptyBody": "New public tracks appear here as soon as artists publish them."
+    },
+    "banner": {
+      "playAll": "Play all",
+      "stats": "{count, plural, one {# track} other {# tracks}} · {duration}",
+      "statsEmpty": "Fresh tracks land here as artists publish them."
+    },
+    "viewAll": "View all",
+    "showLess": "Show less",
+    "mostPlayed": "Most played",
+    "recommended": "Recommended for you",
+    "hotSongs": "Hot songs",
+    "artists": {
+      "title": "Artists",
+      "empty": "Artists appear here once they publish tracks."
+    },
+    "demo": {
+      "badge": "Demo",
+      "note": "Sample content to preview the design — not real data, not playable."
+    },
+    "kinds": {
+      "playlist": "Playlist",
+      "radio": "Radio",
+      "album": "Album",
+      "mix": "Mix"
     }
   },
   "auth": {
@@ -132,6 +178,11 @@
       "revokeOthers": "Sign out all other devices",
       "revokedOthers": "{count, plural, =0 {No other devices were signed in.} one {Signed out # device.} other {Signed out # devices.}}",
       "errorTitle": "Couldn't load your devices"
+    },
+    "avatar": {
+      "change": "Change picture",
+      "remove": "Remove",
+      "hint": "JPEG, PNG or WebP, at least 200 × 200 px, up to {max} MB. Cropped to a square."
     }
   },
   "validation": {
@@ -183,6 +234,7 @@
     "unsupported_file_type": "This doesn't look like a supported audio file.",
     "no_active_upload": "There's no upload in progress.",
     "media_not_ready": "Audio isn't available yet.",
+    "playback_token_invalid": "This playback link has expired. Try playing the track again.",
     "no_audio_stream": "The file contains no audio.",
     "unsupported_format": "This audio format isn't supported.",
     "duration_too_short": "The audio is too short.",
@@ -191,7 +243,29 @@
     "transcode_failed": "The audio couldn't be converted.",
     "processing_timeout": "Processing took too long.",
     "processing_error": "Processing failed. Try uploading again.",
-    "processing_attempts_exhausted": "Processing failed several times. Try uploading again."
+    "processing_attempts_exhausted": "Processing failed several times. Try uploading again.",
+    "audio_required": "Choose an audio file.",
+    "artwork_invalid": "That image can't be read. Use a JPEG, PNG or WebP image.",
+    "artwork_too_small": "Cover art must be at least 200 × 200 px.",
+    "artwork_too_large": "The cover image is too large.",
+    "artwork_not_found": "This track has no cover art.",
+    "multipart_required": "The upload request is invalid.",
+    "multipart_invalid": "The upload data was malformed. Try again.",
+    "image_invalid": "That image can't be read. Use a JPEG, PNG or WebP image.",
+    "image_too_small": "The image is too small: profile pictures need 200 × 200 px, banners 600 × 200 px.",
+    "image_too_large": "The image is too large.",
+    "image_not_found": "Image not found.",
+    "album_not_found": "Album not found.",
+    "album_title_invalid": "Album titles must be 1–120 characters.",
+    "album_description_too_long": "Album descriptions can be at most 2000 characters.",
+    "album_kind_invalid": "Unknown album type.",
+    "album_tracks_invalid": "Albums hold up to 100 of your own tracks.",
+    "playlist_not_found": "Playlist not found.",
+    "playlist_title_invalid": "Playlist names must be 1–100 characters.",
+    "playlist_description_too_long": "Playlist descriptions can be at most 1000 characters.",
+    "playlist_visibility_invalid": "Unknown visibility.",
+    "playlist_full": "This playlist already has 500 tracks.",
+    "playlist_order_mismatch": "The playlist changed; reload the page."
   },
   "notFound": {
     "title": "Page not found",
@@ -254,7 +328,14 @@
       "Public": "Public",
       "Unlisted": "Unlisted",
       "Private": "Private"
-    }
+    },
+    "label": "Song",
+    "moreFrom": "More from {artist}",
+    "viewArtist": "View artist",
+    "listen": "Listen",
+    "waveformHint": "Click the waveform to play from any point.",
+    "onAlbum": "On the album",
+    "addToPlaylist": "Add to playlist"
   },
   "artist": {
     "label": "Artist",
@@ -262,15 +343,22 @@
     "noTracksTitle": "No tracks yet",
     "noTracksBody": "This artist hasn't published anything public yet.",
     "notFoundTitle": "Artist not found",
-    "notFoundBody": "Check the link and try again."
+    "notFoundBody": "Check the link and try again.",
+    "playAll": "Play all",
+    "shufflePlay": "Shuffle",
+    "stats": "{count, plural, one {# track} other {# tracks}} · {duration}",
+    "about": "About",
+    "joined": "On VibeZone since {date}",
+    "noBio": "This artist hasn’t written a bio yet.",
+    "albums": "Albums & EPs"
   },
   "studio": {
     "title": "Studio",
-    "subtitle": "Create tracks, upload audio and follow processing.",
+    "subtitle": "Upload tracks with their cover art and follow processing.",
     "signedInAs": "Publishing as",
     "myTracks": "Your tracks",
     "emptyTitle": "No tracks yet",
-    "emptyBody": "Create your first track, then upload its audio.",
+    "emptyBody": "Tracks you upload show up here.",
     "processing": "Converting audio and computing the waveform… This page updates automatically.",
     "cancelProcessing": "Cancel",
     "delete": "Delete {title}",
@@ -288,7 +376,7 @@
       "submit": "Create artist profile"
     },
     "newTrack": {
-      "heading": "New track",
+      "heading": "Upload a track",
       "title": "Title",
       "titleInvalid": "Use 1–120 characters.",
       "genre": "Genre",
@@ -301,7 +389,28 @@
       },
       "description": "Description (optional)",
       "descriptionTooLong": "Use at most 2000 characters.",
-      "submit": "Create track"
+      "submit": "Upload",
+      "audio": "Audio file",
+      "audioChoose": "Choose an audio file or drop it here",
+      "audioRequired": "Choose an audio file.",
+      "audioReplace": "Replace",
+      "audioRemove": "Remove {name}",
+      "artwork": "Cover art",
+      "artworkOptional": "Optional",
+      "artworkChoose": "Add cover art",
+      "artworkHint": "JPEG, PNG or WebP · at least 200 × 200 px · up to {max} MB. Cropped to a square.",
+      "artworkChange": "Change",
+      "artworkRemove": "Remove cover art",
+      "artworkTooLarge": "Images can be at most {max} MB.",
+      "artworkType": "Use a JPEG, PNG or WebP image.",
+      "details": "Track details",
+      "uploading": "Uploading",
+      "uploadingDetail": "{done} of {total} · {percent}%",
+      "finishing": "Saving…",
+      "cancel": "Cancel upload",
+      "successTitle": "Uploaded!",
+      "successBody": "\"{title}\" is being processed — it'll be ready in a few minutes.",
+      "another": "Upload another"
     },
     "upload": {
       "choose": "Choose an audio file or drop it here",
@@ -309,6 +418,145 @@
       "uploading": "Uploading {name}",
       "progress": "Upload progress",
       "cancel": "Cancel"
+    },
+    "changeCover": "Change the cover of {title}",
+    "coverUpdated": "Cover updated.",
+    "retryUpload": "Upload the audio again",
+    "profile": {
+      "title": "Artist profile",
+      "publishingAs": "Publishing as",
+      "addBanner": "Add banner",
+      "changeBanner": "Change banner",
+      "removeBanner": "Remove banner",
+      "changeAvatar": "Change profile picture",
+      "removeAvatar": "Remove profile picture",
+      "viewProfile": "View artist page",
+      "hint": "Profile picture: square, at least 200 × 200 px. Banner: 3:1, at least 600 × 200 px. JPEG, PNG or WebP, up to {max} MB."
+    },
+    "albums": {
+      "heading": "Albums & EPs",
+      "create": "Create album",
+      "title": "Album title",
+      "titleInvalid": "Use 1–120 characters.",
+      "kind": "Type",
+      "releaseDate": "Release date",
+      "visibility": "Visibility",
+      "description": "Description (optional)",
+      "empty": "No albums yet.",
+      "tracks": "Tracks on the album",
+      "editTracks": "Choose tracks",
+      "pickerHint": "Tick the album's tracks; use the arrows to order them.",
+      "saveTracks": "Save tracklist",
+      "saved": "Saved.",
+      "deleteConfirm": "Delete the album \"{title}\"? Its tracks are kept.",
+      "delete": "Delete album",
+      "noTracks": "You have no tracks yet.",
+      "view": "View album",
+      "selected": "{count, plural, one {# track selected} other {# tracks selected}}"
+    },
+    "edit": {
+      "edit": "Edit {title}",
+      "save": "Save",
+      "saved": "Changes saved."
     }
+  },
+  "search": {
+    "label": "Search",
+    "placeholder": "Search songs, artists, albums...",
+    "clear": "Clear search",
+    "resultsTitle": "Results for “{query}”",
+    "scopeNote": "Searches track, artist, album and public playlist names — accents optional.",
+    "noResultsTitle": "No matches",
+    "noResultsBody": "Try a different song, artist or genre.",
+    "tracks": "Songs",
+    "artists": "Artists",
+    "genres": "Genres",
+    "pageTitle": "Search",
+    "albums": "Albums",
+    "playlists": "Playlists",
+    "startTitle": "What do you want to hear?",
+    "startBody": "Type a track, artist, album or playlist name in the search box above.",
+    "total": "{count, plural, one {# result} other {# results}}"
+  },
+  "nowPlaying": {
+    "title": "Now playing",
+    "emptyTitle": "Nothing playing",
+    "emptyBody": "Pick a track to start listening."
+  },
+  "album": {
+    "label": "Album",
+    "kind": {
+      "Album": "Album",
+      "Ep": "EP",
+      "Single": "Single"
+    },
+    "tracks": "Tracklist",
+    "playAll": "Play album",
+    "shufflePlay": "Shuffle",
+    "stats": "{count, plural, one {# track} other {# tracks}} · {duration}",
+    "emptyTitle": "No playable tracks on this album yet",
+    "emptyBody": "Its tracks appear once they're ready.",
+    "notFoundTitle": "Album not found",
+    "notFoundBody": "It may be private, deleted, or the link is wrong.",
+    "manage": "Manage in Studio",
+    "released": "Released {date}"
+  },
+  "playlist": {
+    "label": "Playlist",
+    "by": "by {name}",
+    "stats": "{count, plural, one {# track} other {# tracks}}",
+    "playAll": "Play",
+    "shufflePlay": "Shuffle",
+    "title": "Playlist name",
+    "titleInvalid": "Use 1–100 characters.",
+    "description": "Description (optional)",
+    "descriptionTooLong": "Use at most 1000 characters.",
+    "visibility": {
+      "Public": "Public",
+      "Private": "Private"
+    },
+    "visibilityHint": {
+      "Public": "Anyone can find and play it.",
+      "Private": "Only you can see it."
+    },
+    "create": "Create playlist",
+    "created": "Playlist created.",
+    "save": "Save changes",
+    "edit": "Edit playlist",
+    "delete": "Delete playlist",
+    "deleteConfirm": "Delete the playlist \"{title}\"? This can't be undone.",
+    "emptyTitle": "This playlist is empty",
+    "emptyBody": "Add tracks with \"Add to playlist\" on any track.",
+    "notFoundTitle": "Playlist not found",
+    "notFoundBody": "It may be private, deleted, or the link is wrong.",
+    "remove": "Remove {title} from the playlist",
+    "moveUp": "Move {title} up",
+    "moveDown": "Move {title} down",
+    "dragHint": "Drag to reorder, or use the arrow buttons / Alt + ↑↓.",
+    "hiddenTracks": "{count, plural, one {# track is} other {# tracks are}} hidden (private, deleted or not ready).",
+    "addTo": "Add to playlist",
+    "addToTitle": "Add \"{title}\" to…",
+    "added": "Added to {playlist}",
+    "alreadyIn": "Already in {playlist}",
+    "newPlaylist": "New playlist…",
+    "noPlaylists": "You have no playlists yet.",
+    "quickCreatePlaceholder": "New playlist name",
+    "moved": "Moved {title} to position {position}.",
+    "visibilityLabel": "Visibility"
+  },
+  "library": {
+    "title": "Library",
+    "subtitle": "Your playlists.",
+    "emptyTitle": "No playlists yet",
+    "emptyBody": "Create your first one with the form.",
+    "newTitle": "New playlist"
+  },
+  "discover": {
+    "title": "Discover",
+    "subtitle": "Genres, community playlists and new releases.",
+    "playlists": "Community playlists",
+    "playlistsEmpty": "No public playlists yet.",
+    "genres": "Genres",
+    "newReleases": "New releases"
   }
 }

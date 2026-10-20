@@ -69,6 +69,11 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+if (args.Contains(VibeZone.Api.DevSeed.Command))
+{
+    return await VibeZone.Api.DevSeed.RunAsync(app);
+}
+
 if (!cookieSecurity.Secure)
 {
     app.Logger.LogWarning("{Setting}=false: session and CSRF cookies are not Secure. Only acceptable for plain-HTTP local development.", CookieSecurity.ConfigurationKey);
@@ -99,5 +104,6 @@ api.MapCsrfEndpoint();
 modules.MapEndpoints(api);
 
 app.Run();
+return 0;
 
 public partial class Program;

@@ -48,7 +48,7 @@
           "    body: { mode: \"raw\", raw: JSON.stringify({ refreshToken: refresh }) },",
           "  }, (err, res) => {",
           "    if (!err && res.code === 200) {",
-          "      const t = res.json();",
+          "      const t = res.json().data;",
           "      pm.collectionVariables.set(\"accessToken\", t.accessToken);",
           "      pm.collectionVariables.set(\"refreshToken\", t.refreshToken);",
           "      pm.collectionVariables.set(\"accessTokenExpiresAt\", String(Date.now() + t.expiresIn * 1000));",
@@ -124,6 +124,30 @@
     },
     {
       "key": "trackId",
+      "value": ""
+    },
+    {
+      "key": "albumId",
+      "value": "",
+      "description": "Set by \"Create album\""
+    },
+    {
+      "key": "playlistId",
+      "value": "",
+      "description": "Set by \"Create playlist\""
+    },
+    {
+      "key": "q",
+      "value": "son tung",
+      "description": "Search text (accents optional)"
+    },
+    {
+      "key": "streamUrl",
+      "value": "",
+      "description": "Set by \"Playback URLs\" (relative, includes the token)"
+    },
+    {
+      "key": "waveformUrl",
       "value": ""
     },
     {
@@ -339,7 +363,7 @@
                 "exec": [
                   "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
                   "if (pm.response.code === 200) {",
-                  "  const t = pm.response.json();",
+                  "  const t = pm.response.json().data;",
                   "  pm.collectionVariables.set(\"accessToken\", t.accessToken);",
                   "  pm.collectionVariables.set(\"refreshToken\", t.refreshToken);",
                   "  pm.collectionVariables.set(\"accessTokenExpiresAt\", String(Date.now() + t.expiresIn * 1000));",
@@ -380,7 +404,7 @@
                 "token"
               ]
             },
-            "description": "200 → {accessToken, tokenType: 'Bearer', expiresIn: 900, refreshToken, refreshTokenExpiresAt}. 401 invalid_credentials (wrong email/password or locked out — indistinguishable). 403 email_not_confirmed. 429 too many attempts. deviceName is shown in the signed-in devices list."
+            "description": "200 → {data: {accessToken, tokenType: 'Bearer', expiresIn: 900, refreshToken, refreshTokenExpiresAt}}. 401 invalid_credentials (wrong email/password or locked out — indistinguishable). 403 email_not_confirmed. 429 too many attempts. deviceName is shown in the signed-in devices list."
           }
         },
         {
@@ -393,7 +417,7 @@
                 "exec": [
                   "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
                   "if (pm.response.code === 200) {",
-                  "  const t = pm.response.json();",
+                  "  const t = pm.response.json().data;",
                   "  pm.collectionVariables.set(\"accessToken\", t.accessToken);",
                   "  pm.collectionVariables.set(\"refreshToken\", t.refreshToken);",
                   "  pm.collectionVariables.set(\"accessTokenExpiresAt\", String(Date.now() + t.expiresIn * 1000));",
@@ -616,7 +640,7 @@
                 "me"
               ]
             },
-            "description": "{id, email, handle, displayName, locale, emailConfirmed, roles[]}. 401 when not signed in."
+            "description": "data: {id, email, handle, displayName, locale, emailConfirmed, roles[]}. 401 when not signed in."
           }
         },
         {
@@ -694,7 +718,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const other = (pm.response.json().items || []).find((s) => !s.isCurrent);",
+                  "const other = (pm.response.json().data || []).find((s) => !s.isCurrent);",
                   "if (other) pm.collectionVariables.set(\"sessionId\", other.id);"
                 ]
               }
@@ -715,7 +739,7 @@
                 "sessions"
               ]
             },
-            "description": "items[]: {id, createdAt, lastSeenAt, userAgent (deviceName for apps), isCurrent}."
+            "description": "data[]: {id, createdAt, lastSeenAt, userAgent (deviceName for apps), isCurrent}; meta {page, pageSize, total, hasMore}."
           }
         },
         {
@@ -757,7 +781,7 @@
                 "revoke-others"
               ]
             },
-            "description": "200 {revoked: n}."
+            "description": "200 {data: {revoked: n}}."
           }
         }
       ]
@@ -784,7 +808,7 @@
                 "genres"
               ]
             },
-            "description": "Public reference data: items[] {id, slug, name}."
+            "description": "Public reference data: data[] {slug, name}, meta."
           }
         },
         {
@@ -796,7 +820,7 @@
             },
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/tracks?limit=20",
+              "raw": "{{baseUrl}}/api/v1/tracks?page=1&pageSize=20",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -807,12 +831,16 @@
               ],
               "query": [
                 {
-                  "key": "limit",
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
                   "value": "20"
                 }
               ]
             },
-            "description": "Public, ready tracks, newest first."
+            "description": "Public, ready tracks, newest first. data[] + meta {page, pageSize, total, hasMore}; load the next page while hasMore."
           }
         },
         {
@@ -918,7 +946,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/me/tracks",
+              "raw": "{{baseUrl}}/api/v1/me/tracks?page=1&pageSize=50",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -927,9 +955,19 @@
                 "v1",
                 "me",
                 "tracks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
               ]
             },
-            "description": "All the artist's own tracks, any status."
+            "description": "The artist's own tracks, any status, newest first (paged)."
           }
         },
         {
@@ -941,7 +979,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"201\", () => pm.response.to.have.status(201));",
-                  "if (pm.response.code === 201) pm.collectionVariables.set(\"trackId\", pm.response.json().id);"
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"trackId\", pm.response.json().data.id);"
                 ]
               }
             }
@@ -974,7 +1012,7 @@
                 "tracks"
               ]
             },
-            "description": "201 → track in status Draft; then upload audio. visibility: Public | Unlisted | Private. 403 if the user is not an artist."
+            "description": "201 → track in status Draft (no audio). Prefer Media → 'Upload a new track', which does it in one request. visibility: Public | Unlisted | Private. 403 if the user is not an artist."
           }
         },
         {
@@ -1034,8 +1072,793 @@
       ]
     },
     {
+      "name": "Albums",
+      "item": [
+        {
+          "name": "Create album",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"albumId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"My first EP\",\n  \"kind\": \"Ep\",\n  \"description\": null,\n  \"releaseDate\": \"2026-10-20\",\n  \"visibility\": \"Public\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/albums",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "albums"
+              ]
+            },
+            "description": "Artist only. kind: Album | Ep | Single; visibility: Public | Unlisted | Private. 201 → data: AlbumDto."
+          }
+        },
+        {
+          "name": "Album",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/albums/{{albumId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "albums",
+                "{{albumId}}"
+              ]
+            },
+            "description": "Album + tracks the viewer can see, in order. Cover = its first track cover. Private: owner only (404)."
+          }
+        },
+        {
+          "name": "Set album tracklist",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackIds\": [\n    \"{{trackId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/albums/{{albumId}}/tracks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "albums",
+                "{{albumId}}",
+                "tracks"
+              ]
+            },
+            "description": "Owner only. The complete tracklist in order (your own tracks, ≤ 100). Tracks left out leave the album."
+          }
+        },
+        {
+          "name": "Update album",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"My first EP (deluxe)\",\n  \"kind\": \"Ep\",\n  \"description\": null,\n  \"releaseDate\": \"2026-10-20\",\n  \"visibility\": \"Public\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/albums/{{albumId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "albums",
+                "{{albumId}}"
+              ]
+            },
+            "description": "Owner only. Send the full object."
+          }
+        },
+        {
+          "name": "My albums",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/albums",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "albums"
+              ]
+            },
+            "description": "The signed-in artist's albums (any visibility)."
+          }
+        },
+        {
+          "name": "Delete album",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/albums/{{albumId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "albums",
+                "{{albumId}}"
+              ]
+            },
+            "description": "204. Tracks are kept."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "item": [
+        {
+          "name": "Search (overview)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search?q={{q}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{q}}"
+                }
+              ]
+            },
+            "description": "Top 6 tracks, artists and albums with totals. Accent-insensitive (\"son tung\" finds \"Sơn Tùng\"), prefix and typo tolerant. Only listed content (Ready public tracks, public albums)."
+          }
+        },
+        {
+          "name": "Search tracks",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/tracks?q={{q}}&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search",
+                "tracks"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{q}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Paged. Also /search/artists and /search/albums."
+          }
+        },
+        {
+          "name": "Search playlists",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/playlists?q={{q}}&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{q}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Public playlists with tracks; without q: newest first."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Playlists",
+      "item": [
+        {
+          "name": "Create playlist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"playlistId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Chill\",\n  \"description\": null,\n  \"visibility\": \"Private\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5080/api/v1/playlists",
+              "host": [
+                "http://localhost:5080"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists"
+              ]
+            },
+            "description": "Any signed-in user. visibility: Public | Private. 201 → data: PlaylistDto."
+          }
+        },
+        {
+          "name": "Add track",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackId\": \"{{trackId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}/tracks",
+              "host": [
+                "http://localhost:5080"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}",
+                "tracks"
+              ]
+            },
+            "description": "Owner only; any track you can see. Already there → no-op. 400 playlist_full at 500."
+          }
+        },
+        {
+          "name": "Playlist",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}",
+              "host": [
+                "http://localhost:5080"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}"
+              ]
+            },
+            "description": "Private: owner only (404). coverUrls = up to 4 track covers for a mosaic."
+          }
+        },
+        {
+          "name": "Playlist tracks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}/tracks",
+              "host": [
+                "http://localhost:5080"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}",
+                "tracks"
+              ]
+            },
+            "description": "In order, without tracks the viewer can't see."
+          }
+        },
+        {
+          "name": "Reorder",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackIds\": [\n    \"{{trackId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}/tracks/order",
+              "host": [
+                "http://localhost:5080"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}",
+                "tracks",
+                "order"
+              ]
+            },
+            "description": "Owner only. The tracks you see, in their new order; they swap among their current positions (hidden tracks keep theirs)."
+          }
+        },
+        {
+          "name": "Remove track",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}/tracks/{{trackId}}",
+              "host": [
+                "http://localhost:5080"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}",
+                "tracks",
+                "{{trackId}}"
+              ]
+            },
+            "description": "204."
+          }
+        },
+        {
+          "name": "My playlists",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5080/api/v1/me/playlists?containsTrack={{trackId}}",
+              "host": [
+                "http://localhost:5080"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "playlists"
+              ],
+              "query": [
+                {
+                  "key": "containsTrack",
+                  "value": "{{trackId}}",
+                  "description": "Optional: fills containsTrack on each"
+                }
+              ]
+            },
+            "description": "Recently updated first (paged)."
+          }
+        },
+        {
+          "name": "Update playlist",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Chill vibes\",\n  \"description\": \"Late night\",\n  \"visibility\": \"Public\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}",
+              "host": [
+                "http://localhost:5080"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}"
+              ]
+            },
+            "description": "Owner only. Send the full object."
+          }
+        },
+        {
+          "name": "Delete playlist",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}",
+              "host": [
+                "http://localhost:5080"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}"
+              ]
+            },
+            "description": "204."
+          }
+        }
+      ]
+    },
+    {
       "name": "Media",
       "item": [
+        {
+          "name": "Upload a new track (details + audio + cover)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"202\", () => pm.response.to.have.status(202));",
+                  "if (pm.response.code === 202) pm.collectionVariables.set(\"trackId\", pm.response.json().data.trackId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "My new track",
+                  "type": "text"
+                },
+                {
+                  "key": "visibility",
+                  "value": "Private",
+                  "type": "text",
+                  "description": "Public | Unlisted | Private"
+                },
+                {
+                  "key": "genreSlug",
+                  "value": "ambient",
+                  "type": "text",
+                  "description": "Optional"
+                },
+                {
+                  "key": "description",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true,
+                  "description": "Optional"
+                },
+                {
+                  "key": "artwork",
+                  "type": "file",
+                  "src": "",
+                  "description": "Optional cover: JPEG/PNG/WebP, ≥ 200×200 px, ≤ 10 MB"
+                },
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": "",
+                  "description": "Required. Send it last."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/track-uploads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "track-uploads"
+              ]
+            },
+            "description": "One request creates the track and starts processing — all or nothing (on any error no track exists).\nmultipart/form-data with text fields first, then artwork (optional), then audio. 202 → data: upload status; Location: /api/v1/tracks/{id}.\nErrors (400, field in errors): track_title_invalid, track_description_too_long, track_visibility_invalid, genre_unknown, audio_required, unsupported_file_type, file_too_large, artwork_invalid, artwork_too_small, artwork_too_large; multipart_required / multipart_invalid; 403 artist_required.\nFlutter (dio): FormData.fromMap({'title': …, 'visibility': 'Public', 'artwork': await MultipartFile.fromFile(coverPath), 'audio': await MultipartFile.fromFile(path)}) with onSendProgress.\nRate limit: 30 uploads/hour per IP."
+          }
+        },
+        {
+          "name": "Set / replace cover",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "image/jpeg"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/artwork",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "artwork"
+              ]
+            },
+            "description": "Owner only. Raw body = the image (JPEG/PNG/WebP, ≥ 200×200 px, ≤ 10 MB). 200 → data: {small, large} URLs. Cropped to a square; metadata removed."
+          }
+        },
+        {
+          "name": "Remove cover",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/artwork",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "artwork"
+              ]
+            },
+            "description": "204. Owner only."
+          }
+        },
+        {
+          "name": "Cover image",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/artwork/small",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "artwork",
+                "small"
+              ]
+            },
+            "description": "image/jpeg. 'small' (≈320 px) or 'large' (≈1200 px). Use the URLs in track.artwork (they change when the cover changes). Anyone who can see the track; 404 otherwise or without a cover."
+          }
+        },
+        {
+          "name": "Set artist avatar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "image/jpeg"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/artist/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "artist",
+                "avatar"
+              ]
+            },
+            "description": "Signed-in artist. Raw body = image (JPEG/PNG/WebP, ≥ 200×200, ≤ 10 MB); cropped square. 200 → data: {small, large}. Errors: image_invalid, image_too_small, image_too_large; 404 artist_not_found."
+          }
+        },
+        {
+          "name": "Set artist banner",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "image/jpeg"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/artist/banner",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "artist",
+                "banner"
+              ]
+            },
+            "description": "Like the avatar, but 3:1 (≥ 600×200). 800/1600 px wide renditions."
+          }
+        },
+        {
+          "name": "Remove artist avatar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/artist/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "artist",
+                "avatar"
+              ]
+            },
+            "description": "204. (Use /banner for the banner.)"
+          }
+        },
         {
           "name": "Upload audio",
           "request": {
@@ -1075,7 +1898,7 @@
                 "upload"
               ]
             },
-            "description": "Raw request body = the audio file (NOT multipart). Pick the file under Body → binary and set {{uploadLength}} to its size in bytes.\nMP3/WAV/FLAC/AAC/M4A/OGG/Opus, ≤ 200 MB, 1 s–2 h. 202 → processing starts (track status Processing → Ready/Failed).\nErrors: upload_length_required, file_too_large, upload_incomplete (size mismatch / connection dropped), unsupported_file_type, track_not_uploadable / upload_in_progress (409). Processing failures (unsupported_format, no_audio_stream, duration_too_short|long, processing_*) appear in track.processingError.\nFlutter (dio): dio.put(url, data: file.openRead(), options: Options(headers: {'Content-Type': 'application/octet-stream', 'X-Upload-Length': await file.length(), 'X-File-Name': Uri.encodeComponent(name)}), onSendProgress: …).\nRate limit: 30 uploads/hour per IP."
+            "description": "For an existing Draft, or again after Failed/Cancelled — new tracks use \"Upload a new track\". Raw request body = the audio file (NOT multipart). Pick the file under Body → binary and set {{uploadLength}} to its size in bytes.\nMP3/WAV/FLAC/AAC/M4A/OGG/Opus, ≤ 200 MB, 1 s–2 h. 202 → processing starts (track status Processing → Ready/Failed).\nErrors: upload_length_required, file_too_large, upload_incomplete (size mismatch / connection dropped), unsupported_file_type, track_not_uploadable / upload_in_progress (409). Processing failures (unsupported_format, no_audio_stream, duration_too_short|long, processing_*) appear in track.processingError.\nFlutter (dio): dio.put(url, data: file.openRead(), options: Options(headers: {'Content-Type': 'application/octet-stream', 'X-Upload-Length': await file.length(), 'X-File-Name': Uri.encodeComponent(name)}), onSendProgress: …).\nRate limit: 30 uploads/hour per IP."
           }
         },
         {
@@ -1121,7 +1944,70 @@
           }
         },
         {
-          "name": "Stream audio",
+          "name": "Playback URLs (for the player)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json().data;",
+                  "  pm.collectionVariables.set(\"streamUrl\", d.streamUrl);",
+                  "  pm.collectionVariables.set(\"waveformUrl\", d.waveformUrl);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/playback",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "playback"
+              ]
+            },
+            "description": "200 → data: {trackId, streamUrl, waveformUrl, contentType: \"audio/mp4\", sizeBytes, durationMs, expiresAt}. Cache-Control: no-store.\nstreamUrl/waveformUrl are relative to the base URL and carry ?token=vzp_… (valid ~6 h): hand baseUrl + streamUrl to the player with NO headers\n(just_audio: AudioSource.uri(Uri.parse(baseUrl + streamUrl)) — works with background playback, iOS, casting).\nPublic tracks: works without sign-in. Private tracks: owner only (bearer). 404 track_not_found / media_not_ready.\nWhen the player gets 401 playback_token_invalid (expired), call this endpoint again and resume at the same position."
+          }
+        },
+        {
+          "name": "Stream audio (player URL)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Range",
+                "value": "bytes=0-",
+                "description": "Players send ranges; 206 Partial Content / 416"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{streamUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{streamUrl}}"
+              ]
+            },
+            "description": "What the player requests: the URL from \"Playback URLs\", no Authorization header. AAC (audio/mp4), HTTP Range. 401 playback_token_invalid when expired."
+          }
+        },
+        {
+          "name": "Stream audio (credentials)",
           "request": {
             "method": "GET",
             "header": [
@@ -1144,7 +2030,7 @@
                 "stream"
               ]
             },
-            "description": "AAC (audio/mp4) with HTTP Range support. Public tracks need no auth; private ones need the owner's bearer token — with just_audio pass headers: {'Authorization': 'Bearer …'} on AudioSource.uri. 404 when not visible or not ready."
+            "description": "Same stream authorised by bearer/cookie instead of a token (the web app uses this). Public tracks need no auth. 404 when not visible or not ready."
           }
         },
         {
@@ -1165,7 +2051,7 @@
                 "waveform"
               ]
             },
-            "description": "{version, durationMs, peaks: float[~1000] in 0..1}. Same visibility rules as streaming."
+            "description": "data: {version, durationMs, peaks: float[~1000] in 0..1}. Same visibility rules as streaming; also accepts ?token= (use waveformUrl)."
           }
         }
       ]
@@ -1182,7 +2068,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.collectionVariables.set(\"csrfToken\", pm.response.json().token);"
+                  "pm.collectionVariables.set(\"csrfToken\", pm.response.json().data.token);"
                 ]
               }
             }
@@ -1289,9 +2175,9 @@
             },
             "header": [],
             "url": {
-              "raw": "http://localhost:5080/health/live",
+              "raw": "{{baseUrl}}/health/live",
               "host": [
-                "http://localhost:5080"
+                "{{baseUrl}}"
               ],
               "path": [
                 "health",
@@ -1309,9 +2195,9 @@
             },
             "header": [],
             "url": {
-              "raw": "http://localhost:5080/health/ready",
+              "raw": "{{baseUrl}}/health/ready",
               "host": [
-                "http://localhost:5080"
+                "{{baseUrl}}"
               ],
               "path": [
                 "health",

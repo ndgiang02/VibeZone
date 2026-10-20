@@ -5,12 +5,22 @@ using VibeZone.SharedKernel;
 
 namespace VibeZone.Modules.Media.Endpoints;
 
+/// <summary>What <see cref="ObjectStreamResult"/> needs to serve: the id doubles as the ETag.</summary>
+internal sealed record StoredObject(Guid Id, string ObjectKey, string ContentType, long SizeBytes)
+{
+    public static implicit operator StoredObject(MediaAsset asset) => new(asset.Id, asset.ObjectKey, asset.ContentType, asset.SizeBytes);
+
+    public static implicit operator StoredObject(ArtistImage image) => new(image.Id, image.ObjectKey, image.ContentType, image.SizeBytes);
+
+    public static implicit operator StoredObject(UserImage image) => new(image.Id, image.ObjectKey, image.ContentType, image.SizeBytes);
+}
+
 /// <summary>
 /// Streams a stored asset with RFC 9110 range semantics: 200 (full), 206 (single range, Content-Range) or
 /// 416 (unsatisfiable, <c>Content-Range: bytes */size</c>). Bytes flow from object storage to the client
 /// without buffering the file; a client disconnect aborts the upstream read.
 /// </summary>
-internal sealed class ObjectStreamResult(IObjectStorage storage, MediaAsset asset) : IResult
+internal sealed class ObjectStreamResult(IObjectStorage storage, StoredObject asset) : IResult
 {
     private const int CopyBufferSize = 64 * 1024;
 

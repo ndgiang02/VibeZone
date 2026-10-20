@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import type { ArtworkUrls } from "@/features/tracks/track-art";
 import { engine } from "./engine";
 
 /** What the player needs to show and stream a track (a snapshot; not refreshed from the API). */
@@ -9,6 +10,8 @@ export type PlayerTrack = {
   artistName: string;
   artistSlug: string;
   durationMs: number | null;
+  /** Absent in queues persisted before covers existed. */
+  artwork?: ArtworkUrls | null;
 };
 
 export type RepeatMode = "off" | "all" | "one";

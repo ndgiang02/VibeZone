@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\BuildingBlocks\VibeZone.SharedKernel\VibeZone.SharedKernel.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\VibeZone.Infrastructure\VibeZone.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Catalog\VibeZone.Modules.Catalog.Contracts\VibeZone.Modules.Catalog.Contracts.csproj" />
+    <ProjectReference Include="..\..\Identity\VibeZone.Modules.Identity.Contracts\VibeZone.Modules.Identity.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="VibeZone.UnitTests" />

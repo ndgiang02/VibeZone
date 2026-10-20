@@ -14,5 +14,6 @@
     <ProjectReference Include="..\Modules\Catalog\VibeZone.Modules.Catalog\VibeZone.Modules.Catalog.csproj" />
     <ProjectReference Include="..\Modules\Identity\VibeZone.Modules.Identity\VibeZone.Modules.Identity.csproj" />
     <ProjectReference Include="..\Modules\Media\VibeZone.Modules.Media\VibeZone.Modules.Media.csproj" />
+    <ProjectReference Include="..\Modules\Playlists\VibeZone.Modules.Playlists\VibeZone.Modules.Playlists.csproj" />
   </ItemGroup>
 </Project>

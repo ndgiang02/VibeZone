@@ -123,3 +123,21 @@ Migration `AddTracksAndMedia` implements `catalog.artists`, `catalog.tracks`, `m
   `ux_upload_jobs_active_track` enforces one active job per track; `ix_upload_jobs_queue` serves claiming.
 - Cross-module FKs (`artists.user_id → identity.users`, `upload_jobs.track_id/user_id`,
   `media_assets.track_id`) are added by hand in the migration (ADR-0001), all `ON DELETE RESTRICT`.
+- Migration `AddTrackArtwork` (ADR-0009): `tracks.artwork_id uuid null` (version of the current cover — the
+  id of its `artworklarge` asset, no FK) and asset kinds `artworksmall` / `artworklarge` (square JPEGs made
+  by the API). The original cover is not stored (`artwork_original` from the plan is not used). Audio
+  processing replaces audio kinds only.
+- Migration `AddArtistImages`: `artists.avatar_id`, `artists.banner_id` (uuid null, current versions) and
+  `media.artist_images` (`id`, `artist_id` FK → `catalog.artists`, `kind ∈ {avatarsmall, avatarlarge,
+  bannersmall, bannerlarge}`, `object_key` unique, `content_type`, `size_bytes`, `created_at`; unique
+  `(artist_id, kind)`). Object keys: `artists/{artistId}/{kind}/{id}.jpg`.
+- Migration `AddAlbumsAndSearch` (ADR-0010): `catalog.albums` (`id`, `artist_id` FK, `title`, `kind ∈ {album, ep, single}`,
+  `description`, `release_date` date, `visibility`, timestamps, `deleted_at`, `xmin`; no slug/artwork — the cover is the
+  first track's); `tracks.album_id` (FK SET NULL) + `track_number`; extensions `unaccent`, `pg_trgm`; function
+  `public.vz_fold`; generated `search_vector` on tracks/artists/albums + GIN and trigram indexes (not in the EF model).
+- Migration `AddPlaylists`: schema `playlists`: `playlists` (`id`, `owner_user_id` FK → `identity.users`, `title`,
+  `description`, `visibility ∈ {public, private}`, `track_count`, timestamps, `xmin`, generated `search_vector`) and
+  `playlist_tracks` (PK `(playlist_id, track_id)`, `position` ≥ 1, `added_at`; FK → playlists CASCADE, → `catalog.tracks`
+  RESTRICT). No slug or artwork (mosaic of track covers).
+- Migration `AddUserAvatars`: `identity.user_profiles.avatar_id` and `media.user_images` (same shape, `user_id`
+  FK → `identity.users`, kinds `avatarsmall|avatarlarge`). Object keys: `users/{userId}/{kind}/{id}.jpg`.

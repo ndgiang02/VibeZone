@@ -9,7 +9,7 @@ function stubApi(handler: (path: string, body: unknown) => Response) {
   const fetchMock = vi.fn<typeof fetch>(async (input) => {
     const request = input as Request;
     const path = new URL(request.url).pathname;
-    if (path === "/api/v1/auth/csrf") return jsonResponse({ token: "t" });
+    if (path === "/api/v1/auth/csrf") return jsonResponse({ data: { token: "t" } });
     const body =
       request.method === "GET"
         ? null

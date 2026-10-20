@@ -183,10 +183,26 @@ internal sealed partial class FfmpegToolkit(IOptions<MediaOptions> options, ILog
         {
             if (_inBucket > 0)
             {
-                _peaks.Add(_currentMax / 32768f);
+                Close(_currentMax / 32768f);
             }
 
             return [.. _peaks];
+        }
+
+        /// <summary>
+        /// The decoder yields a few more samples than the probed duration (encoder priming/padding), so samples
+        /// past the last bucket fold into it: the result never has more than <c>buckets</c> peaks.
+        /// </summary>
+        private void Close(float peak)
+        {
+            if (_peaks.Count < buckets)
+            {
+                _peaks.Add(peak);
+            }
+            else
+            {
+                _peaks[^1] = Math.Max(_peaks[^1], peak);
+            }
         }
 
         public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
@@ -234,7 +250,7 @@ internal sealed partial class FfmpegToolkit(IOptions<MediaOptions> options, ILog
 
             if (++_inBucket >= samplesPerBucket)
             {
-                _peaks.Add(_currentMax / 32768f);
+                Close(_currentMax / 32768f);
                 _currentMax = 0;
                 _inBucket = 0;
             }

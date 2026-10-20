@@ -11,7 +11,7 @@ const test = (src) => [{ listen: "test", script: { type: "text/javascript", exec
 const saveTokens = `
 pm.test("status 200", () => pm.response.to.have.status(200));
 if (pm.response.code === 200) {
-  const t = pm.response.json();
+  const t = pm.response.json().data;
   pm.collectionVariables.set("accessToken", t.accessToken);
   pm.collectionVariables.set("refreshToken", t.refreshToken);
   pm.collectionVariables.set("accessTokenExpiresAt", String(Date.now() + t.expiresIn * 1000));
@@ -79,7 +79,7 @@ if (refresh && !url.includes("/auth/") && Date.now() > expiresAt - 30000) {
     body: { mode: "raw", raw: JSON.stringify({ refreshToken: refresh }) },
   }, (err, res) => {
     if (!err && res.code === 200) {
-      const t = res.json();
+      const t = res.json().data;
       pm.collectionVariables.set("accessToken", t.accessToken);
       pm.collectionVariables.set("refreshToken", t.refreshToken);
       pm.collectionVariables.set("accessTokenExpiresAt", String(Date.now() + t.expiresIn * 1000));
@@ -109,6 +109,11 @@ if (refresh && !url.includes("/auth/") && Date.now() > expiresAt - 30000) {
     { key: "newPassword", value: "another long passphrase 2" },
     { key: "artistSlug", value: "appuser" },
     { key: "trackId", value: "" },
+    { key: "albumId", value: "", description: "Set by \"Create album\"" },
+    { key: "playlistId", value: "", description: "Set by \"Create playlist\"" },
+    { key: "q", value: "son tung", description: "Search text (accents optional)" },
+    { key: "streamUrl", value: "", description: "Set by \"Playback URLs\" (relative, includes the token)" },
+    { key: "waveformUrl", value: "" },
     { key: "sessionId", value: "" },
     { key: "uploadLength", value: "0", description: "Exact size in bytes of the file selected in 'Upload audio'." },
     { key: "csrfToken", value: "" },
@@ -157,7 +162,7 @@ if (list.length) {
         req("Sign in (token)", "POST", "/api/v1/auth/token", {
           auth: noauth,
           body: json({ email: "{{email}}", password: "{{password}}", deviceName: "{{deviceName}}" }),
-          description: "200 → {accessToken, tokenType: 'Bearer', expiresIn: 900, refreshToken, refreshTokenExpiresAt}. 401 invalid_credentials (wrong email/password or locked out — indistinguishable). 403 email_not_confirmed. 429 too many attempts. deviceName is shown in the signed-in devices list.",
+          description: "200 → {data: {accessToken, tokenType: 'Bearer', expiresIn: 900, refreshToken, refreshTokenExpiresAt}}. 401 invalid_credentials (wrong email/password or locked out — indistinguishable). 403 email_not_confirmed. 429 too many attempts. deviceName is shown in the signed-in devices list.",
           events: test(saveTokens),
         }),
         req("Refresh token", "POST", "/api/v1/auth/token/refresh", {
@@ -195,7 +200,7 @@ pm.collectionVariables.set("refreshToken", "");`),
       description: "Requires Authorization: Bearer.",
       item: [
         req("Me", "GET", "/api/v1/me", {
-          description: "{id, email, handle, displayName, locale, emailConfirmed, roles[]}. 401 when not signed in.",
+          description: "data: {id, email, handle, displayName, locale, emailConfirmed, roles[]}. 401 when not signed in.",
           events: test(`pm.test("200", () => pm.response.to.have.status(200));`),
         }),
         req("Update profile", "PATCH", "/api/v1/me/profile", { body: json({ displayName: "New name", locale: "en" }) }),
@@ -204,20 +209,20 @@ pm.collectionVariables.set("refreshToken", "");`),
           description: "204. Signs out every OTHER session (including other app devices); this one stays valid.",
         }),
         req("List sessions (devices)", "GET", "/api/v1/me/sessions", {
-          description: "items[]: {id, createdAt, lastSeenAt, userAgent (deviceName for apps), isCurrent}.",
+          description: "data[]: {id, createdAt, lastSeenAt, userAgent (deviceName for apps), isCurrent}; meta {page, pageSize, total, hasMore}.",
           events: test(`
-const other = (pm.response.json().items || []).find((s) => !s.isCurrent);
+const other = (pm.response.json().data || []).find((s) => !s.isCurrent);
 if (other) pm.collectionVariables.set("sessionId", other.id);`),
         }),
         req("Revoke a session", "DELETE", "/api/v1/me/sessions/{{sessionId}}", { description: "204; 404 session_not_found." }),
-        req("Revoke other sessions", "POST", "/api/v1/me/sessions/revoke-others", { description: "200 {revoked: n}." }),
+        req("Revoke other sessions", "POST", "/api/v1/me/sessions/revoke-others", { description: "200 {data: {revoked: n}}." }),
       ],
     },
     {
       name: "Catalog",
       item: [
-        req("Genres", "GET", "/api/v1/genres", { auth: noauth, description: "Public reference data: items[] {id, slug, name}." }),
-        req("New releases", "GET", "/api/v1/tracks", { auth: noauth, query: [{ key: "limit", value: "20" }], description: "Public, ready tracks, newest first." }),
+        req("Genres", "GET", "/api/v1/genres", { auth: noauth, description: "Public reference data: data[] {slug, name}, meta." }),
+        req("New releases", "GET", "/api/v1/tracks", { auth: noauth, query: [{ key: "page", value: "1" }, { key: "pageSize", value: "20" }], description: "Public, ready tracks, newest first. data[] + meta {page, pageSize, total, hasMore}; load the next page while hasMore." }),
         req("Track by id", "GET", "/api/v1/tracks/{{trackId}}", {
           description: "Public/unlisted tracks for everyone; private/processing tracks only for the owner (else 404). Includes status, durationMs, playable.",
         }),
@@ -227,13 +232,13 @@ if (other) pm.collectionVariables.set("sessionId", other.id);`),
           body: json({ slug: "{{artistSlug}}", name: "App Artist", bio: null }),
           description: "201. Grants the Artist role (needed to create tracks). 409 if the slug is taken or the user already has one.",
         }),
-        req("My tracks", "GET", "/api/v1/me/tracks", { description: "All the artist's own tracks, any status." }),
+        req("My tracks", "GET", "/api/v1/me/tracks", { query: [{ key: "page", value: "1" }, { key: "pageSize", value: "50" }], description: "The artist's own tracks, any status, newest first (paged)." }),
         req("Create track", "POST", "/api/v1/tracks", {
           body: json({ title: "My first track", description: null, genreSlug: "ambient", visibility: "Private" }),
-          description: "201 → track in status Draft; then upload audio. visibility: Public | Unlisted | Private. 403 if the user is not an artist.",
+          description: "201 → track in status Draft (no audio). Prefer Media → 'Upload a new track', which does it in one request. visibility: Public | Unlisted | Private. 403 if the user is not an artist.",
           events: test(`
 pm.test("201", () => pm.response.to.have.status(201));
-if (pm.response.code === 201) pm.collectionVariables.set("trackId", pm.response.json().id);`),
+if (pm.response.code === 201) pm.collectionVariables.set("trackId", pm.response.json().data.id);`),
         }),
         req("Update track", "PATCH", "/api/v1/tracks/{{trackId}}", {
           body: json({ title: "Renamed track", description: "Plain text", genreSlug: "ambient", visibility: "Public" }),
@@ -243,8 +248,125 @@ if (pm.response.code === 201) pm.collectionVariables.set("trackId", pm.response.
       ],
     },
     {
+      name: "Albums",
+      item: [
+        req("Create album", "POST", "/api/v1/albums", {
+          body: json({ title: "My first EP", kind: "Ep", description: null, releaseDate: "2026-10-20", visibility: "Public" }),
+          description: "Artist only. kind: Album | Ep | Single; visibility: Public | Unlisted | Private. 201 → data: AlbumDto.",
+          events: test(`
+pm.test("201", () => pm.response.to.have.status(201));
+if (pm.response.code === 201) pm.collectionVariables.set("albumId", pm.response.json().data.id);`),
+        }),
+        req("Album", "GET", "/api/v1/albums/{{albumId}}", { auth: noauth, description: "Album + tracks the viewer can see, in order. Cover = its first track cover. Private: owner only (404)." }),
+        req("Set album tracklist", "PUT", "/api/v1/albums/{{albumId}}/tracks", {
+          body: json({ trackIds: ["{{trackId}}"] }),
+          description: "Owner only. The complete tracklist in order (your own tracks, ≤ 100). Tracks left out leave the album.",
+        }),
+        req("Update album", "PATCH", "/api/v1/albums/{{albumId}}", {
+          body: json({ title: "My first EP (deluxe)", kind: "Ep", description: null, releaseDate: "2026-10-20", visibility: "Public" }),
+          description: "Owner only. Send the full object.",
+        }),
+        req("My albums", "GET", "/api/v1/me/albums", { description: "The signed-in artist's albums (any visibility)." }),
+        req("Delete album", "DELETE", "/api/v1/albums/{{albumId}}", { description: "204. Tracks are kept." }),
+      ],
+    },
+    {
+      name: "Search",
+      item: [
+        req("Search (overview)", "GET", "/api/v1/search", {
+          auth: noauth,
+          query: [{ key: "q", value: "{{q}}" }],
+          description: "Top 6 tracks, artists and albums with totals. Accent-insensitive (\"son tung\" finds \"Sơn Tùng\"), prefix and typo tolerant. Only listed content (Ready public tracks, public albums).",
+        }),
+        req("Search tracks", "GET", "/api/v1/search/tracks", {
+          auth: noauth,
+          query: [{ key: "q", value: "{{q}}" }, { key: "page", value: "1" }, { key: "pageSize", value: "20" }],
+          description: "Paged. Also /search/artists and /search/albums.",
+        }),
+        req("Search playlists", "GET", "/api/v1/playlists", {
+          auth: noauth,
+          query: [{ key: "q", value: "{{q}}" }, { key: "page", value: "1" }, { key: "pageSize", value: "20" }],
+          description: "Public playlists with tracks; without q: newest first.",
+        }),
+      ],
+    },
+    {
+      name: "Playlists",
+      item: [
+        req("Create playlist", "POST", "/api/v1/playlists", {
+          body: json({ title: "Chill", description: null, visibility: "Private" }),
+          description: "Any signed-in user. visibility: Public | Private. 201 → data: PlaylistDto.",
+          events: test(`
+pm.test("201", () => pm.response.to.have.status(201));
+if (pm.response.code === 201) pm.collectionVariables.set("playlistId", pm.response.json().data.id);`),
+        }),
+        req("Add track", "POST", "/api/v1/playlists/{{playlistId}}/tracks", {
+          body: json({ trackId: "{{trackId}}" }),
+          description: "Owner only; any track you can see. Already there → no-op. 400 playlist_full at 500.",
+        }),
+        req("Playlist", "GET", "/api/v1/playlists/{{playlistId}}", { description: "Private: owner only (404). coverUrls = up to 4 track covers for a mosaic." }),
+        req("Playlist tracks", "GET", "/api/v1/playlists/{{playlistId}}/tracks", { description: "In order, without tracks the viewer can't see." }),
+        req("Reorder", "PUT", "/api/v1/playlists/{{playlistId}}/tracks/order", {
+          body: json({ trackIds: ["{{trackId}}"] }),
+          description: "Owner only. The tracks you see, in their new order; they swap among their current positions (hidden tracks keep theirs).",
+        }),
+        req("Remove track", "DELETE", "/api/v1/playlists/{{playlistId}}/tracks/{{trackId}}", { description: "204." }),
+        req("My playlists", "GET", "/api/v1/me/playlists", {
+          query: [{ key: "containsTrack", value: "{{trackId}}", description: "Optional: fills containsTrack on each" }],
+          description: "Recently updated first (paged).",
+        }),
+        req("Update playlist", "PATCH", "/api/v1/playlists/{{playlistId}}", {
+          body: json({ title: "Chill vibes", description: "Late night", visibility: "Public" }),
+          description: "Owner only. Send the full object.",
+        }),
+        req("Delete playlist", "DELETE", "/api/v1/playlists/{{playlistId}}", { description: "204." }),
+      ],
+    },
+    {
       name: "Media",
       item: [
+        req("Upload a new track (details + audio + cover)", "POST", "/api/v1/track-uploads", {
+          body: {
+            mode: "formdata",
+            formdata: [
+              { key: "title", value: "My new track", type: "text" },
+              { key: "visibility", value: "Private", type: "text", description: "Public | Unlisted | Private" },
+              { key: "genreSlug", value: "ambient", type: "text", description: "Optional" },
+              { key: "description", value: "", type: "text", disabled: true, description: "Optional" },
+              { key: "artwork", type: "file", src: "", description: "Optional cover: JPEG/PNG/WebP, ≥ 200×200 px, ≤ 10 MB" },
+              { key: "audio", type: "file", src: "", description: "Required. Send it last." },
+            ],
+          },
+          description: lines(`
+One request creates the track and starts processing — all or nothing (on any error no track exists).
+multipart/form-data with text fields first, then artwork (optional), then audio. 202 → data: upload status; Location: /api/v1/tracks/{id}.
+Errors (400, field in errors): track_title_invalid, track_description_too_long, track_visibility_invalid, genre_unknown, audio_required, unsupported_file_type, file_too_large, artwork_invalid, artwork_too_small, artwork_too_large; multipart_required / multipart_invalid; 403 artist_required.
+Flutter (dio): FormData.fromMap({'title': …, 'visibility': 'Public', 'artwork': await MultipartFile.fromFile(coverPath), 'audio': await MultipartFile.fromFile(path)}) with onSendProgress.
+Rate limit: 30 uploads/hour per IP.`).join("\n"),
+          events: test(`
+pm.test("202", () => pm.response.to.have.status(202));
+if (pm.response.code === 202) pm.collectionVariables.set("trackId", pm.response.json().data.trackId);`),
+        }),
+        req("Set / replace cover", "PUT", "/api/v1/tracks/{{trackId}}/artwork", {
+          headers: [{ key: "Content-Type", value: "image/jpeg" }],
+          body: { mode: "file", file: { src: "" } },
+          description: "Owner only. Raw body = the image (JPEG/PNG/WebP, ≥ 200×200 px, ≤ 10 MB). 200 → data: {small, large} URLs. Cropped to a square; metadata removed.",
+        }),
+        req("Remove cover", "DELETE", "/api/v1/tracks/{{trackId}}/artwork", { description: "204. Owner only." }),
+        req("Cover image", "GET", "/api/v1/tracks/{{trackId}}/artwork/small", {
+          description: "image/jpeg. 'small' (≈320 px) or 'large' (≈1200 px). Use the URLs in track.artwork (they change when the cover changes). Anyone who can see the track; 404 otherwise or without a cover.",
+        }),
+        req("Set artist avatar", "PUT", "/api/v1/me/artist/avatar", {
+          headers: [{ key: "Content-Type", value: "image/jpeg" }],
+          body: { mode: "file", file: { src: "" } },
+          description: "Signed-in artist. Raw body = image (JPEG/PNG/WebP, ≥ 200×200, ≤ 10 MB); cropped square. 200 → data: {small, large}. Errors: image_invalid, image_too_small, image_too_large; 404 artist_not_found.",
+        }),
+        req("Set artist banner", "PUT", "/api/v1/me/artist/banner", {
+          headers: [{ key: "Content-Type", value: "image/jpeg" }],
+          body: { mode: "file", file: { src: "" } },
+          description: "Like the avatar, but 3:1 (≥ 600×200). 800/1600 px wide renditions.",
+        }),
+        req("Remove artist avatar", "DELETE", "/api/v1/me/artist/avatar", { description: "204. (Use /banner for the banner.)" }),
         req("Upload audio", "PUT", "/api/v1/tracks/{{trackId}}/upload", {
           headers: [
             { key: "Content-Type", value: "application/octet-stream" },
@@ -253,7 +375,7 @@ if (pm.response.code === 201) pm.collectionVariables.set("trackId", pm.response.
           ],
           body: { mode: "file", file: { src: "" } },
           description: lines(`
-Raw request body = the audio file (NOT multipart). Pick the file under Body → binary and set {{uploadLength}} to its size in bytes.
+For an existing Draft, or again after Failed/Cancelled — new tracks use "Upload a new track". Raw request body = the audio file (NOT multipart). Pick the file under Body → binary and set {{uploadLength}} to its size in bytes.
 MP3/WAV/FLAC/AAC/M4A/OGG/Opus, ≤ 200 MB, 1 s–2 h. 202 → processing starts (track status Processing → Ready/Failed).
 Errors: upload_length_required, file_too_large, upload_incomplete (size mismatch / connection dropped), unsupported_file_type, track_not_uploadable / upload_in_progress (409). Processing failures (unsupported_format, no_audio_stream, duration_too_short|long, processing_*) appear in track.processingError.
 Flutter (dio): dio.put(url, data: file.openRead(), options: Options(headers: {'Content-Type': 'application/octet-stream', 'X-Upload-Length': await file.length(), 'X-File-Name': Uri.encodeComponent(name)}), onSendProgress: …).
@@ -261,11 +383,31 @@ Rate limit: 30 uploads/hour per IP.`).join("\n"),
         }),
         req("Upload status", "GET", "/api/v1/tracks/{{trackId}}/upload", { description: "Owner only: status (Uploaded / Processing / Completed / Failed / Cancelled), attempts, error code. Poll every 2–5 s, or poll the track." }),
         req("Cancel upload", "DELETE", "/api/v1/tracks/{{trackId}}/upload", { description: "204 while queued/processing; 409 if already finished." }),
-        req("Stream audio", "GET", "/api/v1/tracks/{{trackId}}/stream", {
-          headers: [{ key: "Range", value: "bytes=0-", description: "Players send ranges; 206 Partial Content / 416" }],
-          description: "AAC (audio/mp4) with HTTP Range support. Public tracks need no auth; private ones need the owner's bearer token — with just_audio pass headers: {'Authorization': 'Bearer …'} on AudioSource.uri. 404 when not visible or not ready.",
+        req("Playback URLs (for the player)", "GET", "/api/v1/tracks/{{trackId}}/playback", {
+          description: lines(`
+200 → data: {trackId, streamUrl, waveformUrl, contentType: "audio/mp4", sizeBytes, durationMs, expiresAt}. Cache-Control: no-store.
+streamUrl/waveformUrl are relative to the base URL and carry ?token=vzp_… (valid ~6 h): hand baseUrl + streamUrl to the player with NO headers
+(just_audio: AudioSource.uri(Uri.parse(baseUrl + streamUrl)) — works with background playback, iOS, casting).
+Public tracks: works without sign-in. Private tracks: owner only (bearer). 404 track_not_found / media_not_ready.
+When the player gets 401 playback_token_invalid (expired), call this endpoint again and resume at the same position.`).join("\n"),
+          events: test(`
+pm.test("200", () => pm.response.to.have.status(200));
+if (pm.response.code === 200) {
+  const d = pm.response.json().data;
+  pm.collectionVariables.set("streamUrl", d.streamUrl);
+  pm.collectionVariables.set("waveformUrl", d.waveformUrl);
+}`),
         }),
-        req("Waveform", "GET", "/api/v1/tracks/{{trackId}}/waveform", { description: "{version, durationMs, peaks: float[~1000] in 0..1}. Same visibility rules as streaming." }),
+        req("Stream audio (player URL)", "GET", "{{streamUrl}}", {
+          auth: noauth,
+          headers: [{ key: "Range", value: "bytes=0-", description: "Players send ranges; 206 Partial Content / 416" }],
+          description: "What the player requests: the URL from \"Playback URLs\", no Authorization header. AAC (audio/mp4), HTTP Range. 401 playback_token_invalid when expired.",
+        }),
+        req("Stream audio (credentials)", "GET", "/api/v1/tracks/{{trackId}}/stream", {
+          headers: [{ key: "Range", value: "bytes=0-", description: "Players send ranges; 206 Partial Content / 416" }],
+          description: "Same stream authorised by bearer/cookie instead of a token (the web app uses this). Public tracks need no auth. 404 when not visible or not ready.",
+        }),
+        req("Waveform", "GET", "/api/v1/tracks/{{trackId}}/waveform", { description: "data: {version, durationMs, peaks: float[~1000] in 0..1}. Same visibility rules as streaming; also accepts ?token= (use waveformUrl)." }),
       ],
     },
     {
@@ -274,7 +416,7 @@ Rate limit: 30 uploads/hour per IP.`).join("\n"),
       item: [
         req("CSRF token", "GET", "/api/v1/auth/csrf", {
           auth: noauth,
-          events: test(`pm.collectionVariables.set("csrfToken", pm.response.json().token);`),
+          events: test(`pm.collectionVariables.set("csrfToken", pm.response.json().data.token);`),
         }),
         req("Login (cookie)", "POST", "/api/v1/auth/login", {
           auth: noauth,

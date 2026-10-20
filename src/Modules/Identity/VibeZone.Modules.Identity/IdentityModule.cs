@@ -60,6 +60,8 @@ public sealed class IdentityModule : IModule
         services.AddScoped<IUserSessions>(sp => sp.GetRequiredService<EfUserSessions>());
         services.AddScoped<IUserProfiles, EfUserProfiles>();
         services.AddScoped<Contracts.IUserRoles, UserRoles>();
+        services.AddScoped<Contracts.IUserAvatars, EfUserAvatars>();
+        services.AddScoped<Contracts.IUserDirectory, EfUserDirectory>();
         services.AddScoped<IAccountEmails, AccountEmails>();
         services.AddSingleton<IEmailSendThrottle, MemoryEmailSendThrottle>();
         services.AddScoped<AccountService>();

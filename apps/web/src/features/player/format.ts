@@ -18,5 +18,6 @@ export function toPlayerTrack(track: Track): PlayerTrack {
     artistName: track.artist.name,
     artistSlug: track.artist.slug,
     durationMs: durationMsOf(track),
+    artwork: track.artwork ?? null,
   };
 }

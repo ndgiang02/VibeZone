@@ -20,6 +20,10 @@
   <Folder Name="/src/Modules/Media/">
     <Project Path="src/Modules/Media/VibeZone.Modules.Media/VibeZone.Modules.Media.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Playlists/">
+    <Project Path="src/Modules/Playlists/VibeZone.Modules.Playlists.Contracts/VibeZone.Modules.Playlists.Contracts.csproj" />
+    <Project Path="src/Modules/Playlists/VibeZone.Modules.Playlists/VibeZone.Modules.Playlists.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/VibeZone.ArchitectureTests/VibeZone.ArchitectureTests.csproj" />
     <Project Path="tests/VibeZone.IntegrationTests/VibeZone.IntegrationTests.csproj" />

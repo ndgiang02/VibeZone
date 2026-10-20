@@ -15,6 +15,8 @@ COPY src/Modules/Catalog/VibeZone.Modules.Catalog.Contracts/VibeZone.Modules.Cat
 COPY src/Modules/Identity/VibeZone.Modules.Identity/VibeZone.Modules.Identity.csproj src/Modules/Identity/VibeZone.Modules.Identity/
 COPY src/Modules/Identity/VibeZone.Modules.Identity.Contracts/VibeZone.Modules.Identity.Contracts.csproj src/Modules/Identity/VibeZone.Modules.Identity.Contracts/
 COPY src/Modules/Media/VibeZone.Modules.Media/VibeZone.Modules.Media.csproj src/Modules/Media/VibeZone.Modules.Media/
+COPY src/Modules/Playlists/VibeZone.Modules.Playlists/VibeZone.Modules.Playlists.csproj src/Modules/Playlists/VibeZone.Modules.Playlists/
+COPY src/Modules/Playlists/VibeZone.Modules.Playlists.Contracts/VibeZone.Modules.Playlists.Contracts.csproj src/Modules/Playlists/VibeZone.Modules.Playlists.Contracts/
 COPY src/VibeZone.Migrations/VibeZone.Migrations.csproj src/VibeZone.Migrations/
 COPY src/VibeZone.Api/VibeZone.Api.csproj src/VibeZone.Api/
 RUN dotnet restore src/VibeZone.Api/VibeZone.Api.csproj

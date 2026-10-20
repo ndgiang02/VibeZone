@@ -5,7 +5,7 @@ using VibeZone.SharedKernel;
 namespace VibeZone.Modules.Catalog.Application.Tracks;
 
 /// <summary>Self-serve artist profiles: any signed-in (hence email-verified) user can become an artist.</summary>
-public sealed class ArtistService(ICatalogRepository repository, IUserRoles roles, TimeProvider time)
+public sealed class ArtistService(ICatalogRepository repository, AlbumService albums, IUserRoles roles, TimeProvider time)
 {
     public async Task<Result<ArtistDto>> CreateForUserAsync(Guid userId, CreateArtistRequest request, CancellationToken cancellationToken)
     {
@@ -53,6 +53,6 @@ public sealed class ArtistService(ICatalogRepository repository, IUserRoles role
             .Where(r => isOwner || r.Track.Visibility == TrackVisibility.Public) // unlisted: link only
             .Select(r => r.ToDto(isOwner))
             .ToList();
-        return new ArtistProfileDto(artist.ToDto(), tracks);
+        return new ArtistProfileDto(artist.ToDto(), tracks, await albums.ListForArtistAsync(artist, isOwner, viewerIsModerator, cancellationToken));
     }
 }

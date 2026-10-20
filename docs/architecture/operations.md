@@ -99,7 +99,8 @@ verified in a non-production environment.
 - Config (API and worker): `Storage:ServiceUrl|Region|Bucket|AccessKey|SecretKey|ForcePathStyle`;
   `Media:MaxUploadBytes` (200 MB), `MinDurationSeconds`/`MaxDurationSeconds` (1 s / 2 h),
   `ProcessingTimeout` (15 min), `MaxAttempts` (3), `LeaseDuration` (5 min), `PollInterval`,
-  `WaveformBuckets` (1000), `TempDirectory`, `FfmpegPath`, `FfprobePath`, `HeartbeatFile`;
+  `WaveformBuckets` (1000), `TempDirectory`, `FfmpegPath`, `FfprobePath`, `HeartbeatFile`,
+  `PlaybackTokenLifetime` (6 h, API only: lifetime of `/playback` stream URLs, ADR-0008);
   `RateLimiting:UploadsPerHour` (30, per IP).
 - Host development: the worker needs FFmpeg on PATH (or `Media:FfmpegPath`); otherwise run it via Compose.
   `scripts/setup-dev-secrets.sh` now also stores the MinIO app credentials in user-secrets.

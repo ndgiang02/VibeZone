@@ -38,6 +38,24 @@ public sealed partial class Artist
 
     public DateTimeOffset UpdatedAt { get; private set; }
 
+    /// <summary>Version of the current profile picture (stored by the Media module), or null.</summary>
+    public Guid? AvatarId { get; private set; }
+
+    /// <summary>Version of the current banner (stored by the Media module), or null.</summary>
+    public Guid? BannerId { get; private set; }
+
+    public void SetAvatar(Guid? imageId, DateTimeOffset now)
+    {
+        AvatarId = imageId;
+        UpdatedAt = now;
+    }
+
+    public void SetBanner(Guid? imageId, DateTimeOffset now)
+    {
+        BannerId = imageId;
+        UpdatedAt = now;
+    }
+
     public static string NormalizeSlug(string? slug) => (slug ?? string.Empty).Trim().ToLowerInvariant();
 
     public static string NormalizeName(string? name) => string.Join(' ', (name ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));

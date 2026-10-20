@@ -19,7 +19,12 @@ public sealed class MediaModule : IModule
         services.AddOptions<MediaOptions>().Bind(configuration.GetSection(MediaOptions.Section)).ValidateDataAnnotations().ValidateOnStart();
         services.AddScoped<IMediaRepository, EfMediaRepository>();
         services.AddScoped<UploadService>();
+        services.AddScoped<ArtworkService>();
+        services.AddScoped<ArtistImageService>();
+        services.AddScoped<UserAvatarService>();
+        services.AddSingleton<IArtworkProcessor, SkiaArtworkProcessor>();
         services.AddScoped<PlaybackService>();
+        services.AddSingleton<IPlaybackTokens, DataProtectionPlaybackTokens>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder api) => MediaEndpoints.Map(api);

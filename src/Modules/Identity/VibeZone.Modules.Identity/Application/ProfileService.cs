@@ -1,3 +1,4 @@
+using VibeZone.Modules.Identity.Contracts;
 using VibeZone.Modules.Identity.Domain;
 using VibeZone.SharedKernel;
 
@@ -10,7 +11,11 @@ public sealed record MeDto(
     string DisplayName,
     string Locale,
     bool EmailConfirmed,
-    IReadOnlyList<string> Roles);
+    IReadOnlyList<string> Roles,
+    UserAvatarDto? Avatar);
+
+/// <summary>Account picture: square JPEG, small ≈ 160 px, large ≈ 640 px.</summary>
+public sealed record UserAvatarDto(string Small, string Large);
 
 public sealed record UpdateProfileRequest(string? DisplayName, string? Locale);
 
@@ -26,7 +31,10 @@ public sealed class ProfileService(IUserAccounts accounts, IUserProfiles profile
         }
 
         var roles = await accounts.GetRolesAsync(userId, cancellationToken);
-        return new MeDto(account.Id, account.Email, account.Handle, profile.DisplayName, profile.Locale, account.EmailConfirmed, roles);
+        var avatar = profile.AvatarId is { } imageId
+            ? new UserAvatarDto(UserAvatarPaths.For(userId, imageId, "small"), UserAvatarPaths.For(userId, imageId, "large"))
+            : null;
+        return new MeDto(account.Id, account.Email, account.Handle, profile.DisplayName, profile.Locale, account.EmailConfirmed, roles, avatar);
     }
 
     public async Task<Result<MeDto>> UpdateProfileAsync(Guid userId, UpdateProfileRequest request, CancellationToken cancellationToken)

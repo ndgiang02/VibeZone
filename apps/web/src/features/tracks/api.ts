@@ -30,7 +30,7 @@ export function useNewReleases(limit = 24) {
   return useQuery({
     queryKey: [...trackKeys.newReleases, limit],
     queryFn: async ({ signal }) =>
-      unwrap(await api.GET("/api/v1/tracks", { params: { query: { limit } }, signal })).items,
+      unwrap(await api.GET("/api/v1/tracks", { params: { query: { pageSize: limit } }, signal })),
   });
 }
 
@@ -75,10 +75,16 @@ export function useCreateArtist() {
   });
 }
 
+/** Studio shows the newest tracks only (API maximum page size); paging the list is a later task. */
+const MY_TRACKS_PAGE_SIZE = 50;
+
 export function useMyTracks(enabled: boolean) {
   return useQuery({
     queryKey: trackKeys.mine,
-    queryFn: async ({ signal }) => unwrap(await api.GET("/api/v1/me/tracks", { signal })).items,
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await api.GET("/api/v1/me/tracks", { params: { query: { pageSize: MY_TRACKS_PAGE_SIZE } }, signal }),
+      ),
     enabled,
     // While something is processing, refresh so the status flips to Ready/Failed without a reload.
     refetchInterval: (query) => (query.state.data?.some((t) => t.status === "Processing") ? 3000 : false),
@@ -136,4 +142,20 @@ export function useWaveform(trackId: string, enabled: boolean) {
 
 export function isNotFound(error: unknown) {
   return error instanceof ApiError && error.status === 404;
+}
+
+/** Everything that shows artist images: the profile, artist pages and track lists (artist avatars). */
+export function invalidateArtistImages(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: trackKeys.myArtist });
+  void queryClient.invalidateQueries({ queryKey: ["artists"] });
+  void queryClient.invalidateQueries({ queryKey: trackKeys.all });
+}
+
+export function useRemoveArtistImage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (slot: "avatar" | "banner") =>
+      ensureOk(await api.DELETE("/api/v1/me/artist/{slot}", { params: { path: { slot } } })),
+    onSuccess: () => invalidateArtistImages(queryClient),
+  });
 }

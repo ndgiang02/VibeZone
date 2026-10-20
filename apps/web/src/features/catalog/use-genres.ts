@@ -9,7 +9,7 @@ export const genreKeys = { all: ["genres"] as const };
 export function useGenres() {
   return useQuery({
     queryKey: genreKeys.all,
-    queryFn: async ({ signal }) => unwrap(await api.GET("/api/v1/genres", { signal })).items,
+    queryFn: async ({ signal }) => unwrap(await api.GET("/api/v1/genres", { signal })),
     staleTime: 5 * 60_000,
   });
 }

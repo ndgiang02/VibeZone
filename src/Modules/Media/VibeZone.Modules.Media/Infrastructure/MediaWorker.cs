@@ -60,6 +60,7 @@ internal sealed partial class MediaWorker(IServiceScopeFactory scopes, IOptions<
     private async Task RunJobAsync(Guid jobId, MediaOptions settings, CancellationToken stoppingToken)
     {
         using var jobCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        using var rowGate = new JobRowGate();
         var cancelledByUser = false;
         var heartbeat = Task.Run(async () =>
         {
@@ -68,6 +69,7 @@ internal sealed partial class MediaWorker(IServiceScopeFactory scopes, IOptions<
                 while (!jobCts.IsCancellationRequested)
                 {
                     await Task.Delay(settings.LeaseDuration / 3, jobCts.Token);
+                    using var hold = await rowGate.EnterAsync(jobCts.Token);
                     using var scope = scopes.CreateScope();
                     var repository = scope.ServiceProvider.GetRequiredService<IMediaRepository>();
                     if (await repository.ReadStatusAsync(jobId, jobCts.Token) == UploadJobStatus.Cancelled)
@@ -90,7 +92,7 @@ internal sealed partial class MediaWorker(IServiceScopeFactory scopes, IOptions<
         {
             using var scope = scopes.CreateScope();
             var processor = scope.ServiceProvider.GetRequiredService<MediaProcessor>();
-            var outcome = await processor.ProcessAsync(jobId, () => cancelledByUser, jobCts.Token);
+            var outcome = await processor.ProcessAsync(jobId, () => cancelledByUser, rowGate, jobCts.Token);
             LogOutcome(logger, jobId, outcome);
         }
         finally

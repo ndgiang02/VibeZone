@@ -2,6 +2,7 @@ using VibeZone.Infrastructure.Modules;
 using VibeZone.Modules.Catalog;
 using VibeZone.Modules.Identity;
 using VibeZone.Modules.Media;
+using VibeZone.Modules.Playlists;
 
 namespace VibeZone.Migrations;
 
@@ -14,5 +15,6 @@ public static class AppModules
     public static ModuleCatalog Create() => new(
         new IdentityModule(),
         new CatalogModule(),
-        new MediaModule());
+        new MediaModule(),
+        new PlaylistsModule());
 }

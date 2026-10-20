@@ -11,7 +11,8 @@ function stubRegister(response: () => Response) {
     "fetch",
     vi.fn<typeof fetch>(async (input) => {
       const request = input as Request;
-      if (new URL(request.url).pathname === "/api/v1/auth/csrf") return jsonResponse({ token: "t" });
+      if (new URL(request.url).pathname === "/api/v1/auth/csrf")
+        return jsonResponse({ data: { token: "t" } });
       bodies.push(await request.clone().json());
       return response();
     }),
