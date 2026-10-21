@@ -94,7 +94,7 @@ if (refresh && !url.includes("/auth/") && Date.now() > expiresAt - 30000) {
     },
   ],
   variable: [
-    { key: "baseUrl", value: "http://localhost:3000", description: "Caddy proxy of the local stack. Android emulator: http://10.0.2.2:3000 (from the app)." },
+    { key: "baseUrl", value: "http://localhost:3001", description: "API site (ADR-0011): local stack port 3001 (Android emulator: http://10.0.2.2:3001); production https://api.<domain>." },
     { key: "mailpitUrl", value: "http://localhost:8025", description: "Local Mailpit (dev only) to read verification/reset emails." },
     { key: "email", value: "app-user@example.test" },
     { key: "password", value: "correct horse battery staple" },

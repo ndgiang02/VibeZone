@@ -23,7 +23,7 @@ Defined in [`docker-compose.yml`](../../docker-compose.yml). Profiles keep each 
 | MinIO + `minio-init` | `media` | M3 | `MINIO_API_PORT` (9000), console `MINIO_CONSOLE_PORT` (9001) | volume `minio-data` |
 | Redis 8.8 | `cache` | when multi-instance features land (≥ M4) | `REDIS_PORT` (6379) | none (ephemeral) |
 | Mailpit | `mail`, `app` | M2 (email verification/reset) | SMTP `MAILPIT_SMTP_PORT` (1025), UI `MAILPIT_UI_PORT` (8025) | in-memory |
-| `migrate` → `api`, `worker`, `web` → `proxy` | `app` | M1 (proxy M3) | `WEB_PORT` (3000, Caddy), `API_PORT` (5080, direct API for debugging) | — |
+| `migrate` → `api`, `worker`, `web` → `proxy` | `app` | M1 (proxy M3) | `WEB_PORT` (3000, Caddy web site), `API_PUBLIC_PORT` (3001, Caddy API site for apps, ADR-0011), `API_PORT` (5080, direct API for debugging) | — |
 
 The `app` profile runs the full stack from the repository's Dockerfiles. `migrate` is the EF Core
 migration bundle (Dockerfile target `migrator`): idempotent, takes the EF migration lock, and the

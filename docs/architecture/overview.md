@@ -16,7 +16,8 @@ reality diverges.
 
 ```
                          ┌──────────────────────────────────────────┐
- Browser ── HTTPS ──►    │  Reverse proxy (prod: Caddy/nginx/ingress)│   single public origin
+ Browser ── HTTPS ──►    │  Reverse proxy (prod: Caddy/nginx/ingress)│   web site: single origin for browsers
+ Apps ──── HTTPS ──►     │  vibezone.vn  |  api.vibezone.vn (ADR-0011)│   API site: /api only, apps & gateway
                          └───────┬──────────────────────┬───────────┘
                                  │ /                    │ /api/*, /hubs/*
                                  ▼                      ▼

@@ -66,8 +66,8 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000",
-      "description": "Caddy proxy of the local stack. Android emulator: http://10.0.2.2:3000 (from the app)."
+      "value": "http://localhost:3001",
+      "description": "API site (ADR-0011): local stack port 3001 (Android emulator: http://10.0.2.2:3001); production https://api.<domain>."
     },
     {
       "key": "mailpitUrl",

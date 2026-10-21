@@ -1,7 +1,10 @@
-# Local reverse proxy — the production topology from ADR-0002, on plain HTTP for localhost:
-#   /api/*, /hubs/*  → API (streamed both ways: no request-body buffering, audio flushes immediately)
-#   everything else  → Next.js web app
-# Browsers see a single origin, so session/CSRF cookies stay first-party.
+# Edge reverse proxy — the production topology from ADR-0002 (+ ADR-0011), on plain HTTP for localhost.
+# Two sites:
+#   WEB_SITE (browsers):  /api/*, /hubs/* → API; everything else → Next.js. Browsers see a single origin,
+#                         so session/CSRF cookies stay first-party.
+#   API_SITE (apps, integrations, a future gateway): /api/*, /hubs/* → API only; no web pages.
+# Locally the sites are ports (:8080, :8081); in production set them to host names, e.g.
+#   WEB_SITE=vibezone.vn  API_SITE=api.vibezone.vn
 {
 	# No admin API and no automatic HTTPS locally (TLS terminates here in real deployments).
 	admin off
@@ -10,12 +13,7 @@
 	# cannot spoof their address; it sets fresh X-Forwarded-For/Proto/Host for the upstreams.
 }
 
-:8080 {
-	# Liveness for the container healthcheck (does not depend on api/web).
-	handle /healthz {
-		respond "ok" 200
-	}
-
+(api_upstream) {
 	@api path /api/* /hubs/*
 	handle @api {
 		# Media:MaxUploadBytes is 200 MB; the API enforces the exact limit while reading.
@@ -27,9 +25,28 @@
 			flush_interval -1
 		}
 	}
+}
+
+{$WEB_SITE::8080} {
+	# Liveness for the container healthcheck (does not depend on api/web).
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	import api_upstream
 
 	handle {
 		reverse_proxy web:3000
+	}
+
+	header -Server
+}
+
+{$API_SITE::8081} {
+	import api_upstream
+
+	handle {
+		respond 404
 	}
 
 	header -Server

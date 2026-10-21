@@ -243,8 +243,8 @@ services:
       retries: 3
       start_period: 20s
 
-  # Edge reverse proxy (ADR-0002): /api/* and /hubs/* stream straight to the API, the rest goes to web.
-  # Uploads and audio never pass through Next.js, so nothing is buffered in the web server.
+  # Edge reverse proxy (ADR-0002, ADR-0011). Web site: /api/* and /hubs/* stream straight to the API, the rest
+  # goes to web. API site: the API only (native apps). Uploads and audio never pass through Next.js.
   proxy:
     <<: *hardening
     profiles: ["app"]
@@ -271,6 +271,7 @@ services:
       - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
     ports:
       - "127.0.0.1:${WEB_PORT:-3000}:8080"
+      - "127.0.0.1:${API_PUBLIC_PORT:-3001}:8081"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
       interval: 5s

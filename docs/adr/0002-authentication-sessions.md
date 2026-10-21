@@ -52,3 +52,5 @@ render per-user data.
 - Data Protection keys (cookies, antiforgery, Identity tokens) are persisted in
   `infra.data_protection_keys` so restarts and multiple instances keep sessions valid. Key-ring
   encryption at rest is an M5 production task.
+
+Addendum (2026-10-21): native apps use a separate API host (ADR-0011). The browser flow above is unchanged.

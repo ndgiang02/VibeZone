@@ -3,6 +3,14 @@
 Newest first. Each entry records what was done, **how it was verified** (actual commands and
 results), known issues and next steps.
 
+## 2026-10-21 — Separate API site for apps (ADR-0011)
+
+**Done**: Caddy serves a web site (`WEB_SITE`, unchanged same-origin `/api`) and an API-only site (`API_SITE`,
+`api.<domain>`; locally `API_PUBLIC_PORT` 3001). Postman `baseUrl` and the app guide point at the API site.
+
+**Verification**: **not run** — Docker was stopped. To check: `docker compose --profile app up -d --wait`, then
+`localhost:3001/api/v1/genres` → 200, `localhost:3001/` → 404, `localhost:3000` unchanged.
+
 ## 2026-10-21 — App API check, Postman collection complete
 
 **Done**

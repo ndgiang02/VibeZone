@@ -38,12 +38,14 @@ bash scripts/verify-local-infra.sh             # optional: end-to-end checks of 
 This starts PostgreSQL and Mailpit, runs migrations once (`migrate` exits 0), then the API and the web app:
 
 - Web: http://localhost:3000 (Caddy reverse proxy: `/api` → API, everything else → web; redirects to
-  `/vi`, English at `/en`) · API directly (debugging): http://localhost:5080
+  `/vi`, English at `/en`)
+- API site for native apps / Postman: http://localhost:3001 (`/api/*` only; production `api.<domain>`, ADR-0011)
+  · API container directly (debugging, health): http://localhost:5080
 - **Emails** (account confirmation, password reset) land in Mailpit: http://localhost:8025 — nothing is
   delivered to real inboxes locally.
 - Logs: `docker compose --profile app logs -f api web` · Stop: `docker compose --profile app down`
 - After code changes: re-run the `up … --build` command. Ports are configurable in `.env`
-  (`API_PORT`, `WEB_PORT`); `API_ENVIRONMENT=Development` exposes `/openapi/v1.json`.
+  (`API_PORT`, `WEB_PORT`, `API_PUBLIC_PORT`); `API_ENVIRONMENT=Development` exposes `/openapi/v1.json`.
 - The containerised API and `dotnet run` both use port 5080 — run one at a time.
 
 ## Develop on the host (hot reload)

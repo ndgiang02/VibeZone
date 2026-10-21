@@ -24,7 +24,9 @@ insider with infrastructure access.
 
 ## 3. Trust boundaries
 
-1. Browser ↔ public origin (reverse proxy / Next.js) — untrusted input, TLS.
+1. Browser ↔ public origin (reverse proxy / Next.js) — untrusted input, TLS. Apps and integrations use the
+   separate API site (`api.<domain>`, ADR-0011): same API, same rate limits and authorization; it serves
+   `/api/*` only and has no CORS, so other origins cannot use it with browser cookies.
 2. Next.js server ↔ API — SSR forwards only the user's cookie; API re-authorises everything.
    Native apps (Flutter) ↔ API — bearer access token + rotating refresh token (ADR-0007); the device
    holds the refresh token and must keep it in OS secure storage.
