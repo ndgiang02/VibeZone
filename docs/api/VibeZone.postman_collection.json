@@ -123,6 +123,11 @@
       "value": "appuser"
     },
     {
+      "key": "artistId",
+      "value": "",
+      "description": "Set by \"My artist profile\" / \"Become an artist\""
+    },
+    {
       "key": "trackId",
       "value": ""
     },
@@ -621,7 +626,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set(\"userId\", pm.response.json().data.id);"
                 ]
               }
             }
@@ -640,7 +646,7 @@
                 "me"
               ]
             },
-            "description": "data: {id, email, handle, displayName, locale, emailConfirmed, roles[]}. 401 when not signed in."
+            "description": "data: {id, email, handle, displayName, locale, emailConfirmed, roles[], avatar: {small, large} | null}. 401 when not signed in."
           }
         },
         {
@@ -783,6 +789,82 @@
             },
             "description": "200 {data: {revoked: n}}."
           }
+        },
+        {
+          "name": "Set account picture",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "image/jpeg"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "avatar"
+              ]
+            },
+            "description": "Any signed-in user (not only artists). Raw body = the image (JPEG/PNG/WebP, ≥ 200×200 px, ≤ 10 MB); cropped square, metadata removed. 200 → data: {small, large} URLs (also in Me.avatar). Errors: image_invalid, image_too_small, image_too_large. Rate limit: 30/hour per IP."
+          }
+        },
+        {
+          "name": "Account picture",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/avatar/small",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}",
+                "avatar",
+                "small"
+              ]
+            },
+            "description": "image/jpeg, public. 'small' or 'large'. Prefer the URLs in Me.avatar / playlist owner (they change when the picture changes). 404 without a picture."
+          }
+        },
+        {
+          "name": "Remove account picture",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "avatar"
+              ]
+            },
+            "description": "204, idempotent."
+          }
         }
       ]
     },
@@ -888,6 +970,17 @@
         },
         {
           "name": "My artist profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) pm.collectionVariables.set(\"artistId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -903,11 +996,22 @@
                 "artist"
               ]
             },
-            "description": "404 if the user has not created one yet."
+            "description": "404 if the user has not created one yet. data.avatar / data.banner = {small, large} URLs or null."
           }
         },
         {
           "name": "Become an artist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"artistId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -1318,7 +1422,81 @@
                 }
               ]
             },
-            "description": "Paged. Also /search/artists and /search/albums."
+            "description": "Paged: data[] TrackDto + meta {page, pageSize, total, hasMore}."
+          }
+        },
+        {
+          "name": "Search artists",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/artists?q={{q}}&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search",
+                "artists"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{q}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Paged: data[] ArtistDto."
+          }
+        },
+        {
+          "name": "Search albums",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/albums?q={{q}}&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search",
+                "albums"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{q}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Paged: data[] AlbumDto (public albums only)."
           }
         },
         {
@@ -1394,9 +1572,9 @@
               }
             },
             "url": {
-              "raw": "http://localhost:5080/api/v1/playlists",
+              "raw": "{{baseUrl}}/api/v1/playlists",
               "host": [
-                "http://localhost:5080"
+                "{{baseUrl}}"
               ],
               "path": [
                 "api",
@@ -1427,9 +1605,9 @@
               }
             },
             "url": {
-              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}/tracks",
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}/tracks",
               "host": [
-                "http://localhost:5080"
+                "{{baseUrl}}"
               ],
               "path": [
                 "api",
@@ -1448,9 +1626,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}",
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}",
               "host": [
-                "http://localhost:5080"
+                "{{baseUrl}}"
               ],
               "path": [
                 "api",
@@ -1468,9 +1646,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}/tracks",
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}/tracks",
               "host": [
-                "http://localhost:5080"
+                "{{baseUrl}}"
               ],
               "path": [
                 "api",
@@ -1503,9 +1681,9 @@
               }
             },
             "url": {
-              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}/tracks/order",
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}/tracks/order",
               "host": [
-                "http://localhost:5080"
+                "{{baseUrl}}"
               ],
               "path": [
                 "api",
@@ -1525,9 +1703,9 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}/tracks/{{trackId}}",
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}/tracks/{{trackId}}",
               "host": [
-                "http://localhost:5080"
+                "{{baseUrl}}"
               ],
               "path": [
                 "api",
@@ -1547,9 +1725,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5080/api/v1/me/playlists?containsTrack={{trackId}}",
+              "raw": "{{baseUrl}}/api/v1/me/playlists?containsTrack={{trackId}}",
               "host": [
-                "http://localhost:5080"
+                "{{baseUrl}}"
               ],
               "path": [
                 "api",
@@ -1588,9 +1766,9 @@
               }
             },
             "url": {
-              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}",
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}",
               "host": [
-                "http://localhost:5080"
+                "{{baseUrl}}"
               ],
               "path": [
                 "api",
@@ -1608,9 +1786,9 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:5080/api/v1/playlists/{{playlistId}}",
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}",
               "host": [
-                "http://localhost:5080"
+                "{{baseUrl}}"
               ],
               "path": [
                 "api",
@@ -1856,7 +2034,53 @@
                 "avatar"
               ]
             },
-            "description": "204. (Use /banner for the banner.)"
+            "description": "204."
+          }
+        },
+        {
+          "name": "Remove artist banner",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/artist/banner",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "artist",
+                "banner"
+              ]
+            },
+            "description": "204."
+          }
+        },
+        {
+          "name": "Artist image",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/artists/{{artistId}}/avatar/small",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "artists",
+                "{{artistId}}",
+                "avatar",
+                "small"
+              ]
+            },
+            "description": "image/jpeg, public. /avatar/{small|large} or /banner/{small|large}. Prefer the URLs in ArtistDto.avatar / banner. 404 without an image."
           }
         },
         {
@@ -2175,9 +2399,9 @@
             },
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/health/live",
+              "raw": "http://localhost:5080/health/live",
               "host": [
-                "{{baseUrl}}"
+                "http://localhost:5080"
               ],
               "path": [
                 "health",
@@ -2195,9 +2419,9 @@
             },
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/health/ready",
+              "raw": "http://localhost:5080/health/ready",
               "host": [
-                "{{baseUrl}}"
+                "http://localhost:5080"
               ],
               "path": [
                 "health",

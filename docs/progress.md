@@ -3,6 +3,22 @@
 Newest first. Each entry records what was done, **how it was verified** (actual commands and
 results), known issues and next steps.
 
+## 2026-10-21 — App API check, Postman collection complete
+
+**Done**
+- Postman collection covers all 62 OpenAPI operations (70 requests): added account picture (set/get/remove),
+  artist image get + banner remove, search artists/albums; `userId`/`artistId` captured from Me / My artist.
+- Fixed the generator: Health and the Mailpit helper are found by folder name — the index-based lookup had
+  pointed the Playlists folder at `localhost:5080` after new folders were inserted.
+
+**Verification**: manual smoke script (not committed) against the local Compose stack through the proxy
+(`localhost:3000`) with Bearer tokens, as the app calls it: 84 checks — register → Mailpit link → verify → token →
+refresh, account picture, become artist, one-request upload (worker → Ready), cover, playback token URL with
+Range (206), waveform, raw two-step upload + cancel, albums, search (all kinds), playlists (CRUD, reorder,
+containsTrack, private → 404 for anonymous), cleanup, refresh-token reuse → 401, revoke and bearer logout → 401.
+All passed (the sign-out checks re-run after the 1-minute auth rate-limit window; the first run hit 429).
+Test data left: the account `smoke-mvhgqf77@example.test` (no delete-account endpoint).
+
 ## 2026-10-20 — M2b/M2c: albums, search, playlists, library, discover, dev seed (no tests)
 
 Owner request: finish M2b, M2c and M3 without writing tests.

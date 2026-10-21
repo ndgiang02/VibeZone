@@ -108,6 +108,7 @@ if (refresh && !url.includes("/auth/") && Date.now() > expiresAt - 30000) {
     { key: "resetToken", value: "" },
     { key: "newPassword", value: "another long passphrase 2" },
     { key: "artistSlug", value: "appuser" },
+    { key: "artistId", value: "", description: "Set by \"My artist profile\" / \"Become an artist\"" },
     { key: "trackId", value: "" },
     { key: "albumId", value: "", description: "Set by \"Create album\"" },
     { key: "playlistId", value: "", description: "Set by \"Create playlist\"" },
@@ -200,8 +201,10 @@ pm.collectionVariables.set("refreshToken", "");`),
       description: "Requires Authorization: Bearer.",
       item: [
         req("Me", "GET", "/api/v1/me", {
-          description: "data: {id, email, handle, displayName, locale, emailConfirmed, roles[]}. 401 when not signed in.",
-          events: test(`pm.test("200", () => pm.response.to.have.status(200));`),
+          description: "data: {id, email, handle, displayName, locale, emailConfirmed, roles[], avatar: {small, large} | null}. 401 when not signed in.",
+          events: test(`
+pm.test("200", () => pm.response.to.have.status(200));
+if (pm.response.code === 200) pm.collectionVariables.set("userId", pm.response.json().data.id);`),
         }),
         req("Update profile", "PATCH", "/api/v1/me/profile", { body: json({ displayName: "New name", locale: "en" }) }),
         req("Change password", "POST", "/api/v1/me/password", {
@@ -216,6 +219,16 @@ if (other) pm.collectionVariables.set("sessionId", other.id);`),
         }),
         req("Revoke a session", "DELETE", "/api/v1/me/sessions/{{sessionId}}", { description: "204; 404 session_not_found." }),
         req("Revoke other sessions", "POST", "/api/v1/me/sessions/revoke-others", { description: "200 {data: {revoked: n}}." }),
+        req("Set account picture", "PUT", "/api/v1/me/avatar", {
+          headers: [{ key: "Content-Type", value: "image/jpeg" }],
+          body: { mode: "file", file: { src: "" } },
+          description: "Any signed-in user (not only artists). Raw body = the image (JPEG/PNG/WebP, ≥ 200×200 px, ≤ 10 MB); cropped square, metadata removed. 200 → data: {small, large} URLs (also in Me.avatar). Errors: image_invalid, image_too_small, image_too_large. Rate limit: 30/hour per IP.",
+        }),
+        req("Account picture", "GET", "/api/v1/users/{{userId}}/avatar/small", {
+          auth: noauth,
+          description: "image/jpeg, public. 'small' or 'large'. Prefer the URLs in Me.avatar / playlist owner (they change when the picture changes). 404 without a picture.",
+        }),
+        req("Remove account picture", "DELETE", "/api/v1/me/avatar", { description: "204, idempotent." }),
       ],
     },
     {
@@ -227,10 +240,14 @@ if (other) pm.collectionVariables.set("sessionId", other.id);`),
           description: "Public/unlisted tracks for everyone; private/processing tracks only for the owner (else 404). Includes status, durationMs, playable.",
         }),
         req("Artist by slug", "GET", "/api/v1/artists/{{artistSlug}}", { auth: noauth, description: "Artist profile + public tracks. 404 if unknown." }),
-        req("My artist profile", "GET", "/api/v1/me/artist", { description: "404 if the user has not created one yet." }),
+        req("My artist profile", "GET", "/api/v1/me/artist", {
+          description: "404 if the user has not created one yet. data.avatar / data.banner = {small, large} URLs or null.",
+          events: test(`if (pm.response.code === 200) pm.collectionVariables.set("artistId", pm.response.json().data.id);`),
+        }),
         req("Become an artist", "POST", "/api/v1/me/artist", {
           body: json({ slug: "{{artistSlug}}", name: "App Artist", bio: null }),
           description: "201. Grants the Artist role (needed to create tracks). 409 if the slug is taken or the user already has one.",
+          events: test(`if (pm.response.code === 201) pm.collectionVariables.set("artistId", pm.response.json().data.id);`),
         }),
         req("My tracks", "GET", "/api/v1/me/tracks", { query: [{ key: "page", value: "1" }, { key: "pageSize", value: "50" }], description: "The artist's own tracks, any status, newest first (paged)." }),
         req("Create track", "POST", "/api/v1/tracks", {
@@ -281,7 +298,17 @@ if (pm.response.code === 201) pm.collectionVariables.set("albumId", pm.response.
         req("Search tracks", "GET", "/api/v1/search/tracks", {
           auth: noauth,
           query: [{ key: "q", value: "{{q}}" }, { key: "page", value: "1" }, { key: "pageSize", value: "20" }],
-          description: "Paged. Also /search/artists and /search/albums.",
+          description: "Paged: data[] TrackDto + meta {page, pageSize, total, hasMore}.",
+        }),
+        req("Search artists", "GET", "/api/v1/search/artists", {
+          auth: noauth,
+          query: [{ key: "q", value: "{{q}}" }, { key: "page", value: "1" }, { key: "pageSize", value: "20" }],
+          description: "Paged: data[] ArtistDto.",
+        }),
+        req("Search albums", "GET", "/api/v1/search/albums", {
+          auth: noauth,
+          query: [{ key: "q", value: "{{q}}" }, { key: "page", value: "1" }, { key: "pageSize", value: "20" }],
+          description: "Paged: data[] AlbumDto (public albums only).",
         }),
         req("Search playlists", "GET", "/api/v1/playlists", {
           auth: noauth,
@@ -366,7 +393,12 @@ if (pm.response.code === 202) pm.collectionVariables.set("trackId", pm.response.
           body: { mode: "file", file: { src: "" } },
           description: "Like the avatar, but 3:1 (≥ 600×200). 800/1600 px wide renditions.",
         }),
-        req("Remove artist avatar", "DELETE", "/api/v1/me/artist/avatar", { description: "204. (Use /banner for the banner.)" }),
+        req("Remove artist avatar", "DELETE", "/api/v1/me/artist/avatar", { description: "204." }),
+        req("Remove artist banner", "DELETE", "/api/v1/me/artist/banner", { description: "204." }),
+        req("Artist image", "GET", "/api/v1/artists/{{artistId}}/avatar/small", {
+          auth: noauth,
+          description: "image/jpeg, public. /avatar/{small|large} or /banner/{small|large}. Prefer the URLs in ArtistDto.avatar / banner. 404 without an image.",
+        }),
         req("Upload audio", "PUT", "/api/v1/tracks/{{trackId}}/upload", {
           headers: [
             { key: "Content-Type", value: "application/octet-stream" },
@@ -438,11 +470,12 @@ if (pm.response.code === 200) {
 };
 
 // Mailpit helper uses its own host.
-const mailpit = collection.item[0].item[1].request;
+const folder = (name) => collection.item.find((f) => f.name === name);
+const mailpit = folder("Auth (app)").item.find((r) => r.name.startsWith("DEV: read")).request;
 mailpit.url.raw = "{{mailpitUrl}}/api/v1/search?query=to:\"{{email}}\"";
 mailpit.url.host = ["{{mailpitUrl}}"];
 // Health lives on the API port, not behind the proxy.
-for (const h of collection.item[5].item) {
+for (const h of folder("Health").item) {
   h.request.url.raw = h.request.url.raw.replace("{{baseUrl}}", "http://localhost:5080");
   h.request.url.host = ["http://localhost:5080"];
 }
