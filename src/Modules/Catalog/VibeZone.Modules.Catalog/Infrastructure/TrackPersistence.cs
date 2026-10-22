@@ -64,6 +64,7 @@ internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
         b.Property(t => t.Status).HasConversion(new LowerCaseEnumConverter<TrackStatus>()).HasMaxLength(16);
         b.Property(t => t.Visibility).HasConversion(new LowerCaseEnumConverter<TrackVisibility>()).HasMaxLength(16);
         b.Property(t => t.ProcessingError).HasMaxLength(64);
+        b.Property(t => t.TakedownReason).HasMaxLength(32);
         b.Property<uint>("xmin").IsRowVersion();
         b.HasOne<Artist>().WithMany().HasForeignKey(t => t.ArtistId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<Genre>().WithMany().HasForeignKey(t => t.GenreId).OnDelete(DeleteBehavior.SetNull);
@@ -73,7 +74,7 @@ internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
         b.HasIndex(t => t.PublishedAt)
             .IsDescending()
             .HasDatabaseName("ix_tracks_new_releases")
-            .HasFilter("status = 'ready' AND visibility = 'public' AND deleted_at IS NULL");
+            .HasFilter("status = 'ready' AND visibility = 'public' AND deleted_at IS NULL AND taken_down_at IS NULL");
     }
 }
 
@@ -103,7 +104,7 @@ internal sealed class EfCatalogRepository(AppDbContext db) : ICatalogRepository
 
     public Task<Paged<TrackRow>> PageNewReleasesAsync(PageRequest page, CancellationToken cancellationToken) =>
         PageAsync(db.Set<Track>().AsNoTracking()
-                .Where(t => t.Status == TrackStatus.Ready && t.Visibility == TrackVisibility.Public && t.DeletedAt == null)
+                .Where(t => t.Status == TrackStatus.Ready && t.Visibility == TrackVisibility.Public && t.DeletedAt == null && t.TakenDownAt == null)
                 .OrderByDescending(t => t.PublishedAt).ThenByDescending(t => t.Id),
             page,
             cancellationToken);
@@ -142,6 +143,36 @@ internal sealed class EfCatalogRepository(AppDbContext db) : ICatalogRepository
                      where albumIds.Contains(al.Id)
                      select new AlbumRow(al, a)).ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<TrackRow>> ListRelatedAsync(Guid trackId, Guid artistId, int? genreId, int limit, CancellationToken cancellationToken) =>
+        await Rows(db.Set<Track>().AsNoTracking()
+                .Where(t => t.Id != trackId && t.Status == TrackStatus.Ready && t.Visibility == TrackVisibility.Public && t.DeletedAt == null && t.TakenDownAt == null)
+                .Where(t => t.ArtistId == artistId || (genreId != null && t.GenreId == genreId))
+                .OrderBy(t => t.ArtistId == artistId ? 0 : 1).ThenByDescending(t => t.PublishedAt).ThenBy(t => t.Id)
+                .Take(limit))
+            .ToListAsync(cancellationToken);
+
+    public Task<Paged<TrackRow>> PageAllAsync(string? query, TrackStatus? status, bool? takenDown, PageRequest page, CancellationToken cancellationToken)
+    {
+        var tracks = db.Set<Track>().AsNoTracking().Where(t => t.DeletedAt == null);
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var pattern = "%" + query.Trim().Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
+            tracks = tracks.Where(t => EF.Functions.ILike(t.Title, pattern));
+        }
+
+        if (status is { } s)
+        {
+            tracks = tracks.Where(t => t.Status == s);
+        }
+
+        if (takenDown is { } down)
+        {
+            tracks = down ? tracks.Where(t => t.TakenDownAt != null) : tracks.Where(t => t.TakenDownAt == null);
+        }
+
+        return PageAsync(tracks.OrderByDescending(t => t.CreatedAt).ThenByDescending(t => t.Id), page, cancellationToken);
+    }
+
     public void Add(Artist artist) => db.Set<Artist>().Add(artist);
 
     public void Add(Track track) => db.Set<Track>().Add(track);
@@ -168,7 +199,7 @@ internal sealed class EfCatalogRepository(AppDbContext db) : ICatalogRepository
 }
 
 /// <summary>Catalog's side of the Media contract. Stage* changes are saved by the caller's SaveChanges.</summary>
-internal sealed class EfTrackCatalog(AppDbContext db, TrackService tracks, TimeProvider time) : ITrackCatalog
+internal sealed class EfTrackCatalog(AppDbContext db, TrackService tracks, IOutbox outbox, TimeProvider time) : ITrackCatalog
 {
     public async Task<OwnedTrack?> FindOwnedAsync(Guid trackId, Guid userId, CancellationToken cancellationToken)
     {
@@ -231,14 +262,70 @@ internal sealed class EfTrackCatalog(AppDbContext db, TrackService tracks, TimeP
     public async Task StageProcessingAsync(Guid trackId, CancellationToken cancellationToken) =>
         (await LoadAsync(trackId, cancellationToken)).StartProcessing(time.GetUtcNow());
 
-    public async Task StageReadyAsync(Guid trackId, int durationMs, CancellationToken cancellationToken) =>
-        (await LoadAsync(trackId, cancellationToken)).MarkReady(durationMs, time.GetUtcNow());
+    public async Task StageReadyAsync(Guid trackId, int durationMs, CancellationToken cancellationToken)
+    {
+        var track = await LoadAsync(trackId, cancellationToken);
+        track.MarkReady(durationMs, time.GetUtcNow());
+        await StageProcessedEventAsync(track, null, cancellationToken);
+    }
 
-    public async Task StageFailedAsync(Guid trackId, string reasonCode, CancellationToken cancellationToken) =>
-        (await LoadAsync(trackId, cancellationToken)).MarkFailed(reasonCode, time.GetUtcNow());
+    public async Task StageFailedAsync(Guid trackId, string reasonCode, CancellationToken cancellationToken)
+    {
+        var track = await LoadAsync(trackId, cancellationToken);
+        track.MarkFailed(reasonCode, time.GetUtcNow());
+        await StageProcessedEventAsync(track, reasonCode, cancellationToken);
+    }
 
     public async Task StageCancelledAsync(Guid trackId, CancellationToken cancellationToken) =>
         (await LoadAsync(trackId, cancellationToken)).Cancel(time.GetUtcNow());
+
+    public async Task<IReadOnlyDictionary<Guid, TrackInfo>> GetInfoAsync(IReadOnlyCollection<Guid> trackIds, CancellationToken cancellationToken)
+    {
+        if (trackIds.Count == 0)
+        {
+            return new Dictionary<Guid, TrackInfo>();
+        }
+
+        var rows = await (from t in db.Set<Track>().AsNoTracking()
+                          join a in db.Set<Artist>() on t.ArtistId equals a.Id
+                          where trackIds.Contains(t.Id) && t.DeletedAt == null
+                          select new { Track = t, Artist = a })
+            .ToListAsync(cancellationToken);
+        return rows.ToDictionary(
+            r => r.Track.Id,
+            r => new TrackInfo(r.Track.Id, r.Track.Title, r.Artist.Id, r.Artist.Name, r.Artist.Slug, r.Artist.UserId,
+                r.Track.ToArtwork()?.Small, r.Track.DurationMs, r.Track.IsTakenDown));
+    }
+
+    public async Task<bool> StageTakedownAsync(Guid trackId, string reasonCode, CancellationToken cancellationToken)
+    {
+        var track = await db.Set<Track>().FindAsync([trackId], cancellationToken);
+        if (track is null || track.DeletedAt is not null)
+        {
+            return false;
+        }
+
+        track.TakeDown(reasonCode, time.GetUtcNow());
+        return true;
+    }
+
+    public async Task<bool> StageRestoreAsync(Guid trackId, CancellationToken cancellationToken)
+    {
+        var track = await db.Set<Track>().FindAsync([trackId], cancellationToken);
+        if (track is null || track.DeletedAt is not null)
+        {
+            return false;
+        }
+
+        track.Restore(time.GetUtcNow());
+        return true;
+    }
+
+    private async Task StageProcessedEventAsync(Track track, string? errorCode, CancellationToken cancellationToken)
+    {
+        var ownerUserId = await db.Set<Artist>().Where(a => a.Id == track.ArtistId).Select(a => a.UserId).SingleAsync(cancellationToken);
+        outbox.Enqueue(new TrackProcessed(track.Id, ownerUserId, track.Title, errorCode is null, errorCode));
+    }
 
     // FindAsync also returns a track staged (Added) earlier in the same unit of work.
     private async Task<Track> LoadAsync(Guid trackId, CancellationToken cancellationToken) =>
@@ -253,6 +340,17 @@ internal sealed class EfArtistCatalog(AppDbContext db, TimeProvider time) : IArt
 
     public Task<bool> ExistsAsync(Guid artistId, CancellationToken cancellationToken) =>
         db.Set<Artist>().AnyAsync(a => a.Id == artistId, cancellationToken);
+
+    public async Task<IReadOnlyDictionary<Guid, ArtistSummary>> GetSummariesAsync(IReadOnlyCollection<Guid> artistIds, CancellationToken cancellationToken)
+    {
+        if (artistIds.Count == 0)
+        {
+            return new Dictionary<Guid, ArtistSummary>();
+        }
+
+        var artists = await db.Set<Artist>().AsNoTracking().Where(a => artistIds.Contains(a.Id)).ToListAsync(cancellationToken);
+        return artists.ToDictionary(a => a.Id, a => new ArtistSummary(a.Id, a.Slug, a.Name, a.ToRef().AvatarUrl, a.UserId));
+    }
 
     public async Task StageImageAsync(Guid artistId, ArtistImageSlot slot, Guid? imageId, CancellationToken cancellationToken)
     {

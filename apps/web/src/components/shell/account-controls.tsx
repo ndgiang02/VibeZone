@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Settings } from "lucide-react";
+import { Bell, Heart, History, LogOut, Settings, Shield, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ArtistAvatar } from "@/components/media/artist-avatar";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,40 @@ export function AccountControls({ variant }: { variant: "sidebar" | "topbar" }) 
       <DropdownMenuContent align={variant === "sidebar" ? "start" : "end"} className="w-56">
         <DropdownMenuLabel className="truncate">@{user.handle}</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/notifications">
+            <Bell className="size-4" aria-hidden="true" />
+            {t("notifications")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="md:hidden">
+          <Link href="/liked">
+            <Heart className="size-4" aria-hidden="true" />
+            {t("favourites")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="md:hidden">
+          <Link href="/history">
+            <History className="size-4" aria-hidden="true" />
+            {t("history")}
+          </Link>
+        </DropdownMenuItem>
+        {user.roles.includes("Moderator") || user.roles.includes("Admin") ? (
+          <DropdownMenuItem asChild>
+            <Link href="/moderation">
+              <Shield className="size-4" aria-hidden="true" />
+              {t("moderation")}
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {user.roles.includes("Admin") ? (
+          <DropdownMenuItem asChild>
+            <Link href="/admin">
+              <ShieldCheck className="size-4" aria-hidden="true" />
+              {t("admin")}
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem asChild>
           <Link href="/settings">
             <Settings className="size-4" aria-hidden="true" />

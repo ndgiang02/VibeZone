@@ -6,6 +6,7 @@ using VibeZone.Api.Web;
 using VibeZone.Infrastructure.Email;
 using VibeZone.Infrastructure.Health;
 using VibeZone.Infrastructure.Observability;
+using VibeZone.Infrastructure.Outbox;
 using VibeZone.Infrastructure.Persistence;
 using VibeZone.Infrastructure.Security;
 using VibeZone.Infrastructure.Storage;
@@ -53,6 +54,11 @@ if (!generatingOpenApiDocument)
 }
 
 modules.AddServices(builder.Services, builder.Configuration);
+if (!generatingOpenApiDocument)
+{
+    // Integration events are dispatched by the API (not the worker): notification handlers push over SignalR (ADR-0012).
+    builder.Services.AddOutboxDispatcher();
+}
 
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = ctx =>
@@ -102,6 +108,7 @@ if (app.Environment.IsDevelopment())
 var api = app.MapGroup("/api/v1").RequireCsrfForUnsafeMethods();
 api.MapCsrfEndpoint();
 modules.MapEndpoints(api);
+api.MapOutboxAdminEndpoints();
 
 app.Run();
 return 0;

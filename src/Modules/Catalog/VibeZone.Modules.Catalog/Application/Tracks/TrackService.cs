@@ -44,7 +44,7 @@ public sealed class TrackService(ICatalogRepository repository, IPlaylistReader 
     {
         var row = await repository.FindTrackAsync(trackId, cancellationToken);
         var isOwner = row is not null && viewerUserId == row.Artist.UserId;
-        return row is not null && row.Track.IsVisibleTo(isOwner, viewerIsModerator) ? row.ToDto(isOwner) : NotFound;
+        return row is not null && row.Track.IsVisibleTo(isOwner, viewerIsModerator) ? row.ToDto(isOwner, viewerIsModerator) : NotFound;
     }
 
     public async Task<Result<TrackDto>> UpdateAsync(Guid userId, Guid trackId, SaveTrackRequest request, CancellationToken cancellationToken)
@@ -103,7 +103,7 @@ public sealed class TrackService(ICatalogRepository repository, IPlaylistReader 
         return ids.Where(rows.ContainsKey)
             .Select(id => rows[id])
             .Where(r => r.Track.IsVisibleTo(viewerUserId == r.Artist.UserId, viewerIsModerator))
-            .Select(r => r.ToDto(isOwner: viewerUserId == r.Artist.UserId))
+            .Select(r => r.ToDto(viewerUserId == r.Artist.UserId, viewerIsModerator))
             .ToList();
     }
 

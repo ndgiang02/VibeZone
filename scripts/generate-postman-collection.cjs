@@ -118,6 +118,11 @@ if (refresh && !url.includes("/auth/") && Date.now() > expiresAt - 30000) {
     { key: "sessionId", value: "" },
     { key: "uploadLength", value: "0", description: "Exact size in bytes of the file selected in 'Upload audio'." },
     { key: "csrfToken", value: "" },
+    { key: "commentId", value: "", description: "Set by \"Post a comment\"" },
+    { key: "reportId", value: "", description: "Pick one from \"Report queue\"" },
+    { key: "notificationId", value: "" },
+    { key: "targetUserId", value: "", description: "Admin: the user whose roles you change" },
+    { key: "playSessionId", value: "", description: "Set by \"Report playback\" (one per track start)" },
   ],
   item: [
     {
@@ -440,6 +445,129 @@ if (pm.response.code === 200) {
           description: "Same stream authorised by bearer/cookie instead of a token (the web app uses this). Public tracks need no auth. 404 when not visible or not ready.",
         }),
         req("Waveform", "GET", "/api/v1/tracks/{{trackId}}/waveform", { description: "data: {version, durationMs, peaks: float[~1000] in 0..1}. Same visibility rules as streaming; also accepts ?token= (use waveformUrl)." }),
+      ],
+    },
+    {
+      name: "Social",
+      description: "Likes, follows and timed comments (M4). Writes are rate-limited (60/min per account).",
+      item: [
+        req("Track engagement", "GET", "/api/v1/tracks/{{trackId}}/engagement", {
+          description: "data: {likeCount, commentCount, liked}. Anyone who can see the track (liked=false when signed out).",
+        }),
+        req("Like track", "PUT", "/api/v1/tracks/{{trackId}}/like", {
+          description: "Idempotent. Track must be playable for you. 200 → engagement. The artist gets a notification (not for their own tracks).",
+        }),
+        req("Unlike track", "DELETE", "/api/v1/tracks/{{trackId}}/like", { description: "Idempotent. 200 → engagement." }),
+        req("My liked track ids", "GET", "/api/v1/me/likes/ids", { description: "All ids (≤ 5000, newest first) — mark hearts in lists without one request per track." }),
+        req("List comments", "GET", "/api/v1/tracks/{{trackId}}/comments", {
+          query: [{ key: "page", value: "1" }, { key: "pageSize", value: "20" }],
+          description: "Top-level comments newest first (paged); each has replies[] oldest first. timestampMs = moment of the track (ms) or null. Plain text — render as text.",
+        }),
+        req("Post a comment", "POST", "/api/v1/tracks/{{trackId}}/comments", {
+          body: json({ body: "Love this drop!", timestampMs: 42000, parentId: null }),
+          description: "1–1000 chars. timestampMs pins it to the waveform (top-level only). parentId → reply (a reply to a reply attaches to its top-level comment). 201. Errors: comment_body_invalid, comment_timestamp_invalid, comment_not_found (parent).",
+          events: test(`
+pm.test("201", () => pm.response.to.have.status(201));
+if (pm.response.code === 201) pm.collectionVariables.set("commentId", pm.response.json().data.id);`),
+        }),
+        req("Edit comment", "PATCH", "/api/v1/comments/{{commentId}}", { body: json({ body: "Edited text" }), description: "Author only (404 otherwise)." }),
+        req("Delete comment", "DELETE", "/api/v1/comments/{{commentId}}", { description: "204. Author, the track's owner or a moderator; 404 for others." }),
+        req("Follow summary", "GET", "/api/v1/artists/{{artistId}}/followers/summary", { description: "data: {followerCount, following}." }),
+        req("Follow artist", "PUT", "/api/v1/artists/{{artistId}}/follow", { description: "Idempotent. 400 follow_self for your own profile. The artist gets a notification." }),
+        req("Unfollow artist", "DELETE", "/api/v1/artists/{{artistId}}/follow", { description: "Idempotent." }),
+      ],
+    },
+    {
+      name: "Library & charts",
+      item: [
+        req("Liked tracks", "GET", "/api/v1/me/likes", {
+          query: [{ key: "page", value: "1" }, { key: "pageSize", value: "20" }],
+          description: "data: [{likedAt, track: TrackDto}], newest like first. Tracks you can no longer see are left out (total still counts them).",
+        }),
+        req("Listening history", "GET", "/api/v1/me/history", {
+          query: [{ key: "page", value: "1" }, { key: "pageSize", value: "20" }],
+          description: "Recently played: [{playedAt, track}], one entry per track, most recent first.",
+        }),
+        req("Followed artists", "GET", "/api/v1/me/following", { description: "[{id, slug, name, avatarUrl, followedAt}] newest first (paged)." }),
+        req("Trending", "GET", "/api/v1/tracks/trending", {
+          auth: noauth,
+          query: [{ key: "page", value: "1" }, { key: "pageSize", value: "20" }],
+          description: "Chart: valid listens + 2 × likes over the last 7 days, recent days weigh more. Same for everyone (not personalised). Top 100, paged.",
+        }),
+        req("Related tracks", "GET", "/api/v1/tracks/{{trackId}}/related", {
+          auth: noauth,
+          description: "≤ 12 public tracks by the same artist or in the same genre (label them as such in the UI — not recommendations).",
+        }),
+        req("Track stats", "GET", "/api/v1/tracks/{{trackId}}/stats", { auth: noauth, description: "data: {plays (started), listens (valid)}, all time." }),
+      ],
+    },
+    {
+      name: "Analytics",
+      item: [
+        req("Report playback", "POST", "/api/v1/plays", {
+          body: json({
+            clientId: null,
+            events: [
+              { id: "{{$guid}}", sessionId: "{{playSessionId}}", trackId: "{{trackId}}", type: "started", positionMs: 0, listenedMs: 0, clientTimestamp: null },
+            ],
+          }),
+          description: lines(`
+Send from the player: "started" when a track starts (new sessionId per start), "progress" every ~15 s of actual listening, "completed" at the end.
+listenedMs = playback time accumulated in this session (seeks don't count); the server caps it by wall-clock time since the session started.
+A valid listen = ≥ 30 s (half of tracks under 60 s), once per listener and track per 30 minutes. Event ids are idempotency keys: retry a failed batch with the same ids.
+Signed-out players may send clientId (a random UUID kept on the device) so their listens de-duplicate. 1–50 events per batch; 202 → {accepted}. Rate limit 60 batches/min.`).join("\n"),
+          events: [
+            { listen: "prerequest", script: { type: "text/javascript", exec: [`if (!pm.collectionVariables.get("playSessionId")) pm.collectionVariables.set("playSessionId", crypto.randomUUID());`] } },
+          ],
+        }),
+      ],
+    },
+    {
+      name: "Notifications",
+      description: "Realtime: SignalR hub {{baseUrl}}/api/v1/hubs/notifications (apps: ?access_token={{accessToken}}) sends 'unread' with {count}; then refetch.",
+      item: [
+        req("My notifications", "GET", "/api/v1/me/notifications", {
+          query: [{ key: "unreadOnly", value: "false" }, { key: "page", value: "1" }],
+          description: "Newest first. type: TrackLiked, ArtistFollowed, CommentPosted, CommentReplied, TrackReady, TrackFailed, ReportResolved, ContentRemoved. Link with trackId / artistSlug; code = error/outcome/reason.",
+        }),
+        req("Unread count", "GET", "/api/v1/me/notifications/unread-count", { description: "data: {count}." }),
+        req("Mark one read", "POST", "/api/v1/me/notifications/{{notificationId}}/read", { description: "204; 404 if it isn't yours." }),
+        req("Mark all read", "POST", "/api/v1/me/notifications/read-all", { description: "204." }),
+      ],
+    },
+    {
+      name: "Moderation",
+      item: [
+        req("Report content", "POST", "/api/v1/reports", {
+          body: json({ subjectType: "Track", subjectId: "{{trackId}}", reason: "Copyright", details: "Original: https://example.com/…" }),
+          description: "subjectType: Track | Comment | Playlist; reason: Copyright | Abuse | Spam | Other. 201. Errors: report_own_content (400), report_subject_not_found (404), report_exists (409 — one open report per item).",
+        }),
+        req("Report queue (moderators)", "GET", "/api/v1/moderation/reports", {
+          query: [{ key: "status", value: "Open" }, { key: "page", value: "1" }],
+          description: "Moderator/Admin. status=Open (oldest first) | Actioned | Rejected; omit for all. 403 for other users.",
+        }),
+        req("Resolve report", "POST", "/api/v1/moderation/reports/{{reportId}}/resolve", {
+          body: json({ action: "remove", note: "Confirmed copyright claim" }),
+          description: "Moderator/Admin. action: remove (takes the content down and settles every open report on it) | dismiss. Audited; reporters and the owner are notified. 409 report_not_open.",
+        }),
+        req("Restore content", "POST", "/api/v1/moderation/content/Track/{{trackId}}/restore", { description: "Moderator/Admin. Track or Playlist. 204. Audited." }),
+      ],
+    },
+    {
+      name: "Admin",
+      description: "Admin role only (403 otherwise).",
+      item: [
+        req("Users", "GET", "/api/v1/admin/users", { query: [{ key: "q", value: "" }, { key: "role", value: "" }, { key: "page", value: "1" }] }),
+        req("Grant role", "PUT", "/api/v1/admin/users/{{targetUserId}}/roles/Moderator", { description: "Moderator or Admin. Idempotent, audited, effective immediately." }),
+        req("Revoke role", "DELETE", "/api/v1/admin/users/{{targetUserId}}/roles/Moderator", { description: "400 role_self_admin when removing your own Admin." }),
+        req("All tracks", "GET", "/api/v1/admin/tracks", {
+          query: [{ key: "q", value: "" }, { key: "takenDown", value: "" }, { key: "page", value: "1" }],
+          description: "Moderators too. Every non-deleted track, any status/visibility.",
+        }),
+        req("Processing jobs", "GET", "/api/v1/admin/jobs", { query: [{ key: "status", value: "" }, { key: "page", value: "1" }] }),
+        req("Job summary", "GET", "/api/v1/admin/jobs/summary"),
+        req("Outbox summary", "GET", "/api/v1/admin/outbox", { description: "{pending, deadLettered, processedLastDay}." }),
+        req("Audit log", "GET", "/api/v1/admin/audit-log", { query: [{ key: "page", value: "1" }] }),
       ],
     },
     {

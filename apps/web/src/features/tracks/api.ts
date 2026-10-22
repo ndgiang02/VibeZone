@@ -13,6 +13,9 @@ export type Waveform = { version: number; durationMs: number; peaks: number[] };
 export const trackKeys = {
   all: ["tracks"] as const,
   newReleases: ["tracks", "new-releases"] as const,
+  trending: ["tracks", "trending"] as const,
+  related: (id: string) => ["tracks", "related", id] as const,
+  stats: (id: string) => ["tracks", "stats", id] as const,
   detail: (id: string) => ["tracks", "detail", id] as const,
   mine: ["tracks", "mine"] as const,
   upload: (id: string) => ["tracks", "upload", id] as const,
@@ -31,6 +34,36 @@ export function useNewReleases(limit = 24) {
     queryKey: [...trackKeys.newReleases, limit],
     queryFn: async ({ signal }) =>
       unwrap(await api.GET("/api/v1/tracks", { params: { query: { pageSize: limit } }, signal })),
+  });
+}
+
+/** Trending (valid listens and likes over the last 7 days), best first. */
+export function useTrending(limit = 24) {
+  return useQuery({
+    queryKey: [...trackKeys.trending, limit],
+    queryFn: async ({ signal }) =>
+      unwrap(await api.GET("/api/v1/tracks/trending", { params: { query: { pageSize: limit } }, signal })),
+  });
+}
+
+/** Same artist or same genre — not personalised. */
+export function useRelatedTracks(trackId: string) {
+  return useQuery({
+    queryKey: trackKeys.related(trackId),
+    queryFn: async ({ signal }) =>
+      unwrap(await api.GET("/api/v1/tracks/{trackId}/related", { params: { path: { trackId } }, signal })),
+  });
+}
+
+export function useTrackStats(trackId: string) {
+  return useQuery({
+    queryKey: trackKeys.stats(trackId),
+    queryFn: async ({ signal }) => {
+      const stats = unwrap(
+        await api.GET("/api/v1/tracks/{trackId}/stats", { params: { path: { trackId } }, signal }),
+      );
+      return { plays: Number(stats.plays), listens: Number(stats.listens) };
+    },
   });
 }
 

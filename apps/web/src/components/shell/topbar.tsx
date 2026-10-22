@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Suspense, type ReactNode } from "react";
 import { Logo } from "@/components/brand/logo";
 import { Link, useRouter } from "@/i18n/navigation";
+import { NotificationBell } from "@/features/notifications/notification-bell";
 import { AccountControls } from "./account-controls";
 import { LanguageSwitcher } from "./language-switcher";
 import { SearchBox } from "./search-box";
@@ -36,6 +37,7 @@ export function Topbar() {
 
         <div className="ml-auto flex items-center gap-1 md:gap-2">
           <LanguageSwitcher compact />
+          <NotificationBell />
           <AccountControls variant="topbar" />
         </div>
       </div>

@@ -219,3 +219,23 @@ Waveform peaks: `GET baseUrl + waveformUrl` →
 
 Credentials also work in place of the token: the web app calls `GET /tracks/{id}/stream` with its
 cookie, and a bearer token works the same way. In the app, prefer `/playback`.
+
+## Social, library, plays and notifications (M4)
+
+All in the Postman collection (folders *Social*, *Library & charts*, *Analytics*, *Notifications*,
+*Moderation*, *Admin*). Highlights for the app:
+
+- **Hearts in lists**: load `GET /me/likes/ids` once (≤ 5000 ids) and keep it in memory; `PUT`/`DELETE
+  /tracks/{id}/like` return the new `{likeCount, commentCount, liked}`.
+- **Timed comments**: `POST /tracks/{id}/comments` with `timestampMs` = the player position when the user started
+  typing; show comments as markers on the waveform and seek on tap. Bodies are plain text — never render as HTML.
+- **Play reporting** (`POST /plays`): per track start create a `sessionId` (UUID); send `started`, then `progress`
+  about every 15 s of *actual* playback with the accumulated `listenedMs` (pauses and seeks don't count), and
+  `completed` at the end. Give every event a UUID `id` and keep unsent events across app restarts — resending
+  the same ids is safe. Without sign-in, send a stable random `clientId` per install.
+- **Notifications**: `GET /me/notifications` (+ `unread-count`, `read`, `read-all`). Realtime with
+  `signalr_netcore`: `HubConnectionBuilder().withUrl('$baseUrl/api/v1/hubs/notifications',
+  options: HttpConnectionOptions(accessTokenFactory: () async => accessToken))` and `on('unread', …)` → refetch.
+  The token goes in the query string for the WebSocket, which the API accepts on hub paths only.
+- **Reports**: `POST /reports` with `subjectType` Track | Comment | Playlist and `reason` Copyright | Abuse | Spam
+  | Other. 409 `report_exists` means the user already has an open report on it.

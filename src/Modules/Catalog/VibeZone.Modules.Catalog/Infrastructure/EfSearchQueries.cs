@@ -19,7 +19,7 @@ internal sealed class EfSearchQueries(AppDbContext db) : ISearchQueries
         var total = await db.Database.SqlQuery<int>($"""
             SELECT count(*)::int AS "Value"
             FROM catalog.tracks t JOIN catalog.artists a ON a.id = t.artist_id
-            WHERE t.status = 'ready' AND t.visibility = 'public' AND t.deleted_at IS NULL
+            WHERE t.status = 'ready' AND t.visibility = 'public' AND t.deleted_at IS NULL AND t.taken_down_at IS NULL
               AND (t.search_vector @@ to_tsquery('simple', public.vz_fold({tsq}))
                 OR a.search_vector @@ to_tsquery('simple', public.vz_fold({tsq}))
                 OR public.vz_fold({raw}) <% public.vz_fold(t.title))
@@ -32,7 +32,7 @@ internal sealed class EfSearchQueries(AppDbContext db) : ISearchQueries
         var ids = await db.Database.SqlQuery<Guid>($"""
             SELECT t.id AS "Value"
             FROM catalog.tracks t JOIN catalog.artists a ON a.id = t.artist_id
-            WHERE t.status = 'ready' AND t.visibility = 'public' AND t.deleted_at IS NULL
+            WHERE t.status = 'ready' AND t.visibility = 'public' AND t.deleted_at IS NULL AND t.taken_down_at IS NULL
               AND (t.search_vector @@ to_tsquery('simple', public.vz_fold({tsq}))
                 OR a.search_vector @@ to_tsquery('simple', public.vz_fold({tsq}))
                 OR public.vz_fold({raw}) <% public.vz_fold(t.title))

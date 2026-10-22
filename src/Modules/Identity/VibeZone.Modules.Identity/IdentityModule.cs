@@ -53,7 +53,7 @@ public sealed class IdentityModule : IModule
             .AddScheme<AuthenticationSchemeOptions, AccessTokenHandler>(AccessTokenHandler.SchemeName, null);
         services.AddSingleton<DataProtectionAccessTokens>();
         services.AddSingleton<IAccessTokens>(sp => sp.GetRequiredService<DataProtectionAccessTokens>());
-        services.AddAuthorization();
+        services.AddAuthorization(AuthorizationPolicies.Configure);
 
         services.AddScoped<IUserAccounts, IdentityUserAccounts>();
         services.AddScoped<EfUserSessions>();
@@ -68,11 +68,14 @@ public sealed class IdentityModule : IModule
         services.AddScoped<SessionService>();
         services.AddScoped<TokenService>();
         services.AddScoped<ProfileService>();
+        services.AddScoped<IUserAdministration, IdentityUserAdministration>();
+        services.AddScoped<AdminUserService>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder api)
     {
         AuthEndpoints.Map(api);
         MeEndpoints.Map(api);
+        AdminEndpoints.Map(api);
     }
 }

@@ -72,6 +72,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tracks/trending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Trending public tracks: valid listens and likes over the last 7 days, recent days weigh more (paged, top 100). */
+        get: operations["ListTrendingTracks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tracks/{trackId}/related": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public tracks by the same artist or in the same genre (not personalised), at most 12. */
+        get: operations["ListRelatedTracks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tracks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Moderators: every track (any status/visibility, not deleted), newest first. q = title contains. */
+        get: operations["AdminListTracks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/track-uploads": {
         parameters: {
             query?: never;
@@ -132,6 +183,91 @@ export interface paths {
         };
         /** The signed-in user's playlists, recently updated first (paged). containsTrack fills PlaylistDto.containsTrack. */
         get: operations["ListMyPlaylists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Player events (1-50 per batch; anonymous allowed for public tracks). Idempotent by event id. A valid listen is ≥ 30 s of playback (half of tracks under 60 s), once per listener and track per 30 minutes. */
+        post: operations["RecordPlayEvents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tracks/{trackId}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All-time plays (started) and valid listens. */
+        get: operations["GetTrackStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report a track, comment or playlist you can see (reason: copyright, abuse, spam, other). One open report per item. */
+        post: operations["ReportContent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admins. Staff actions, newest first (paged). */
+        get: operations["ListAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/outbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admins. Integration-event outbox: pending, dead-lettered and recently processed messages. */
+        get: operations["AdminOutboxSummary"];
         put?: never;
         post?: never;
         delete?: never;
@@ -403,6 +539,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admins. Newest first (paged). q matches handle, display name or email; role filters by role. */
+        get: operations["AdminListUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{userId}/roles/{role}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Admins. Grant Moderator or Admin (idempotent, audited). */
+        put: operations["AdminGrantRole"];
+        post?: never;
+        /** Admins. Revoke Moderator or Admin (not your own Admin; audited). */
+        delete: operations["AdminRevokeRole"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/genres": {
         parameters: {
             query?: never;
@@ -605,6 +776,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/likes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tracks you liked, newest like first (paged). total counts likes of tracks you can no longer see too. */
+        get: operations["ListMyLikedTracks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recently played tracks, one entry per track, most recent first (paged). */
+        get: operations["ListMyListeningHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/avatar": {
         parameters: {
             query?: never;
@@ -723,6 +928,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admins. Media processing jobs, newest first (paged), optionally by status. */
+        get: operations["AdminListJobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/jobs/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admins. Number of jobs per status. */
+        get: operations["AdminJobSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/playlists": {
         parameters: {
             query?: never;
@@ -782,9 +1021,262 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Owner only. trackIds = every track of the playlist exactly once, in the new order. */
+        /** Owner only. trackIds = the tracks to reorder (usually all the caller sees), in their new order; they swap among their current positions and tracks left out keep theirs. */
         put: operations["ReorderPlaylist"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tracks/{trackId}/engagement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Like and comment counts, and whether you liked it. */
+        get: operations["GetTrackEngagement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tracks/{trackId}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Like a track you can play (idempotent). */
+        put: operations["LikeTrack"];
+        post?: never;
+        delete: operations["UnlikeTrack"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tracks/{trackId}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Top-level comments newest first (paged), each with its replies oldest first. */
+        get: operations["ListTrackComments"];
+        put?: never;
+        /** Plain text, 1-1000 characters. timestampMs pins it to a moment of the track; parentId makes it a reply. */
+        post: operations["PostTrackComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/comments/{commentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Author, the track's owner or a moderator. */
+        delete: operations["DeleteComment"];
+        options?: never;
+        head?: never;
+        /** Author only. */
+        patch: operations["EditComment"];
+        trace?: never;
+    };
+    "/api/v1/artists/{artistId}/followers/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetArtistFollowSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/artists/{artistId}/follow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Idempotent. You can't follow your own artist profile. */
+        put: operations["FollowArtist"];
+        post?: never;
+        delete: operations["UnfollowArtist"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/likes/ids": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ids of the tracks you liked (newest first, at most 5000), to mark hearts in lists. */
+        get: operations["ListMyLikedTrackIds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/following": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Artists you follow, newest first (paged). */
+        get: operations["ListMyFollowedArtists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Newest first (paged). unreadOnly=true for unread ones. Realtime: SignalR hub /api/v1/hubs/notifications sends 'unread' { count }. */
+        get: operations["ListMyNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMyUnreadNotificationCount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications/{notificationId}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MarkNotificationRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MarkAllNotificationsRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/moderation/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Moderators. status=open (oldest first, the queue), actioned or rejected (newest first); omit for all. */
+        get: operations["ListReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/moderation/reports/{reportId}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Moderators. action=remove takes the content down (resolving every open report on it) or dismiss. Audited; reporter and owner are notified. */
+        post: operations["ResolveReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/moderation/content/{subjectType}/{subjectId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Moderators. Lifts a takedown of a track or playlist. Audited. */
+        post: operations["RestoreContent"];
         delete?: never;
         options?: never;
         head?: never;
@@ -798,6 +1290,39 @@ export interface components {
         AddPlaylistTrackRequest: {
             /** Format: uuid */
             trackId: string;
+        };
+        AdminJobDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            trackId: string;
+            status: components["schemas"]["UploadJobStatus"];
+            /** Format: int32 */
+            attemptCount: number | string;
+            /** Format: int32 */
+            maxAttempts: number | string;
+            lastError: null | string;
+            originalFileName: null | string;
+            /** Format: int64 */
+            sizeBytes: number | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            completedAt: null | string;
+        };
+        AdminUserDto: {
+            /** Format: uuid */
+            id: string;
+            handle: string;
+            displayName: string;
+            email: string;
+            emailConfirmed: boolean;
+            roles: string[];
+            /** Format: date-time */
+            createdAt: string;
+            avatarUrl: null | string;
         };
         AlbumDetailDto: {
             album: components["schemas"]["AlbumDto"];
@@ -829,6 +1354,14 @@ export interface components {
             id: string;
             title: string;
         };
+        ApiListResponseOfAdminJobDto: {
+            data: components["schemas"]["AdminJobDto"][];
+            meta: components["schemas"]["ListMeta"];
+        };
+        ApiListResponseOfAdminUserDto: {
+            data: components["schemas"]["AdminUserDto"][];
+            meta: components["schemas"]["ListMeta"];
+        };
         ApiListResponseOfAlbumDto: {
             data: components["schemas"]["AlbumDto"][];
             meta: components["schemas"]["ListMeta"];
@@ -837,12 +1370,44 @@ export interface components {
             data: components["schemas"]["ArtistDto"][];
             meta: components["schemas"]["ListMeta"];
         };
+        ApiListResponseOfAuditEntryDto: {
+            data: components["schemas"]["AuditEntryDto"][];
+            meta: components["schemas"]["ListMeta"];
+        };
+        ApiListResponseOfCommentDto: {
+            data: components["schemas"]["CommentDto"][];
+            meta: components["schemas"]["ListMeta"];
+        };
+        ApiListResponseOfFollowedArtistDto: {
+            data: components["schemas"]["FollowedArtistDto"][];
+            meta: components["schemas"]["ListMeta"];
+        };
         ApiListResponseOfGenreDto: {
             data: components["schemas"]["GenreDto"][];
             meta: components["schemas"]["ListMeta"];
         };
+        ApiListResponseOfGuid: {
+            data: string[];
+            meta: components["schemas"]["ListMeta"];
+        };
+        ApiListResponseOfHistoryEntryDto: {
+            data: components["schemas"]["HistoryEntryDto"][];
+            meta: components["schemas"]["ListMeta"];
+        };
+        ApiListResponseOfLikedTrackDto: {
+            data: components["schemas"]["LikedTrackDto"][];
+            meta: components["schemas"]["ListMeta"];
+        };
+        ApiListResponseOfNotificationDto: {
+            data: components["schemas"]["NotificationDto"][];
+            meta: components["schemas"]["ListMeta"];
+        };
         ApiListResponseOfPlaylistDto: {
             data: components["schemas"]["PlaylistDto"][];
+            meta: components["schemas"]["ListMeta"];
+        };
+        ApiListResponseOfReportDto: {
+            data: components["schemas"]["ReportDto"][];
             meta: components["schemas"]["ListMeta"];
         };
         ApiListResponseOfSessionDto: {
@@ -852,6 +1417,9 @@ export interface components {
         ApiListResponseOfTrackDto: {
             data: components["schemas"]["TrackDto"][];
             meta: components["schemas"]["ListMeta"];
+        };
+        ApiResponseOfAdminUserDto: {
+            data: components["schemas"]["AdminUserDto"];
         };
         ApiResponseOfAlbumDetailDto: {
             data: components["schemas"]["AlbumDetailDto"];
@@ -865,20 +1433,41 @@ export interface components {
         ApiResponseOfArtistProfileDto: {
             data: components["schemas"]["ArtistProfileDto"];
         };
+        ApiResponseOfCommentDto: {
+            data: components["schemas"]["CommentDto"];
+        };
         ApiResponseOfCsrfTokenResponse: {
             data: components["schemas"]["CsrfTokenResponse"];
+        };
+        ApiResponseOfFollowSummaryDto: {
+            data: components["schemas"]["FollowSummaryDto"];
         };
         ApiResponseOfImageUrlsDto: {
             data: components["schemas"]["ImageUrlsDto"];
         };
+        ApiResponseOfJobSummaryDto: {
+            data: components["schemas"]["JobSummaryDto"];
+        };
         ApiResponseOfMeDto: {
             data: components["schemas"]["MeDto"];
+        };
+        ApiResponseOfMyReportDto: {
+            data: components["schemas"]["MyReportDto"];
+        };
+        ApiResponseOfOutboxSummaryDto: {
+            data: components["schemas"]["OutboxSummaryDto"];
+        };
+        ApiResponseOfPlayBatchResultDto: {
+            data: components["schemas"]["PlayBatchResultDto"];
         };
         ApiResponseOfPlaybackDto: {
             data: components["schemas"]["PlaybackDto"];
         };
         ApiResponseOfPlaylistDto: {
             data: components["schemas"]["PlaylistDto"];
+        };
+        ApiResponseOfReportDto: {
+            data: components["schemas"]["ReportDto"];
         };
         ApiResponseOfRevokedSessionsResponse: {
             data: components["schemas"]["RevokedSessionsResponse"];
@@ -894,6 +1483,15 @@ export interface components {
         };
         ApiResponseOfTrackDto: {
             data: components["schemas"]["TrackDto"];
+        };
+        ApiResponseOfTrackEngagementDto: {
+            data: components["schemas"]["TrackEngagementDto"];
+        };
+        ApiResponseOfTrackStatsDto: {
+            data: components["schemas"]["TrackStatsDto"];
+        };
+        ApiResponseOfUnreadCountDto: {
+            data: components["schemas"]["UnreadCountDto"];
         };
         ApiResponseOfUploadStatusDto: {
             data: components["schemas"]["UploadStatusDto"];
@@ -928,9 +1526,48 @@ export interface components {
             small: string;
             large: string;
         };
+        AuditEntryDto: {
+            /** Format: uuid */
+            id: string;
+            actor: null | components["schemas"]["UserRefDto"];
+            action: string;
+            subjectType: string;
+            subjectId: null | string;
+            metadata: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            occurredAt: string;
+        };
         ChangePasswordRequest: {
             currentPassword: null | string;
             newPassword: null | string;
+        };
+        CommentAuthorDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+            handle: string;
+            avatarUrl: null | string;
+        };
+        CommentDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            trackId: string;
+            /** Format: uuid */
+            parentId: null | string;
+            body: string;
+            /** Format: int32 */
+            timestampMs: null | number | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            editedAt: null | string;
+            author: components["schemas"]["CommentAuthorDto"];
+            isAuthor: boolean;
+            canDelete: boolean;
+            replies: components["schemas"]["CommentDto"][];
         };
         ConfirmEmailRequest: {
             /** Format: uuid */
@@ -942,22 +1579,61 @@ export interface components {
             name: null | string;
             bio: null | string;
         };
+        CreateReportRequest: {
+            subjectType: components["schemas"]["ReportSubjectType"];
+            /** Format: uuid */
+            subjectId: string;
+            reason: components["schemas"]["ReportReason"];
+            details: null | string;
+        };
         CsrfTokenResponse: {
             token: string;
+        };
+        EditCommentRequest: {
+            body: null | string;
         };
         EmailOnlyRequest: {
             email: null | string;
             locale: null | string;
         };
+        FollowSummaryDto: {
+            /** Format: int32 */
+            followerCount: number | string;
+            following: boolean;
+        };
+        FollowedArtistDto: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: string;
+            avatarUrl: null | string;
+            /** Format: date-time */
+            followedAt: string;
+        };
         GenreDto: {
             slug: string;
             name: string;
+        };
+        HistoryEntryDto: {
+            /** Format: date-time */
+            playedAt: string;
+            track: components["schemas"]["TrackDto"];
         };
         /** Format: binary */
         IFormFile: string;
         ImageUrlsDto: {
             small: string;
             large: string;
+        };
+        JobSummaryDto: {
+            counts: {
+                [key: string]: number | string;
+            };
+        };
+        LikedTrackDto: {
+            /** Format: date-time */
+            likedAt: string;
+            track: components["schemas"]["TrackDto"];
         };
         ListMeta: {
             /** Format: int32 */
@@ -983,6 +1659,77 @@ export interface components {
             emailConfirmed: boolean;
             roles: string[];
             avatar: null | components["schemas"]["UserAvatarDto"];
+        };
+        MyReportDto: {
+            /** Format: uuid */
+            id: string;
+            subjectType: components["schemas"]["ReportSubjectType"];
+            /** Format: uuid */
+            subjectId: string;
+            reason: components["schemas"]["ReportReason"];
+            status: components["schemas"]["ReportStatus"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        NotificationActorDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+            handle: string;
+            avatarUrl: null | string;
+        };
+        NotificationDto: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["NotificationType"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            readAt: null | string;
+            actor: null | components["schemas"]["NotificationActorDto"];
+            subjectType: string;
+            /** Format: uuid */
+            subjectId: string;
+            title: null | string;
+            /** Format: uuid */
+            trackId: null | string;
+            artistSlug: null | string;
+            excerpt: null | string;
+            code: null | string;
+        };
+        /** @enum {unknown} */
+        NotificationType: "TrackLiked" | "ArtistFollowed" | "CommentPosted" | "CommentReplied" | "TrackReady" | "TrackFailed" | "ReportResolved" | "ContentRemoved";
+        OutboxSummaryDto: {
+            /** Format: int32 */
+            pending: number | string;
+            /** Format: int32 */
+            deadLettered: number | string;
+            /** Format: int32 */
+            processedLastDay: number | string;
+        };
+        PlayBatchRequest: {
+            /** Format: uuid */
+            clientId: null | string;
+            events: null | components["schemas"]["PlayEventRequest"][];
+        };
+        PlayBatchResultDto: {
+            /** Format: int32 */
+            accepted: number | string;
+        };
+        PlayEventRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            sessionId: string;
+            /** Format: uuid */
+            trackId: string;
+            type: null | string;
+            /** Format: int32 */
+            positionMs: number | string;
+            /** Format: int32 */
+            listenedMs: number | string;
+            /** Format: date-time */
+            clientTimestamp: null | string;
         };
         PlaybackDto: {
             /** Format: uuid */
@@ -1013,6 +1760,7 @@ export interface components {
             coverUrls: string[];
             isOwner: boolean;
             containsTrack: null | boolean;
+            takenDown: boolean;
         };
         PlaylistOwnerDto: {
             /** Format: uuid */
@@ -1023,6 +1771,13 @@ export interface components {
         };
         /** @enum {unknown} */
         PlaylistVisibility: "Public" | "Private";
+        PostCommentRequest: {
+            body: null | string;
+            /** Format: int32 */
+            timestampMs: null | number | string;
+            /** Format: uuid */
+            parentId: null | string;
+        };
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -1044,10 +1799,45 @@ export interface components {
         ReorderPlaylistRequest: {
             trackIds: null | string[];
         };
+        ReportDto: {
+            /** Format: uuid */
+            id: string;
+            subjectType: components["schemas"]["ReportSubjectType"];
+            /** Format: uuid */
+            subjectId: string;
+            reason: components["schemas"]["ReportReason"];
+            details: null | string;
+            status: components["schemas"]["ReportStatus"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            handledAt: null | string;
+            resolutionNote: null | string;
+            reporter: null | components["schemas"]["UserRefDto"];
+            handledBy: null | components["schemas"]["UserRefDto"];
+            subject: components["schemas"]["ReportSubjectDto"];
+        };
+        /** @enum {unknown} */
+        ReportReason: "Copyright" | "Abuse" | "Spam" | "Other";
+        /** @enum {unknown} */
+        ReportStatus: "Open" | "Actioned" | "Rejected";
+        ReportSubjectDto: {
+            title: null | string;
+            owner: null | components["schemas"]["UserRefDto"];
+            /** Format: uuid */
+            trackId: null | string;
+            removed: boolean;
+        };
+        /** @enum {unknown} */
+        ReportSubjectType: "Track" | "Comment" | "Playlist";
         ResetPasswordRequest: {
             email: null | string;
             token: null | string;
             newPassword: null | string;
+        };
+        ResolveReportRequest: {
+            action: null | string;
+            note: null | string;
         };
         RevokedSessionsResponse: {
             /** Format: int32 */
@@ -1148,6 +1938,20 @@ export interface components {
             album: null | components["schemas"]["AlbumRefDto"];
             /** Format: int32 */
             trackNumber: null | number | string;
+            takenDown: boolean;
+        };
+        TrackEngagementDto: {
+            /** Format: int32 */
+            likeCount: number | string;
+            /** Format: int32 */
+            commentCount: number | string;
+            liked: boolean;
+        };
+        TrackStatsDto: {
+            /** Format: int64 */
+            plays: number | string;
+            /** Format: int64 */
+            listens: number | string;
         };
         /** @enum {unknown} */
         TrackStatus: "Draft" | "Processing" | "Ready" | "Failed" | "Cancelled";
@@ -1161,6 +1965,10 @@ export interface components {
         };
         /** @enum {unknown} */
         TrackVisibility: "Public" | "Unlisted" | "Private";
+        UnreadCountDto: {
+            /** Format: int32 */
+            count: number | string;
+        };
         UpdateProfileRequest: {
             displayName: null | string;
             locale: null | string;
@@ -1183,6 +1991,13 @@ export interface components {
         UserAvatarDto: {
             small: string;
             large: string;
+        };
+        UserRefDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+            handle: string;
+            avatarUrl: null | string;
         };
         WaveformResponse: {
             /** Format: int32 */
@@ -1346,6 +2161,95 @@ export interface operations {
             };
         };
     };
+    ListTrendingTracks: {
+        parameters: {
+            query?: {
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfTrackDto"];
+                };
+            };
+        };
+    };
+    ListRelatedTracks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfTrackDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListTracks: {
+        parameters: {
+            query?: {
+                q?: string;
+                status?: components["schemas"]["TrackStatus"];
+                takenDown?: boolean;
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfTrackDto"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     CreateTrackUpload: {
         parameters: {
             query?: never;
@@ -1469,6 +2373,164 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiListResponseOfPlaylistDto"];
+                };
+            };
+        };
+    };
+    RecordPlayEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfPlayBatchResultDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetTrackStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfTrackStatsDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReportContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReportRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfMyReportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListAuditLog: {
+        parameters: {
+            query?: {
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfAuditEntryDto"];
+                };
+            };
+        };
+    };
+    AdminOutboxSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfOutboxSummaryDto"];
                 };
             };
         };
@@ -2134,6 +3196,167 @@ export interface operations {
             };
         };
     };
+    AdminListUsers: {
+        parameters: {
+            query?: {
+                q?: string;
+                role?: string;
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfAdminUserDto"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminGrantRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+                role: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfAdminUserDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminRevokeRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+                role: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfAdminUserDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     ListGenres: {
         parameters: {
             query?: never;
@@ -2701,6 +3924,52 @@ export interface operations {
             };
         };
     };
+    ListMyLikedTracks: {
+        parameters: {
+            query?: {
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfLikedTrackDto"];
+                };
+            };
+        };
+    };
+    ListMyListeningHistory: {
+        parameters: {
+            query?: {
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfHistoryEntryDto"];
+                };
+            };
+        };
+    };
     ReplaceUserAvatar: {
         parameters: {
             query?: never;
@@ -3129,6 +4398,50 @@ export interface operations {
             };
         };
     };
+    AdminListJobs: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["UploadJobStatus"];
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfAdminJobDto"];
+                };
+            };
+        };
+    };
+    AdminJobSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfJobSummaryDto"];
+                };
+            };
+        };
+    };
     ListPublicPlaylists: {
         parameters: {
             query?: {
@@ -3343,6 +4656,584 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiResponseOfPlaylistDto"];
                 };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetTrackEngagement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfTrackEngagementDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    LikeTrack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfTrackEngagementDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UnlikeTrack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfTrackEngagementDto"];
+                };
+            };
+        };
+    };
+    ListTrackComments: {
+        parameters: {
+            query?: {
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfCommentDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    PostTrackComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostCommentRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfCommentDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    EditComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditCommentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfCommentDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetArtistFollowSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfFollowSummaryDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    FollowArtist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfFollowSummaryDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UnfollowArtist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfFollowSummaryDto"];
+                };
+            };
+        };
+    };
+    ListMyLikedTrackIds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfGuid"];
+                };
+            };
+        };
+    };
+    ListMyFollowedArtists: {
+        parameters: {
+            query?: {
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfFollowedArtistDto"];
+                };
+            };
+        };
+    };
+    ListMyNotifications: {
+        parameters: {
+            query?: {
+                unreadOnly?: boolean;
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfNotificationDto"];
+                };
+            };
+        };
+    };
+    GetMyUnreadNotificationCount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfUnreadCountDto"];
+                };
+            };
+        };
+    };
+    MarkNotificationRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkAllNotificationsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ListReports: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ReportStatus"];
+                page?: number | string;
+                pageSize?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiListResponseOfReportDto"];
+                };
+            };
+        };
+    };
+    ResolveReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reportId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveReportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfReportDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RestoreContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subjectType: components["schemas"]["ReportSubjectType"];
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Bad Request */
             400: {

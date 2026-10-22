@@ -9,6 +9,7 @@
     <ProjectReference Include="..\..\..\BuildingBlocks\VibeZone.SharedKernel\VibeZone.SharedKernel.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\VibeZone.Infrastructure\VibeZone.Infrastructure.csproj" />
     <ProjectReference Include="..\VibeZone.Modules.Identity.Contracts\VibeZone.Modules.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\Moderation\VibeZone.Modules.Moderation.Contracts\VibeZone.Modules.Moderation.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="VibeZone.UnitTests" />

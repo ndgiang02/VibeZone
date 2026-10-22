@@ -34,6 +34,15 @@ public interface ITrackCatalog
     /// <summary>Small cover URL of each given track that has one and isn't deleted (e.g. for playlist mosaics).</summary>
     Task<IReadOnlyDictionary<Guid, string>> GetArtworkUrlsAsync(IReadOnlyCollection<Guid> trackIds, CancellationToken cancellationToken);
 
+    /// <summary>Facts about each given track that isn't deleted (any status or visibility — the caller authorizes).</summary>
+    Task<IReadOnlyDictionary<Guid, TrackInfo>> GetInfoAsync(IReadOnlyCollection<Guid> trackIds, CancellationToken cancellationToken);
+
+    /// <summary>Moderation takedown: hidden from everyone but moderators, unplayable. False if the track doesn't exist.</summary>
+    Task<bool> StageTakedownAsync(Guid trackId, string reasonCode, CancellationToken cancellationToken);
+
+    /// <summary>Lifts a takedown. False if the track doesn't exist.</summary>
+    Task<bool> StageRestoreAsync(Guid trackId, CancellationToken cancellationToken);
+
     /// <summary>
     /// Validates the metadata and stages a new Draft track owned by the user's artist profile. Fails with
     /// <c>artist_required</c> (forbidden) or a field validation error; nothing is staged on failure.

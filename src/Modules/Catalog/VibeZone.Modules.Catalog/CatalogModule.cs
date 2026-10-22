@@ -28,6 +28,7 @@ public sealed class CatalogModule : IModule
         services.AddScoped<SearchService>();
         services.AddScoped<ISearchQueries, EfSearchQueries>();
         services.AddScoped<TrackService>();
+        services.AddScoped<TrackFeedService>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder api)
@@ -36,5 +37,6 @@ public sealed class CatalogModule : IModule
         TrackEndpoints.Map(api);
         AlbumEndpoints.Map(api);
         SearchEndpoints.Map(api);
+        FeedEndpoints.Map(api);
     }
 }

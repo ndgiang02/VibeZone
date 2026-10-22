@@ -34,6 +34,7 @@ import {
   useRemoveFromPlaylist,
   useReorderPlaylist,
 } from "./api";
+import { ReportButton } from "@/features/moderation/report-button";
 import { PlaylistCover } from "./playlist-card";
 import { PlaylistForm } from "./playlist-form";
 
@@ -203,7 +204,22 @@ function Hero({ playlist, tracks }: { playlist: Playlist; tracks: Track[] }) {
                 </button>
               </>
             ) : null}
+            {!playlist.isOwner ? (
+              <ReportButton
+                subjectType="Playlist"
+                subjectId={playlist.id}
+                className="h-11 border-white/20 text-white/80 hover:bg-white/10 hover:text-white"
+              />
+            ) : null}
           </div>
+          {playlist.takenDown ? (
+            <p
+              role="status"
+              className="rounded-xl border border-destructive/40 bg-destructive/15 px-3 py-2 text-sm text-white"
+            >
+              {t("takenDown")}
+            </p>
+          ) : null}
           {remove.isError ? (
             <p role="alert" className="text-sm text-destructive">
               {tErrors(errorCode(remove.error))}

@@ -74,8 +74,15 @@ public sealed class Playlist
 
     public IReadOnlyList<PlaylistTrack> Tracks => _tracks;
 
+    /// <summary>When moderation took the playlist down: hidden from everyone but its owner and moderators.</summary>
+    public DateTimeOffset? TakenDownAt { get; private set; }
+
     public bool IsVisibleTo(Guid? viewerUserId, bool viewerIsModerator) =>
-        Visibility == PlaylistVisibility.Public || viewerUserId == OwnerUserId || viewerIsModerator;
+        (Visibility == PlaylistVisibility.Public && TakenDownAt is null) || viewerUserId == OwnerUserId || viewerIsModerator;
+
+    public void TakeDown(DateTimeOffset now) => TakenDownAt ??= now;
+
+    public void Restore() => TakenDownAt = null;
 
     public static string NormalizeTitle(string? title) => string.Join(' ', (title ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 

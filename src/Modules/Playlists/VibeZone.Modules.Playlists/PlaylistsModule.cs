@@ -20,6 +20,7 @@ public sealed class PlaylistsModule : IModule
         services.AddScoped<IPlaylistRepository, EfPlaylistRepository>();
         services.AddScoped<PlaylistService>();
         services.AddScoped<IPlaylistReader, PlaylistReader>();
+        services.AddScoped<IPlaylistModeration, EfPlaylistModeration>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder api) => PlaylistEndpoints.Map(api);

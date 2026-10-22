@@ -45,7 +45,11 @@
     "downloads": "Downloads",
     "back": "Go back",
     "forward": "Go forward",
-    "discover": "Discover"
+    "discover": "Discover",
+    "notifications": "Notifications",
+    "moderation": "Moderation",
+    "admin": "Admin",
+    "staff": "Staff"
   },
   "home": {
     "eyebrow": "VibeZone",
@@ -88,6 +92,18 @@
       "radio": "Radio",
       "album": "Album",
       "mix": "Mix"
+    },
+    "trending": {
+      "title": "Trending this week",
+      "note": "Based on listens and likes in the last 7 days — the same for everyone.",
+      "errorTitle": "Couldn't load trending tracks",
+      "emptyTitle": "Nothing trending yet",
+      "emptyBody": "Tracks appear here once people start listening."
+    },
+    "recent": {
+      "title": "Recently played",
+      "emptyTitle": "Nothing played yet",
+      "emptyBody": "Press play on any track and it shows up here."
     }
   },
   "auth": {
@@ -265,7 +281,28 @@
     "playlist_description_too_long": "Playlist descriptions can be at most 1000 characters.",
     "playlist_visibility_invalid": "Unknown visibility.",
     "playlist_full": "This playlist already has 500 tracks.",
-    "playlist_order_mismatch": "The playlist changed; reload the page."
+    "playlist_order_mismatch": "The playlist changed; reload the page.",
+    "comment_not_found": "That comment doesn't exist any more.",
+    "comment_body_invalid": "Comments must be 1–1000 characters.",
+    "comment_timestamp_invalid": "That moment isn't within the track.",
+    "follow_self": "You can't follow your own artist profile.",
+    "play_batch_invalid": "Couldn't record playback.",
+    "play_event_invalid": "Couldn't record playback.",
+    "notification_not_found": "That notification doesn't exist.",
+    "report_subject_invalid": "This can't be reported.",
+    "report_reason_invalid": "Choose a reason.",
+    "report_details_too_long": "Use at most 1000 characters.",
+    "report_note_too_long": "Use at most 1000 characters.",
+    "report_subject_not_found": "This content doesn't exist any more.",
+    "report_own_content": "You can't report your own content.",
+    "report_exists": "You already reported this — a moderator will review it.",
+    "report_not_found": "That report doesn't exist.",
+    "report_action_invalid": "Choose remove or dismiss.",
+    "report_not_open": "This report was already handled.",
+    "restore_not_supported": "Only tracks and playlists can be restored.",
+    "role_not_assignable": "Only Moderator and Admin can be assigned.",
+    "role_self_admin": "You can't remove your own Admin role.",
+    "user_not_found": "That user doesn't exist."
   },
   "notFound": {
     "title": "Page not found",
@@ -335,7 +372,13 @@
     "listen": "Listen",
     "waveformHint": "Click the waveform to play from any point.",
     "onAlbum": "On the album",
-    "addToPlaylist": "Add to playlist"
+    "addToPlaylist": "Add to playlist",
+    "takenDown": "This track was removed by moderation and is only visible to its owner and moderators.",
+    "takenDownBadge": "Removed by moderation",
+    "listensLabel": "Listens",
+    "listens": "{count, plural, one {# listen} other {# listens}}",
+    "related": "Related tracks",
+    "relatedHint": "Same artist or same genre."
   },
   "artist": {
     "label": "Artist",
@@ -542,14 +585,20 @@
     "noPlaylists": "You have no playlists yet.",
     "quickCreatePlaceholder": "New playlist name",
     "moved": "Moved {title} to position {position}.",
-    "visibilityLabel": "Visibility"
+    "visibilityLabel": "Visibility",
+    "takenDown": "This playlist was removed by moderation and is only visible to you and moderators."
   },
   "library": {
     "title": "Library",
-    "subtitle": "Your playlists.",
+    "subtitle": "Your playlists and the artists you follow.",
     "emptyTitle": "No playlists yet",
     "emptyBody": "Create your first one with the form.",
-    "newTitle": "New playlist"
+    "newTitle": "New playlist",
+    "following": {
+      "title": "Artists you follow",
+      "emptyTitle": "You don't follow anyone yet",
+      "emptyBody": "Follow artists from their page to find them here."
+    }
   },
   "discover": {
     "title": "Discover",
@@ -558,5 +607,227 @@
     "playlistsEmpty": "No public playlists yet.",
     "genres": "Genres",
     "newReleases": "New releases"
+  },
+  "social": {
+    "like": "Like {title}",
+    "unlike": "Unlike {title}",
+    "likeShort": "Like",
+    "signInToLike": "Sign in to like tracks",
+    "follow": "Follow",
+    "following": "Following",
+    "followers": "{count, plural, one {# follower} other {# followers}}"
+  },
+  "comments": {
+    "title": "Comments",
+    "signIn": "Sign in to comment",
+    "emptyTitle": "No comments yet",
+    "emptyBody": "Be the first to say something about this track.",
+    "label": "Your comment",
+    "replyLabel": "Reply to {name}",
+    "placeholder": "Write a comment…",
+    "replyPlaceholder": "Write a reply…",
+    "pinAt": "Pin at {time}",
+    "cancel": "Cancel",
+    "reply": "Reply",
+    "post": "Comment",
+    "edited": "(edited)",
+    "playAt": "Play from {time}",
+    "editLabel": "Edit your comment",
+    "save": "Save",
+    "edit": "Edit comment",
+    "delete": "Delete comment",
+    "deleteConfirm": "Delete this comment?"
+  },
+  "report": {
+    "open": {
+      "Track": "Report track",
+      "Comment": "Report comment",
+      "Playlist": "Report playlist"
+    },
+    "short": "Report",
+    "sentTitle": "Thanks for reporting",
+    "sentBody": "A moderator will review it. You'll get a notification when it's handled.",
+    "close": "Close",
+    "reason": "What's wrong?",
+    "reasons": {
+      "Copyright": {
+        "label": "Copyright",
+        "hint": "It uses music or artwork without the owner's permission."
+      },
+      "Abuse": {
+        "label": "Abuse or hate",
+        "hint": "Harassment, threats, hate speech or harmful content."
+      },
+      "Spam": {
+        "label": "Spam",
+        "hint": "Advertising, scams or repeated junk."
+      },
+      "Other": {
+        "label": "Something else",
+        "hint": "Tell us more in the details."
+      }
+    },
+    "details": "Details (optional)",
+    "detailsPlaceholder": "Links, the original work, what exactly is wrong…",
+    "cancel": "Cancel",
+    "submit": "Send report"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Likes, follows, comments, processing and moderation updates.",
+    "bell": "Notifications",
+    "bellUnread": "Notifications, {count} unread",
+    "markAllRead": "Mark all as read",
+    "empty": "You're all caught up.",
+    "seeAll": "See all notifications",
+    "emptyTitle": "No notifications yet",
+    "emptyBody": "When people like, follow or comment, you'll see it here.",
+    "someone": "Someone",
+    "unread": "Unread",
+    "text": {
+      "trackLiked": "{actor} liked “{title}”",
+      "artistFollowed": "{actor} started following you",
+      "commentPosted": "{actor} commented on “{title}”",
+      "commentReplied": "{actor} replied to your comment on “{title}”",
+      "trackReady": "“{title}” is ready to play",
+      "trackFailed": "Processing “{title}” failed: {reason}",
+      "reportActioned": "Thanks — we removed “{title}” after your report.",
+      "reportRejected": "We reviewed your report on “{title}” and found no violation.",
+      "contentRemoved": "Your {subject} “{title}” was removed by moderation ({reason})."
+    },
+    "subjects": {
+      "track": "track",
+      "comment": "comment",
+      "playlist": "playlist"
+    },
+    "reasons": {
+      "copyright": "copyright",
+      "abuse": "abuse",
+      "spam": "spam",
+      "other": "other"
+    }
+  },
+  "liked": {
+    "title": "Liked tracks",
+    "subtitle": "Everything you hearted, newest first.",
+    "emptyTitle": "No liked tracks yet",
+    "emptyBody": "Tap the heart on any track to keep it here."
+  },
+  "history": {
+    "title": "Listening history",
+    "subtitle": "Tracks you played recently.",
+    "emptyTitle": "Nothing played yet",
+    "emptyBody": "Tracks you listen to show up here."
+  },
+  "charts": {
+    "title": "Charts",
+    "subtitle": "Trending this week: listens of 30 s or more and likes over the last 7 days.",
+    "emptyTitle": "No chart yet",
+    "emptyBody": "The chart fills up as people listen to and like tracks."
+  },
+  "moderation": {
+    "title": "Moderation",
+    "subtitle": "Review reports from listeners. Removing content notifies its owner and every reporter, and is logged.",
+    "forbiddenTitle": "Moderators only",
+    "forbiddenBody": "You need the Moderator or Admin role to open this page.",
+    "tabs": {
+      "Open": "Open",
+      "Actioned": "Removed",
+      "Rejected": "Dismissed",
+      "all": "All"
+    },
+    "emptyTitle": "No reports here",
+    "emptyBody": "New reports from listeners appear in the Open tab.",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page}",
+    "subjects": {
+      "Track": "Track",
+      "Comment": "Comment",
+      "Playlist": "Playlist"
+    },
+    "reportedBy": "Reported by {name} · {when}",
+    "subjectGone": "This content no longer exists.",
+    "owner": "Owner: {name}",
+    "removed": "Removed",
+    "note": "Note (optional, kept in the audit log)",
+    "remove": "Remove content",
+    "removeConfirm": "Remove this content? Its owner and the reporters will be notified.",
+    "dismiss": "Dismiss",
+    "handledBy": "Handled by {name} · {when}",
+    "restore": "Restore"
+  },
+  "admin": {
+    "title": "Admin",
+    "subtitle": "Users and roles, content, processing jobs and the audit log.",
+    "forbiddenTitle": "Admins only",
+    "forbiddenBody": "You need the Admin role to open this page.",
+    "empty": "Nothing to show.",
+    "tabs": {
+      "overview": "Overview",
+      "users": "Users",
+      "tracks": "Tracks",
+      "jobs": "Jobs",
+      "audit": "Audit log"
+    },
+    "overview": {
+      "users": "Users",
+      "openReports": "Open reports",
+      "openQueue": "Open the queue",
+      "takenDown": "Removed tracks",
+      "failedJobs": "Failed processing jobs",
+      "outboxPending": "Pending events",
+      "outboxDetail": "{dead} gave up · {processed} delivered in 24 h"
+    },
+    "users": {
+      "search": "Search by handle, name or email",
+      "roleFilter": "Role",
+      "allRoles": "All roles",
+      "roles": {
+        "Artist": "Artist",
+        "Moderator": "Moderator",
+        "Admin": "Admin"
+      },
+      "user": "User",
+      "email": "Email",
+      "joined": "Joined",
+      "rolesHeader": "Roles",
+      "unverified": "not verified",
+      "selfAdmin": "You can't remove your own Admin role.",
+      "grant": "+ {role}",
+      "revoke": "{role} ✓"
+    },
+    "tracks": {
+      "search": "Search by title",
+      "onlyTakenDown": "Only removed tracks",
+      "track": "Track",
+      "status": "Status",
+      "visibility": "Visibility",
+      "moderation": "Moderation",
+      "restore": "Restore"
+    },
+    "jobs": {
+      "statusFilter": "Status",
+      "allStatuses": "All statuses",
+      "status": {
+        "Uploaded": "Queued",
+        "Processing": "Processing",
+        "Completed": "Completed",
+        "Failed": "Failed",
+        "Cancelled": "Cancelled"
+      },
+      "file": "File",
+      "statusHeader": "Status",
+      "attempts": "Attempts",
+      "created": "Created",
+      "error": "Error"
+    },
+    "audit": {
+      "when": "When",
+      "actor": "Who",
+      "action": "Action",
+      "subject": "Subject",
+      "details": "Details"
+    }
   }
 }

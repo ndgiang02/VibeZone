@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using VibeZone.Infrastructure.Persistence;
 using VibeZone.Modules.Playlists.Application;
+using VibeZone.Modules.Playlists.Contracts;
 using VibeZone.Modules.Playlists.Domain;
 using VibeZone.SharedKernel;
 
@@ -28,7 +29,7 @@ internal sealed class PlaylistConfiguration : IEntityTypeConfiguration<Playlist>
         b.HasMany(p => p.Tracks).WithOne().HasForeignKey(t => t.PlaylistId).OnDelete(DeleteBehavior.Cascade);
         b.Navigation(p => p.Tracks).HasField("_tracks").UsePropertyAccessMode(PropertyAccessMode.Field);
         b.HasIndex(p => new { p.OwnerUserId, p.UpdatedAt }).IsDescending(false, true);
-        b.HasIndex(p => p.UpdatedAt).IsDescending().HasDatabaseName("ix_playlists_public").HasFilter("visibility = 'public' AND track_count > 0");
+        b.HasIndex(p => p.UpdatedAt).IsDescending().HasDatabaseName("ix_playlists_public").HasFilter("visibility = 'public' AND track_count > 0 AND taken_down_at IS NULL");
     }
 }
 
@@ -53,7 +54,7 @@ internal sealed class EfPlaylistRepository(AppDbContext db) : IPlaylistRepositor
 
     public async Task<Paged<Playlist>> PagePublicAsync(string? query, PageRequest page, CancellationToken cancellationToken)
     {
-        var listed = db.Set<Playlist>().AsNoTracking().Where(p => p.Visibility == PlaylistVisibility.Public && p.TrackCount > 0);
+        var listed = db.Set<Playlist>().AsNoTracking().Where(p => p.Visibility == PlaylistVisibility.Public && p.TrackCount > 0 && p.TakenDownAt == null);
         if (query is null)
         {
             return await PageAsync(listed.OrderByDescending(p => p.UpdatedAt).ThenBy(p => p.Id), page, cancellationToken);
@@ -69,13 +70,13 @@ internal sealed class EfPlaylistRepository(AppDbContext db) : IPlaylistRepositor
 
         var total = await db.Database.SqlQuery<int>($"""
             SELECT count(*)::int AS "Value" FROM playlists.playlists p
-            WHERE p.visibility = 'public' AND p.track_count > 0
+            WHERE p.visibility = 'public' AND p.track_count > 0 AND p.taken_down_at IS NULL
               AND (p.search_vector @@ to_tsquery('simple', public.vz_fold({terms}))
                 OR public.vz_fold({raw}) <% public.vz_fold(p.title))
             """).SingleAsync(cancellationToken);
         var ids = await db.Database.SqlQuery<Guid>($"""
             SELECT p.id AS "Value" FROM playlists.playlists p
-            WHERE p.visibility = 'public' AND p.track_count > 0
+            WHERE p.visibility = 'public' AND p.track_count > 0 AND p.taken_down_at IS NULL
               AND (p.search_vector @@ to_tsquery('simple', public.vz_fold({terms}))
                 OR public.vz_fold({raw}) <% public.vz_fold(p.title))
             ORDER BY ts_rank(p.search_vector, to_tsquery('simple', public.vz_fold({terms})))
@@ -118,5 +119,28 @@ internal sealed class EfPlaylistRepository(AppDbContext db) : IPlaylistRepositor
         var total = await query.CountAsync(cancellationToken);
         IReadOnlyList<Playlist> items = total <= page.Skip ? [] : await query.Skip(page.Skip).Take(page.PageSize).ToListAsync(cancellationToken);
         return new Paged<Playlist>(items, page.Page, page.PageSize, total);
+    }
+}
+
+/// <summary>Playlists' side of the Moderation contract. Stage* changes are saved by the caller's SaveChanges.</summary>
+internal sealed class EfPlaylistModeration(AppDbContext db, TimeProvider time) : IPlaylistModeration
+{
+    public async Task<PlaylistInfo?> FindAsync(Guid playlistId, CancellationToken cancellationToken) =>
+        await db.Set<Playlist>().AsNoTracking().Where(p => p.Id == playlistId)
+            .Select(p => new PlaylistInfo(p.Id, p.Title, p.OwnerUserId, p.Visibility == PlaylistVisibility.Public, p.TakenDownAt != null))
+            .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<bool> StageTakedownAsync(Guid playlistId, CancellationToken cancellationToken)
+    {
+        var playlist = await db.Set<Playlist>().FindAsync([playlistId], cancellationToken);
+        playlist?.TakeDown(time.GetUtcNow());
+        return playlist is not null;
+    }
+
+    public async Task<bool> StageRestoreAsync(Guid playlistId, CancellationToken cancellationToken)
+    {
+        var playlist = await db.Set<Playlist>().FindAsync([playlistId], cancellationToken);
+        playlist?.Restore();
+        return playlist is not null;
     }
 }

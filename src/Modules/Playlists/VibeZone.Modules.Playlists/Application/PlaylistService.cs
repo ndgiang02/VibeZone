@@ -21,7 +21,8 @@ public sealed record PlaylistDto(
     PlaylistOwnerDto Owner,
     IReadOnlyList<string> CoverUrls,
     bool IsOwner,
-    bool? ContainsTrack);
+    bool? ContainsTrack,
+    bool TakenDown);
 
 public sealed record SavePlaylistRequest(string? Title, string? Description, PlaylistVisibility Visibility);
 
@@ -216,7 +217,7 @@ public sealed class PlaylistService(IPlaylistRepository repository, ITrackCatalo
                 ? trackIds.Where(covers.ContainsKey).Select(id => covers[id]).Distinct().Take(MosaicSize).ToList()
                 : [];
             return new PlaylistDto(p.Id, p.Title, p.Description, p.Visibility, p.TrackCount, p.CreatedAt, p.UpdatedAt, owner, mosaic,
-                viewerUserId == p.OwnerUserId, containing?.Contains(p.Id));
+                viewerUserId == p.OwnerUserId, containing?.Contains(p.Id), p.TakenDownAt is not null);
         }).ToList();
     }
 }

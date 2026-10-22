@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Disc3, Clock3, ListPlus } from "lucide-react";
+import { CalendarDays, Disc3, Clock3, Headphones, ListPlus, ShieldAlert } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { ArtistAvatar } from "@/components/media/artist-avatar";
 import { ErrorState, Skeleton } from "@/components/states/states";
@@ -9,7 +9,18 @@ import { errorCode } from "@/lib/api/errors";
 import { formatTime, toPlayerTrack } from "@/features/player/format";
 import { usePlayerStore } from "@/features/player/store";
 import { AddToPlaylistMenu } from "@/features/playlists/add-to-playlist-menu";
-import { durationMsOf, isNotFound, type Track, useArtistProfile, useTrack } from "./api";
+import { ReportButton } from "@/features/moderation/report-button";
+import { CommentsSection } from "@/features/social/comments-section";
+import { LikeButton } from "@/features/social/like-button";
+import {
+  durationMsOf,
+  isNotFound,
+  type Track,
+  useArtistProfile,
+  useRelatedTracks,
+  useTrack,
+  useTrackStats,
+} from "./api";
 import { PlayButton } from "./play-button";
 import { StatusBadge } from "./status-badge";
 import { artHue, TrackArt } from "./track-art";
@@ -131,6 +142,7 @@ export function TrackView({ trackId }: { trackId: string }) {
                   </dd>
                 </div>
               ) : null}
+              <PlaysStat trackId={data.id} />
               {data.genre ? (
                 <div>
                   <dt className="sr-only">{t("genre")}</dt>
@@ -142,6 +154,15 @@ export function TrackView({ trackId }: { trackId: string }) {
             </dl>
 
             {data.isOwner ? <StatusBadge track={data} /> : null}
+            {data.takenDown ? (
+              <p
+                role="status"
+                className="flex items-center gap-2 rounded-xl border border-destructive/40 bg-destructive/15 px-3 py-2 text-sm text-white"
+              >
+                <ShieldAlert className="size-4 shrink-0" aria-hidden="true" />
+                {t("takenDown")}
+              </p>
+            ) : null}
 
             <div className="mt-2 flex items-center gap-3">
               <PlayButton
@@ -164,6 +185,18 @@ export function TrackView({ trackId }: { trackId: string }) {
                 variant="button"
                 className="h-10 border-white/20 bg-black/20 text-white backdrop-blur hover:border-white/40 hover:bg-black/30 hover:text-white"
               />
+              <LikeButton
+                track={data}
+                variant="button"
+                className="border-white/20 bg-black/20 text-white backdrop-blur hover:border-white/40 hover:bg-black/30"
+              />
+              {!data.isOwner ? (
+                <ReportButton
+                  subjectType="Track"
+                  subjectId={data.id}
+                  className="border-white/20 bg-black/20 text-white/80 backdrop-blur hover:border-white/40 hover:bg-black/30 hover:text-white"
+                />
+              ) : null}
             </div>
           </div>
         </div>
@@ -195,7 +228,11 @@ export function TrackView({ trackId }: { trackId: string }) {
             </section>
           ) : null}
 
+          <CommentsSection track={data} />
+
           <MoreFromArtist track={data} />
+
+          <RelatedTracks track={data} />
         </div>
 
         <ArtistCard track={data} />
@@ -278,5 +315,38 @@ function ArtistCard({ track }: { track: Track }) {
         {t("track.viewArtist")}
       </Link>
     </aside>
+  );
+}
+
+/** Valid listens (≥ 30 s), all time. Hidden until loaded and on error (secondary info). */
+function PlaysStat({ trackId }: { trackId: string }) {
+  const t = useTranslations("track");
+  const stats = useTrackStats(trackId);
+  if (!stats.data) return null;
+  return (
+    <div className="flex items-center gap-1.5">
+      <dt className="sr-only">{t("listensLabel")}</dt>
+      <Headphones className="size-3.5 text-white/60" aria-hidden="true" />
+      <dd className="tabular-nums">{t("listens", { count: stats.data.listens })}</dd>
+    </div>
+  );
+}
+
+/** Same artist or same genre — labelled as such, not as a personal recommendation. */
+function RelatedTracks({ track }: { track: Track }) {
+  const t = useTranslations("track");
+  const related = useRelatedTracks(track.id);
+  // Secondary section: nothing to show while loading, on error or when empty.
+  if (!related.data || related.data.length === 0) return null;
+  return (
+    <section aria-labelledby="related-tracks" className="flex flex-col gap-3">
+      <div>
+        <h2 id="related-tracks" className="text-xl font-semibold tracking-tight">
+          {t("related")}
+        </h2>
+        <p className="text-xs text-subtle-foreground">{t("relatedHint")}</p>
+      </div>
+      <TrackList tracks={related.data} />
+    </section>
   );
 }

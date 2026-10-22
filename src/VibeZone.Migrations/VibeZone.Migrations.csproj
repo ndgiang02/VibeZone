@@ -15,5 +15,9 @@
     <ProjectReference Include="..\Modules\Identity\VibeZone.Modules.Identity\VibeZone.Modules.Identity.csproj" />
     <ProjectReference Include="..\Modules\Media\VibeZone.Modules.Media\VibeZone.Modules.Media.csproj" />
     <ProjectReference Include="..\Modules\Playlists\VibeZone.Modules.Playlists\VibeZone.Modules.Playlists.csproj" />
+    <ProjectReference Include="..\Modules\Social\VibeZone.Modules.Social\VibeZone.Modules.Social.csproj" />
+    <ProjectReference Include="..\Modules\Analytics\VibeZone.Modules.Analytics\VibeZone.Modules.Analytics.csproj" />
+    <ProjectReference Include="..\Modules\Notifications\VibeZone.Modules.Notifications\VibeZone.Modules.Notifications.csproj" />
+    <ProjectReference Include="..\Modules\Moderation\VibeZone.Modules.Moderation\VibeZone.Modules.Moderation.csproj" />
   </ItemGroup>
 </Project>

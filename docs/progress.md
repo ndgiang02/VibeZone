@@ -3,6 +3,60 @@
 Newest first. Each entry records what was done, **how it was verified** (actual commands and
 results), known issues and next steps.
 
+## 2026-10-22 — M4: social, analytics, notifications, moderation, admin (ADR-0012; no automated tests)
+
+Owner's instruction: finish M2/M3 and build M4 without tests for now ("development phase"). M2b/M2c had no
+build work left (only tests/manual checks), M3 only verification — both stay open in the plan; M4 was built.
+
+**Done**
+- Outbox (ADR-0004 implemented): `infra.outbox_messages` + `outbox_consumptions`, `IOutbox`,
+  `IIntegrationEventConsumer<T>`, dispatcher in the API (SKIP LOCKED claims, lease, backoff, dead-letter after 10).
+- Modules `Social` (likes, artist follows, timed comments + replies), `Analytics` (play events, sessions with
+  capped listening time, valid listens, daily stats upsert, history, trending), `Notifications` (8 types, SignalR
+  hub `/api/v1/hubs/notifications`, unread count), `Moderation` (reports, queue, remove/dismiss, restore, audit log).
+- Catalog: track takedown (hidden/unplayable, excluded from lists, search, new releases), `TrackProcessed` event,
+  trending / related / liked / history feeds, `/admin/tracks`. Playlists: takedown. Identity: `/admin/users` +
+  role grant/revoke (audited). Media: `/admin/jobs` (+ summary). Named policies `moderator` / `admin`.
+- Migration `AddSocialAnalyticsNotificationsModeration` (+ hand-written cross-module FKs).
+- Web: like hearts (rows + track page), follow button + follower count, timed comments (pin to the current
+  player position, timestamp chips play from there), report dialog, play reporter on the global player, top-bar
+  notification bell (live via `@microsoft/signalr` 10.0.11), pages /notifications, /liked, /history, /charts,
+  /moderation, /admin; Home "Recently played" + "Trending this week"; related tracks and listen count on the track
+  page; followed artists in Library; sidebar Charts/Favourites/History are real links now, staff links by role;
+  vi + en strings and error codes.
+- Postman collection: +6 folders (104 requests); app guide section for M4; ADR-0012; data-model, security
+  (§12), overview, plan updated; API/worker Dockerfile restore layers include the new projects.
+
+**Verification (actually run)**
+- `dotnet build VibeZone.slnx -warnaserror` ✓; `dotnet format --verify-no-changes` ✓; architecture tests
+  **34/34** ✓ (cheap, no Docker). `bash scripts/db-migrate.sh` applied the migration to the local database ✓.
+- Web: `npm run typecheck` ✓, `npm run lint` ✓, `npm run format:check` ✓, `npm run build` ✓, existing unit tests
+  `npm test` **37/37** ✓ (the i18n placeholder check failed once on new plural strings; fixed).
+- Manual smoke against the API running locally (`dotnet run`, real Postgres/Mailpit/MinIO), two fresh accounts
+  registered and verified through Mailpit: like/unlike counts, liked ids, comment (HTML stays text), follow,
+  report 201 then 409 `report_exists`, non-staff 403 on `/moderation` and `/admin`, play events 202 with duplicate
+  event → `accepted: 0`, valid listen counted after 21 s + 31 s reported (cap works), stats/history/trending
+  updated; with Admin granted in the DB to a test account: report queue, dismiss (409 on second resolve), grant
+  Moderator (audited), removing own Admin → 400, job/outbox summaries; comment report → remove → comment hidden,
+  author got `ContentRemoved`, reporter `ReportResolved` — outbox 6/6 processed, 0 dead. SignalR negotiate through
+  the Next rewrite: 401 anonymous, 200 signed in. Production web build served 200 for the new pages.
+
+**Not run**: integration/e2e tests (none written for M4, by decision), Playwright, browser/visual check of the
+new UI, WebSocket upgrade through the Next dev rewrite (negotiate only), Docker image builds, CI.
+
+**Known issues / limitations**
+- Realtime push is single-instance (needs a SignalR backplane to scale out); the web app polls the unread count
+  every 2 minutes as a fallback.
+- Counts are live `COUNT`s; trending is in-memory paging over the top 100.
+- Pre-existing: a JSON body with a wrongly typed field (e.g. `"userId": ""`) returns 500 instead of 400
+  (`BadHttpRequestException` reaches the exception handler) — seen while smoke-testing verify-email.
+- Account emails still use the in-memory queue, not the outbox.
+- The `app` compose profile containers (api/web/proxy/worker) run old images until rebuilt; they were stopped
+  for this session because they hold port 5080.
+
+**Next**: tests for M2–M4 when the owner wants them (authz matrix incl. IDOR for comments/notifications/reports,
+valid-listen rules, outbox idempotency, e2e for like/follow → notification and report → takedown), then M5.
+
 ## 2026-10-21 — Separate API site for apps (ADR-0011)
 
 **Done**: Caddy serves a web site (`WEB_SITE`, unchanged same-origin `/api`) and an API-only site (`API_SITE`,

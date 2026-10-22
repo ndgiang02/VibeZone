@@ -2,6 +2,8 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { PlayerBar } from "@/features/player/player-bar";
 import { PlayerEngine } from "@/features/player/player-engine";
+import { PlayReporter } from "@/features/player/play-reporter";
+import { NotificationHub } from "@/features/notifications/notification-hub";
 import { NavLinks } from "./nav-links";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
@@ -38,6 +40,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         {/* The one playback engine for the whole app + its UI; both survive client-side navigation. */}
         <PlayerEngine />
+        <PlayReporter />
+        <NotificationHub />
         <PlayerBar />
 
         <nav

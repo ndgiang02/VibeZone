@@ -45,7 +45,11 @@
     "downloads": "Tải xuống",
     "back": "Quay lại",
     "forward": "Tiến tới",
-    "discover": "Khám phá"
+    "discover": "Khám phá",
+    "notifications": "Thông báo",
+    "moderation": "Kiểm duyệt",
+    "admin": "Quản trị",
+    "staff": "Quản lý"
   },
   "home": {
     "eyebrow": "VibeZone",
@@ -88,6 +92,18 @@
       "radio": "Radio",
       "album": "Album",
       "mix": "Mix"
+    },
+    "trending": {
+      "title": "Thịnh hành tuần này",
+      "note": "Dựa trên lượt nghe và lượt thích trong 7 ngày qua — giống nhau với mọi người.",
+      "errorTitle": "Không tải được bài thịnh hành",
+      "emptyTitle": "Chưa có bài thịnh hành",
+      "emptyBody": "Bài hát sẽ xuất hiện ở đây khi mọi người bắt đầu nghe."
+    },
+    "recent": {
+      "title": "Nghe gần đây",
+      "emptyTitle": "Chưa nghe bài nào",
+      "emptyBody": "Phát bất kỳ bài hát nào và nó sẽ xuất hiện ở đây."
     }
   },
   "auth": {
@@ -265,7 +281,28 @@
     "playlist_description_too_long": "Mô tả playlist tối đa 1000 ký tự.",
     "playlist_visibility_invalid": "Chế độ hiển thị không hợp lệ.",
     "playlist_full": "Playlist đã đủ 500 bài.",
-    "playlist_order_mismatch": "Danh sách đã thay đổi, hãy tải lại trang."
+    "playlist_order_mismatch": "Danh sách đã thay đổi, hãy tải lại trang.",
+    "comment_not_found": "Bình luận này không còn tồn tại.",
+    "comment_body_invalid": "Bình luận phải từ 1–1000 ký tự.",
+    "comment_timestamp_invalid": "Thời điểm đó không nằm trong bài hát.",
+    "follow_self": "Bạn không thể theo dõi hồ sơ nghệ sĩ của chính mình.",
+    "play_batch_invalid": "Không ghi nhận được lượt phát.",
+    "play_event_invalid": "Không ghi nhận được lượt phát.",
+    "notification_not_found": "Thông báo này không tồn tại.",
+    "report_subject_invalid": "Không thể báo cáo nội dung này.",
+    "report_reason_invalid": "Hãy chọn một lý do.",
+    "report_details_too_long": "Tối đa 1000 ký tự.",
+    "report_note_too_long": "Tối đa 1000 ký tự.",
+    "report_subject_not_found": "Nội dung này không còn tồn tại.",
+    "report_own_content": "Bạn không thể báo cáo nội dung của chính mình.",
+    "report_exists": "Bạn đã báo cáo nội dung này — kiểm duyệt viên sẽ xem xét.",
+    "report_not_found": "Báo cáo này không tồn tại.",
+    "report_action_invalid": "Hãy chọn gỡ hoặc bỏ qua.",
+    "report_not_open": "Báo cáo này đã được xử lý.",
+    "restore_not_supported": "Chỉ có thể khôi phục bài hát và playlist.",
+    "role_not_assignable": "Chỉ có thể gán vai trò Moderator và Admin.",
+    "role_self_admin": "Bạn không thể tự bỏ vai trò Admin của mình.",
+    "user_not_found": "Người dùng này không tồn tại."
   },
   "notFound": {
     "title": "Không tìm thấy trang",
@@ -335,7 +372,13 @@
     "listen": "Nghe",
     "waveformHint": "Bấm vào dạng sóng để phát từ bất kỳ đoạn nào.",
     "onAlbum": "Trong album",
-    "addToPlaylist": "Thêm vào playlist"
+    "addToPlaylist": "Thêm vào playlist",
+    "takenDown": "Bài hát này đã bị gỡ bởi kiểm duyệt và chỉ chủ sở hữu và kiểm duyệt viên nhìn thấy.",
+    "takenDownBadge": "Đã bị gỡ bởi kiểm duyệt",
+    "listensLabel": "Lượt nghe",
+    "listens": "{count, plural, other {# lượt nghe}}",
+    "related": "Bài hát liên quan",
+    "relatedHint": "Cùng nghệ sĩ hoặc cùng thể loại."
   },
   "artist": {
     "label": "Nghệ sĩ",
@@ -542,14 +585,20 @@
     "noPlaylists": "Bạn chưa có playlist nào.",
     "quickCreatePlaceholder": "Tên playlist mới",
     "moved": "Đã chuyển {title} tới vị trí {position}.",
-    "visibilityLabel": "Chế độ hiển thị"
+    "visibilityLabel": "Chế độ hiển thị",
+    "takenDown": "Playlist này đã bị gỡ bởi kiểm duyệt và chỉ bạn và kiểm duyệt viên nhìn thấy."
   },
   "library": {
     "title": "Thư viện",
-    "subtitle": "Các playlist của bạn.",
+    "subtitle": "Playlist của bạn và các nghệ sĩ bạn theo dõi.",
     "emptyTitle": "Chưa có playlist nào",
     "emptyBody": "Tạo playlist đầu tiên bằng biểu mẫu bên cạnh.",
-    "newTitle": "Playlist mới"
+    "newTitle": "Playlist mới",
+    "following": {
+      "title": "Nghệ sĩ bạn theo dõi",
+      "emptyTitle": "Bạn chưa theo dõi ai",
+      "emptyBody": "Theo dõi nghệ sĩ từ trang của họ để thấy họ ở đây."
+    }
   },
   "discover": {
     "title": "Khám phá",
@@ -558,5 +607,227 @@
     "playlistsEmpty": "Chưa có playlist công khai nào.",
     "genres": "Thể loại",
     "newReleases": "Mới phát hành"
+  },
+  "social": {
+    "like": "Thích {title}",
+    "unlike": "Bỏ thích {title}",
+    "likeShort": "Thích",
+    "signInToLike": "Đăng nhập để thích bài hát",
+    "follow": "Theo dõi",
+    "following": "Đang theo dõi",
+    "followers": "{count, plural, other {# người theo dõi}}"
+  },
+  "comments": {
+    "title": "Bình luận",
+    "signIn": "Đăng nhập để bình luận",
+    "emptyTitle": "Chưa có bình luận",
+    "emptyBody": "Hãy là người đầu tiên nói gì đó về bài hát này.",
+    "label": "Bình luận của bạn",
+    "replyLabel": "Trả lời {name}",
+    "placeholder": "Viết bình luận…",
+    "replyPlaceholder": "Viết câu trả lời…",
+    "pinAt": "Gắn vào {time}",
+    "cancel": "Huỷ",
+    "reply": "Trả lời",
+    "post": "Bình luận",
+    "edited": "(đã sửa)",
+    "playAt": "Phát từ {time}",
+    "editLabel": "Sửa bình luận",
+    "save": "Lưu",
+    "edit": "Sửa bình luận",
+    "delete": "Xoá bình luận",
+    "deleteConfirm": "Xoá bình luận này?"
+  },
+  "report": {
+    "open": {
+      "Track": "Báo cáo bài hát",
+      "Comment": "Báo cáo bình luận",
+      "Playlist": "Báo cáo playlist"
+    },
+    "short": "Báo cáo",
+    "sentTitle": "Cảm ơn bạn đã báo cáo",
+    "sentBody": "Kiểm duyệt viên sẽ xem xét. Bạn sẽ nhận được thông báo khi có kết quả.",
+    "close": "Đóng",
+    "reason": "Vấn đề là gì?",
+    "reasons": {
+      "Copyright": {
+        "label": "Bản quyền",
+        "hint": "Dùng nhạc hoặc hình ảnh khi chưa được chủ sở hữu cho phép."
+      },
+      "Abuse": {
+        "label": "Lạm dụng hoặc thù ghét",
+        "hint": "Quấy rối, đe doạ, phát ngôn thù ghét hoặc nội dung có hại."
+      },
+      "Spam": {
+        "label": "Spam",
+        "hint": "Quảng cáo, lừa đảo hoặc nội dung rác lặp lại."
+      },
+      "Other": {
+        "label": "Lý do khác",
+        "hint": "Mô tả thêm ở phần chi tiết."
+      }
+    },
+    "details": "Chi tiết (không bắt buộc)",
+    "detailsPlaceholder": "Đường dẫn, tác phẩm gốc, chính xác sai ở đâu…",
+    "cancel": "Huỷ",
+    "submit": "Gửi báo cáo"
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "subtitle": "Lượt thích, theo dõi, bình luận, xử lý bài hát và kết quả kiểm duyệt.",
+    "bell": "Thông báo",
+    "bellUnread": "Thông báo, {count} chưa đọc",
+    "markAllRead": "Đánh dấu tất cả đã đọc",
+    "empty": "Bạn đã xem hết thông báo.",
+    "seeAll": "Xem tất cả thông báo",
+    "emptyTitle": "Chưa có thông báo",
+    "emptyBody": "Khi có người thích, theo dõi hoặc bình luận, bạn sẽ thấy ở đây.",
+    "someone": "Ai đó",
+    "unread": "Chưa đọc",
+    "text": {
+      "trackLiked": "{actor} đã thích “{title}”",
+      "artistFollowed": "{actor} đã bắt đầu theo dõi bạn",
+      "commentPosted": "{actor} đã bình luận về “{title}”",
+      "commentReplied": "{actor} đã trả lời bình luận của bạn trong “{title}”",
+      "trackReady": "“{title}” đã sẵn sàng để phát",
+      "trackFailed": "Xử lý “{title}” thất bại: {reason}",
+      "reportActioned": "Cảm ơn bạn — chúng tôi đã gỡ “{title}” sau báo cáo của bạn.",
+      "reportRejected": "Chúng tôi đã xem xét báo cáo về “{title}” và không thấy vi phạm.",
+      "contentRemoved": "{subject} “{title}” của bạn đã bị gỡ bởi kiểm duyệt ({reason})."
+    },
+    "subjects": {
+      "track": "Bài hát",
+      "comment": "Bình luận",
+      "playlist": "Playlist"
+    },
+    "reasons": {
+      "copyright": "bản quyền",
+      "abuse": "lạm dụng",
+      "spam": "spam",
+      "other": "lý do khác"
+    }
+  },
+  "liked": {
+    "title": "Bài hát đã thích",
+    "subtitle": "Mọi bài bạn đã thả tim, mới nhất trước.",
+    "emptyTitle": "Chưa có bài hát nào",
+    "emptyBody": "Nhấn vào trái tim ở bất kỳ bài hát nào để lưu lại đây."
+  },
+  "history": {
+    "title": "Lịch sử nghe",
+    "subtitle": "Những bài bạn đã phát gần đây.",
+    "emptyTitle": "Chưa nghe bài nào",
+    "emptyBody": "Các bài bạn nghe sẽ xuất hiện ở đây."
+  },
+  "charts": {
+    "title": "Bảng xếp hạng",
+    "subtitle": "Thịnh hành tuần này: lượt nghe từ 30 giây trở lên và lượt thích trong 7 ngày qua.",
+    "emptyTitle": "Chưa có bảng xếp hạng",
+    "emptyBody": "Bảng xếp hạng sẽ có khi mọi người nghe và thích bài hát."
+  },
+  "moderation": {
+    "title": "Kiểm duyệt",
+    "subtitle": "Xem xét báo cáo từ người nghe. Gỡ nội dung sẽ thông báo cho chủ sở hữu và người báo cáo, và được ghi nhật ký.",
+    "forbiddenTitle": "Chỉ dành cho kiểm duyệt viên",
+    "forbiddenBody": "Bạn cần vai trò Moderator hoặc Admin để mở trang này.",
+    "tabs": {
+      "Open": "Đang chờ",
+      "Actioned": "Đã gỡ",
+      "Rejected": "Đã bỏ qua",
+      "all": "Tất cả"
+    },
+    "emptyTitle": "Không có báo cáo",
+    "emptyBody": "Báo cáo mới từ người nghe sẽ xuất hiện ở tab Đang chờ.",
+    "previous": "Trước",
+    "next": "Sau",
+    "page": "Trang {page}",
+    "subjects": {
+      "Track": "Bài hát",
+      "Comment": "Bình luận",
+      "Playlist": "Playlist"
+    },
+    "reportedBy": "Báo cáo bởi {name} · {when}",
+    "subjectGone": "Nội dung này không còn tồn tại.",
+    "owner": "Chủ sở hữu: {name}",
+    "removed": "Đã gỡ",
+    "note": "Ghi chú (không bắt buộc, lưu trong nhật ký)",
+    "remove": "Gỡ nội dung",
+    "removeConfirm": "Gỡ nội dung này? Chủ sở hữu và người báo cáo sẽ được thông báo.",
+    "dismiss": "Bỏ qua",
+    "handledBy": "Xử lý bởi {name} · {when}",
+    "restore": "Khôi phục"
+  },
+  "admin": {
+    "title": "Quản trị",
+    "subtitle": "Người dùng và vai trò, nội dung, tác vụ xử lý và nhật ký thao tác.",
+    "forbiddenTitle": "Chỉ dành cho quản trị viên",
+    "forbiddenBody": "Bạn cần vai trò Admin để mở trang này.",
+    "empty": "Không có gì để hiển thị.",
+    "tabs": {
+      "overview": "Tổng quan",
+      "users": "Người dùng",
+      "tracks": "Bài hát",
+      "jobs": "Tác vụ",
+      "audit": "Nhật ký"
+    },
+    "overview": {
+      "users": "Người dùng",
+      "openReports": "Báo cáo đang chờ",
+      "openQueue": "Mở hàng đợi",
+      "takenDown": "Bài hát đã gỡ",
+      "failedJobs": "Tác vụ xử lý thất bại",
+      "outboxPending": "Sự kiện đang chờ",
+      "outboxDetail": "{dead} đã bỏ cuộc · {processed} đã gửi trong 24 giờ"
+    },
+    "users": {
+      "search": "Tìm theo handle, tên hoặc email",
+      "roleFilter": "Vai trò",
+      "allRoles": "Mọi vai trò",
+      "roles": {
+        "Artist": "Nghệ sĩ",
+        "Moderator": "Kiểm duyệt",
+        "Admin": "Quản trị"
+      },
+      "user": "Người dùng",
+      "email": "Email",
+      "joined": "Tham gia",
+      "rolesHeader": "Vai trò",
+      "unverified": "chưa xác minh",
+      "selfAdmin": "Bạn không thể tự bỏ vai trò Admin của mình.",
+      "grant": "+ {role}",
+      "revoke": "{role} ✓"
+    },
+    "tracks": {
+      "search": "Tìm theo tên bài",
+      "onlyTakenDown": "Chỉ bài đã gỡ",
+      "track": "Bài hát",
+      "status": "Trạng thái",
+      "visibility": "Hiển thị",
+      "moderation": "Kiểm duyệt",
+      "restore": "Khôi phục"
+    },
+    "jobs": {
+      "statusFilter": "Trạng thái",
+      "allStatuses": "Mọi trạng thái",
+      "status": {
+        "Uploaded": "Đang chờ",
+        "Processing": "Đang xử lý",
+        "Completed": "Hoàn tất",
+        "Failed": "Thất bại",
+        "Cancelled": "Đã huỷ"
+      },
+      "file": "Tệp",
+      "statusHeader": "Trạng thái",
+      "attempts": "Số lần thử",
+      "created": "Tạo lúc",
+      "error": "Lỗi"
+    },
+    "audit": {
+      "when": "Thời gian",
+      "actor": "Người thực hiện",
+      "action": "Thao tác",
+      "subject": "Đối tượng",
+      "details": "Chi tiết"
+    }
   }
 }

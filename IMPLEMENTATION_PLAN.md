@@ -111,6 +111,9 @@ Delivered in slices, each verified before the next.
 - [x] Rate limit and lockout verified by tests; register/forgot/resend responses don't reveal account existence — M2a
 - [ ] Responsive check at mobile/tablet/desktop widths; keyboard navigation
 
+> 2026-10-22: no build work is left in M2b/M2c — the open items are tests and manual checks, deferred by the owner
+> ("development phase, no tests yet"). M4 was started on the owner's instruction before they were done.
+
 ---
 
 ## M3 — Real media & playback 🟡 (backend verified by integration tests; browser/e2e not yet run)
@@ -153,16 +156,19 @@ slice M3 needs (self-serve artist, tracks); the rest of M2b/M2c is still open.
 - [x] Worker killed mid-job → job re-claimed after lease expiry and completes
 - [~] Docker images: worker image builds (Testcontainers); api/web images and compose stack not re-verified after these changes
 
+> 2026-10-22: the remaining M3 items are verification only (e2e player run, browser playback of long files, image
+> builds) plus the streaming-allocation investigation; deferred with the M2 tests by the owner.
+
 ---
 
-## M4 — Social
+## M4 — Social 🟡 (built 2026-10-22 without automated tests, owner's request — ADR-0012; smoke-tested by hand against the local API)
 
-- [ ] Likes, follows, comments (timed), listening history, recently played
-- [ ] Play events ingestion with idempotency + valid-listen rules; trending from daily stats
-- [ ] Related tracks (genre/artist based — labelled as such, not "personalised")
-- [ ] Notifications (outbox → in-app, SignalR push); Notifications page
-- [ ] Content reports (incl. copyright), moderation queue, takedown, audit log
-- [ ] Admin dashboard (users, roles, reports, tracks, jobs) — admin-only policies
+- [x] Likes, follows (artist profiles), comments (timed, one reply level), listening history, recently played
+- [x] Play events ingestion with idempotency + valid-listen rules; trending from daily stats (Charts page, Home)
+- [x] Related tracks (genre/artist based — labelled as such, not "personalised")
+- [x] Notifications (transactional outbox → in-app, SignalR push); Notifications page and top-bar bell
+- [x] Content reports (incl. copyright), moderation queue, takedown/restore, audit log
+- [x] Admin dashboard (overview, users + roles, tracks, jobs, audit log) — `moderator` / `admin` policies
 
 **Acceptance criteria**
 - [ ] E2E: like/follow → counts and notifications update

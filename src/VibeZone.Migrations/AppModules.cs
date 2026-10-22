@@ -1,8 +1,12 @@
 using VibeZone.Infrastructure.Modules;
+using VibeZone.Modules.Analytics;
 using VibeZone.Modules.Catalog;
 using VibeZone.Modules.Identity;
 using VibeZone.Modules.Media;
+using VibeZone.Modules.Moderation;
+using VibeZone.Modules.Notifications;
 using VibeZone.Modules.Playlists;
+using VibeZone.Modules.Social;
 
 namespace VibeZone.Migrations;
 
@@ -16,5 +20,9 @@ public static class AppModules
         new IdentityModule(),
         new CatalogModule(),
         new MediaModule(),
-        new PlaylistsModule());
+        new PlaylistsModule(),
+        new SocialModule(),
+        new AnalyticsModule(),
+        new NotificationsModule(),
+        new ModerationModule());
 }

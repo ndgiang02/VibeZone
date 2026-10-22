@@ -34,7 +34,8 @@ public sealed record TrackDto(
     bool Playable,
     ArtworkDto? Artwork,
     AlbumRefDto? Album,
-    int? TrackNumber);
+    int? TrackNumber,
+    bool TakenDown);
 
 public sealed record AlbumRefDto(Guid Id, string Title);
 
@@ -114,6 +115,12 @@ public interface ICatalogRepository
 
     Task<IReadOnlyList<AlbumRow>> ListAlbumRowsAsync(IReadOnlyCollection<Guid> albumIds, CancellationToken cancellationToken);
 
+    /// <summary>Listed tracks by the same artist or in the same genre (same artist first, then newest), excluding the track itself.</summary>
+    Task<IReadOnlyList<TrackRow>> ListRelatedAsync(Guid trackId, Guid artistId, int? genreId, int limit, CancellationToken cancellationToken);
+
+    /// <summary>Every not-deleted track (staff view), newest first, optionally filtered by title, status and takedown.</summary>
+    Task<Paged<TrackRow>> PageAllAsync(string? query, TrackStatus? status, bool? takenDown, PageRequest page, CancellationToken cancellationToken);
+
     void Add(Artist artist);
 
     void Add(Track track);
@@ -125,7 +132,8 @@ public interface ICatalogRepository
 
 internal static class TrackMapping
 {
-    public static TrackDto ToDto(this TrackRow row, bool isOwner) => new(
+    /// <param name="viewerIsModerator">Moderators may play taken-down tracks (to review them).</param>
+    public static TrackDto ToDto(this TrackRow row, bool isOwner, bool viewerIsModerator = false) => new(
         row.Track.Id,
         row.Track.Title,
         row.Track.Description,
@@ -138,10 +146,11 @@ internal static class TrackMapping
         row.Artist.ToRef(),
         row.Genre is null ? null : new GenreDto(row.Genre.Slug, row.Genre.Name),
         isOwner,
-        row.Track.Status == TrackStatus.Ready,
+        row.Track.Status == TrackStatus.Ready && (!row.Track.IsTakenDown || viewerIsModerator),
         row.Track.ToArtwork(),
         row.Album is { DeletedAt: null } album && album.IsVisibleTo(isOwner, false) ? new AlbumRefDto(album.Id, album.Title) : null,
-        row.Album is { DeletedAt: null } ? row.Track.TrackNumber : null);
+        row.Album is { DeletedAt: null } ? row.Track.TrackNumber : null,
+        row.Track.IsTakenDown);
 
     public static ArtworkDto? ToArtwork(this Track track) =>
         track.ArtworkId is { } artworkId

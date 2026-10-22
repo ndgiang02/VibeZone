@@ -167,6 +167,30 @@
     {
       "key": "csrfToken",
       "value": ""
+    },
+    {
+      "key": "commentId",
+      "value": "",
+      "description": "Set by \"Post a comment\""
+    },
+    {
+      "key": "reportId",
+      "value": "",
+      "description": "Pick one from \"Report queue\""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
+    },
+    {
+      "key": "targetUserId",
+      "value": "",
+      "description": "Admin: the user whose roles you change"
+    },
+    {
+      "key": "playSessionId",
+      "value": "",
+      "description": "Set by \"Report playback\" (one per track start)"
     }
   ],
   "item": [
@@ -2276,6 +2300,947 @@
               ]
             },
             "description": "data: {version, durationMs, peaks: float[~1000] in 0..1}. Same visibility rules as streaming; also accepts ?token= (use waveformUrl)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Social",
+      "description": "Likes, follows and timed comments (M4). Writes are rate-limited (60/min per account).",
+      "item": [
+        {
+          "name": "Track engagement",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/engagement",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "engagement"
+              ]
+            },
+            "description": "data: {likeCount, commentCount, liked}. Anyone who can see the track (liked=false when signed out)."
+          }
+        },
+        {
+          "name": "Like track",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/like",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "like"
+              ]
+            },
+            "description": "Idempotent. Track must be playable for you. 200 → engagement. The artist gets a notification (not for their own tracks)."
+          }
+        },
+        {
+          "name": "Unlike track",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/like",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "like"
+              ]
+            },
+            "description": "Idempotent. 200 → engagement."
+          }
+        },
+        {
+          "name": "My liked track ids",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/likes/ids",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "likes",
+                "ids"
+              ]
+            },
+            "description": "All ids (≤ 5000, newest first) — mark hearts in lists without one request per track."
+          }
+        },
+        {
+          "name": "List comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/comments?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "comments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Top-level comments newest first (paged); each has replies[] oldest first. timestampMs = moment of the track (ms) or null. Plain text — render as text."
+          }
+        },
+        {
+          "name": "Post a comment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"commentId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Love this drop!\",\n  \"timestampMs\": 42000,\n  \"parentId\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "comments"
+              ]
+            },
+            "description": "1–1000 chars. timestampMs pins it to the waveform (top-level only). parentId → reply (a reply to a reply attaches to its top-level comment). 201. Errors: comment_body_invalid, comment_timestamp_invalid, comment_not_found (parent)."
+          }
+        },
+        {
+          "name": "Edit comment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Edited text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comments/{{commentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comments",
+                "{{commentId}}"
+              ]
+            },
+            "description": "Author only (404 otherwise)."
+          }
+        },
+        {
+          "name": "Delete comment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comments/{{commentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comments",
+                "{{commentId}}"
+              ]
+            },
+            "description": "204. Author, the track's owner or a moderator; 404 for others."
+          }
+        },
+        {
+          "name": "Follow summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/artists/{{artistId}}/followers/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "artists",
+                "{{artistId}}",
+                "followers",
+                "summary"
+              ]
+            },
+            "description": "data: {followerCount, following}."
+          }
+        },
+        {
+          "name": "Follow artist",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/artists/{{artistId}}/follow",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "artists",
+                "{{artistId}}",
+                "follow"
+              ]
+            },
+            "description": "Idempotent. 400 follow_self for your own profile. The artist gets a notification."
+          }
+        },
+        {
+          "name": "Unfollow artist",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/artists/{{artistId}}/follow",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "artists",
+                "{{artistId}}",
+                "follow"
+              ]
+            },
+            "description": "Idempotent."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Library & charts",
+      "item": [
+        {
+          "name": "Liked tracks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/likes?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "likes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "data: [{likedAt, track: TrackDto}], newest like first. Tracks you can no longer see are left out (total still counts them)."
+          }
+        },
+        {
+          "name": "Listening history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/history?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Recently played: [{playedAt, track}], one entry per track, most recent first."
+          }
+        },
+        {
+          "name": "Followed artists",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/following",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "following"
+              ]
+            },
+            "description": "[{id, slug, name, avatarUrl, followedAt}] newest first (paged)."
+          }
+        },
+        {
+          "name": "Trending",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/trending?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "trending"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Chart: valid listens + 2 × likes over the last 7 days, recent days weigh more. Same for everyone (not personalised). Top 100, paged."
+          }
+        },
+        {
+          "name": "Related tracks",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/related",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "related"
+              ]
+            },
+            "description": "≤ 12 public tracks by the same artist or in the same genre (label them as such in the UI — not recommendations)."
+          }
+        },
+        {
+          "name": "Track stats",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "stats"
+              ]
+            },
+            "description": "data: {plays (started), listens (valid)}, all time."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Report playback",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"playSessionId\")) pm.collectionVariables.set(\"playSessionId\", crypto.randomUUID());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientId\": null,\n  \"events\": [\n    {\n      \"id\": \"{{$guid}}\",\n      \"sessionId\": \"{{playSessionId}}\",\n      \"trackId\": \"{{trackId}}\",\n      \"type\": \"started\",\n      \"positionMs\": 0,\n      \"listenedMs\": 0,\n      \"clientTimestamp\": null\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plays",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "plays"
+              ]
+            },
+            "description": "Send from the player: \"started\" when a track starts (new sessionId per start), \"progress\" every ~15 s of actual listening, \"completed\" at the end.\nlistenedMs = playback time accumulated in this session (seeks don't count); the server caps it by wall-clock time since the session started.\nA valid listen = ≥ 30 s (half of tracks under 60 s), once per listener and track per 30 minutes. Event ids are idempotency keys: retry a failed batch with the same ids.\nSigned-out players may send clientId (a random UUID kept on the device) so their listens de-duplicate. 1–50 events per batch; 202 → {accepted}. Rate limit 60 batches/min."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "Realtime: SignalR hub {{baseUrl}}/api/v1/hubs/notifications (apps: ?access_token={{accessToken}}) sends 'unread' with {count}; then refetch.",
+      "item": [
+        {
+          "name": "My notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/notifications?unreadOnly=false&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "unreadOnly",
+                  "value": "false"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Newest first. type: TrackLiked, ArtistFollowed, CommentPosted, CommentReplied, TrackReady, TrackFailed, ReportResolved, ContentRemoved. Link with trackId / artistSlug; code = error/outcome/reason."
+          }
+        },
+        {
+          "name": "Unread count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/notifications/unread-count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "notifications",
+                "unread-count"
+              ]
+            },
+            "description": "data: {count}."
+          }
+        },
+        {
+          "name": "Mark one read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            },
+            "description": "204; 404 if it isn't yours."
+          }
+        },
+        {
+          "name": "Mark all read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "notifications",
+                "read-all"
+              ]
+            },
+            "description": "204."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Moderation",
+      "item": [
+        {
+          "name": "Report content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subjectType\": \"Track\",\n  \"subjectId\": \"{{trackId}}\",\n  \"reason\": \"Copyright\",\n  \"details\": \"Original: https://example.com/…\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reports"
+              ]
+            },
+            "description": "subjectType: Track | Comment | Playlist; reason: Copyright | Abuse | Spam | Other. 201. Errors: report_own_content (400), report_subject_not_found (404), report_exists (409 — one open report per item)."
+          }
+        },
+        {
+          "name": "Report queue (moderators)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/moderation/reports?status=Open&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "moderation",
+                "reports"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Open"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Moderator/Admin. status=Open (oldest first) | Actioned | Rejected; omit for all. 403 for other users."
+          }
+        },
+        {
+          "name": "Resolve report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"remove\",\n  \"note\": \"Confirmed copyright claim\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/moderation/reports/{{reportId}}/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "moderation",
+                "reports",
+                "{{reportId}}",
+                "resolve"
+              ]
+            },
+            "description": "Moderator/Admin. action: remove (takes the content down and settles every open report on it) | dismiss. Audited; reporters and the owner are notified. 409 report_not_open."
+          }
+        },
+        {
+          "name": "Restore content",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/moderation/content/Track/{{trackId}}/restore",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "moderation",
+                "content",
+                "Track",
+                "{{trackId}}",
+                "restore"
+              ]
+            },
+            "description": "Moderator/Admin. Track or Playlist. 204. Audited."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Admin role only (403 otherwise).",
+      "item": [
+        {
+          "name": "Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users?q=&role=&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "role",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Grant role",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/{{targetUserId}}/roles/Moderator",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users",
+                "{{targetUserId}}",
+                "roles",
+                "Moderator"
+              ]
+            },
+            "description": "Moderator or Admin. Idempotent, audited, effective immediately."
+          }
+        },
+        {
+          "name": "Revoke role",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/{{targetUserId}}/roles/Moderator",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users",
+                "{{targetUserId}}",
+                "roles",
+                "Moderator"
+              ]
+            },
+            "description": "400 role_self_admin when removing your own Admin."
+          }
+        },
+        {
+          "name": "All tracks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/tracks?q=&takenDown=&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "tracks"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "takenDown",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Moderators too. Every non-deleted track, any status/visibility."
+          }
+        },
+        {
+          "name": "Processing jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/jobs?status=&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "jobs"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Job summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/jobs/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "jobs",
+                "summary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Outbox summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/outbox",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "outbox"
+              ]
+            },
+            "description": "{pending, deadLettered, processedLastDay}."
+          }
+        },
+        {
+          "name": "Audit log",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/audit-log?page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "audit-log"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
           }
         }
       ]

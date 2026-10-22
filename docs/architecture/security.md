@@ -147,8 +147,8 @@ insider with infrastructure access.
   stack; misconfiguring it in a real deployment would drop the Secure flag. The API logs a warning;
   M5 adds a startup guard for non-local environments.
 - Session revocation and rate limits are per instance until Redis is introduced for scale-out.
-- The email queue is in memory: emails queued during a crash are lost (user can resend). Durable
-  outbox in M4.
+- The email queue is in memory: emails queued during a crash are lost (user can resend). The durable
+  outbox exists since M4 (ADR-0012) but account emails don't go through it yet.
 - Data Protection key ring is stored unencrypted in Postgres (M5: certificate/KMS encryption).
 - No breached-password (HIBP) check yet; no MFA yet.
 - `npm audit` reports GHSA-vfj7-8cjw-p6xm (`braces` ≤ 3.0.3, no patched release exists) through
@@ -211,3 +211,32 @@ insider with infrastructure access.
 - Web: covers are `<img>` from our own API (`img-src 'self' blob:`; `blob:` for local previews before
   upload); without a cover a decorative gradient is shown; descriptions/bios rendered as
   plain text; waveform styles injected with the CSP nonce (`cspNonce`).
+
+## 12. Social, analytics, notifications and moderation (M4, ADR-0012; built without tests)
+
+- **Authorization**: likes and comments require the track to be playable for the caller; reading comments,
+  engagement and stats requires it to be visible (invisible → 404). Comment edits: author only; deletion: author,
+  track owner or moderator (others → 404). Notifications: recipient only (others → 404). Moderation endpoints use
+  the `moderator` policy, user/role administration, jobs, outbox and audit log the `admin` policy
+  (401 anonymous, 403 wrong role). Role changes are limited to Moderator/Admin, can't remove your own Admin,
+  take effect immediately (session cache evicted) and are audited.
+- **New data**: comments and report details are user-generated plain text (≤ 1000 chars), rendered as text,
+  never HTML. Play events store no IP address; anonymous listeners are keyed by a SHA-256 of a random client id
+  the browser keeps (not a credential). Notification payloads hold titles/excerpts/codes only. Admins see
+  account emails in `/admin/users` (staff-only data class). Audit metadata holds ids, roles, reasons and the
+  moderator's note — never secrets.
+- **Abuse limits**: `social` policy (60 writes/min per account, else per IP) on likes, follows, comments and
+  reports; `plays` policy (60 batches/min) on play events; batches ≤ 50 events; one open report per reporter
+  and item; reporters can't report their own content.
+- **Play-count integrity**: event ids are idempotency keys; a session belongs to one listener and one track;
+  listened time is capped by wall-clock time since the session started; one valid listen per listener, track and
+  30 minutes. A determined client can still script listens (residual risk, see §9).
+- **Realtime hub** (`/api/v1/hubs/notifications`): authenticated (cookie or bearer); apps pass the access token as
+  `?access_token=` on hub paths only — the request log records paths without query strings, but reverse-proxy
+  access logs must not log query strings for `/api/v1/hubs/*`. Exempt from the CSRF filter: server → client only,
+  no state-changing hub methods, and cross-site pages can't read negotiate responses. Single instance until a
+  SignalR backplane is added.
+- **Takedown**: a removed track is unplayable and hidden from everyone but its owner and moderators, including
+  search, trending, related, playlists and albums; restore is audited. Removed comments are soft-deleted.
+- **Outbox**: events carry ids and display snapshots, never emails or tokens; failures store only the exception
+  type.

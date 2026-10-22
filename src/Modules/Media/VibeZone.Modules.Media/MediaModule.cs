@@ -24,10 +24,16 @@ public sealed class MediaModule : IModule
         services.AddScoped<UserAvatarService>();
         services.AddSingleton<IArtworkProcessor, SkiaArtworkProcessor>();
         services.AddScoped<PlaybackService>();
+        services.AddScoped<IJobQueries, EfJobQueries>();
+        services.AddScoped<JobAdminService>();
         services.AddSingleton<IPlaybackTokens, DataProtectionPlaybackTokens>();
     }
 
-    public void MapEndpoints(IEndpointRouteBuilder api) => MediaEndpoints.Map(api);
+    public void MapEndpoints(IEndpointRouteBuilder api)
+    {
+        MediaEndpoints.Map(api);
+        AdminJobEndpoints.Map(api);
+    }
 }
 
 public static class MediaWorkerExtensions

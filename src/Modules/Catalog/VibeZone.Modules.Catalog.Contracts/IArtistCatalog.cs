@@ -20,6 +20,8 @@ public interface IArtistCatalog
 
     Task<bool> ExistsAsync(Guid artistId, CancellationToken cancellationToken);
 
+    Task<IReadOnlyDictionary<Guid, ArtistSummary>> GetSummariesAsync(IReadOnlyCollection<Guid> artistIds, CancellationToken cancellationToken);
+
     /// <summary>Points the profile at its current image of that slot (an opaque version id), or clears it.</summary>
     Task StageImageAsync(Guid artistId, ArtistImageSlot slot, Guid? imageId, CancellationToken cancellationToken);
 }

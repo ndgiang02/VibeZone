@@ -5,6 +5,7 @@ import { NowPlayingCard } from "@/features/player/now-playing-card";
 import { ShowcaseSections } from "@/features/showcase/showcase-sections";
 import { NewReleases } from "@/features/tracks/new-releases";
 import { ArtistPanel } from "./artist-panel";
+import { RecentlyPlayedSection, TrendingSection } from "./home-feeds";
 import { FeaturedBanner } from "./featured-banner";
 
 /**
@@ -17,6 +18,8 @@ export function HomeView() {
       <div className="flex min-w-0 flex-1 flex-col gap-10">
         <FeaturedBanner />
         <ArtistPanel variant="rail" className="xl:hidden" />
+        <RecentlyPlayedSection />
+        <TrendingSection />
         <NewReleases />
         <ShowcaseSections />
         <GenreBrowser />

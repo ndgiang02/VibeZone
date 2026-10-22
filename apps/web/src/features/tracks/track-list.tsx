@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { AddToPlaylistMenu } from "@/features/playlists/add-to-playlist-menu";
+import { LikeButton } from "@/features/social/like-button";
 import { formatTime, toPlayerTrack } from "@/features/player/format";
 import { usePlayerStore } from "@/features/player/store";
 import { durationMsOf, type Track } from "./api";
@@ -124,6 +125,7 @@ export function TrackList({
                   <ListPlus className="size-4" aria-hidden="true" />
                 </button>
               ) : null}
+              <LikeButton track={track} />
               <AddToPlaylistMenu track={track} />
               {actions?.(track)}
             </div>

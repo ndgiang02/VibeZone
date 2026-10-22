@@ -10,7 +10,9 @@ import { AlbumCard } from "@/features/albums/album-card";
 import { GRID } from "@/features/home/media-section";
 import { formatTime, toPlayerTrack } from "@/features/player/format";
 import { usePlayerStore } from "@/features/player/store";
-import { durationMsOf, isNotFound, useArtistProfile } from "./api";
+import { useMe } from "@/features/auth/api";
+import { FollowButton } from "@/features/social/follow-button";
+import { durationMsOf, isNotFound, useArtistProfile, useMyArtist } from "./api";
 import { TrackList } from "./track-list";
 
 export function ArtistView({ slug }: { slug: string }) {
@@ -19,6 +21,8 @@ export function ArtistView({ slug }: { slug: string }) {
   const tCommon = useTranslations("common");
   const format = useFormatter();
   const profile = useArtistProfile(slug);
+  const me = useMe();
+  const myArtist = useMyArtist(Boolean(me.data));
   const playQueue = usePlayerStore((s) => s.playQueue);
 
   if (profile.isPending) {
@@ -85,6 +89,7 @@ export function ArtistView({ slug }: { slug: string }) {
                 {t("stats", { count: tracks.length, duration: formatTime(totalSeconds) })}
               </p>
             ) : null}
+            <FollowButton artist={artist} isOwner={myArtist.data?.id === artist.id} />
             {playable.length > 0 ? (
               <div className="mt-2 flex flex-wrap items-center gap-3">
                 <button

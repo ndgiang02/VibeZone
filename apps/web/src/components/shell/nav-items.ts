@@ -13,34 +13,43 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-/** Only routes that exist. Add an item in the same change that ships its page. */
+export type NavKey =
+  "home" | "discover" | "library" | "studio" | "charts" | "favourites" | "history" | "moderation" | "admin";
+
+export type NavItem = { href: string; key: NavKey; icon: LucideIcon };
+
+/** Only routes that exist. Add an item in the same change that ships its page. Also the mobile tab bar. */
 export const primaryNav = [
   { href: "/", key: "home", icon: House },
   { href: "/discover", key: "discover", icon: Compass },
   { href: "/library", key: "library", icon: LibraryBig },
   { href: "/studio", key: "studio", icon: Mic2 },
-] as const satisfies readonly {
-  href: string;
-  key: "home" | "discover" | "library" | "studio";
-  icon: LucideIcon;
-}[];
+] as const satisfies readonly NavItem[];
 
-export type UpcomingKey = "yourFm" | "forYou" | "charts" | "favourites" | "ranking" | "history" | "downloads";
+/** Sidebar-only destinations under "Menu". */
+export const secondaryMenu = [
+  { href: "/charts", key: "charts", icon: ChartNoAxesColumn },
+] as const satisfies readonly NavItem[];
+
+/** Sidebar "Library" section. */
+export const libraryNav = [
+  { href: "/liked", key: "favourites", icon: Heart },
+  { href: "/history", key: "history", icon: History },
+] as const satisfies readonly NavItem[];
+
+export type UpcomingKey = "yourFm" | "forYou" | "ranking" | "downloads";
 
 /**
  * Planned destinations without a page yet. Rendered as disabled "Soon" entries (never links), so the
- * sidebar shows the roadmap without pretending the feature works. Move an item to `primaryNav` (or a
- * real section) in the same change that ships its page.
+ * sidebar shows the roadmap without pretending the feature works. Move an item to a real list in the
+ * same change that ships its page.
  */
 export const upcomingMenu = [
   { key: "yourFm", icon: Radio },
   { key: "forYou", icon: Sparkles },
-  { key: "charts", icon: ChartNoAxesColumn },
 ] as const satisfies readonly { key: UpcomingKey; icon: LucideIcon }[];
 
 export const upcomingLibrary = [
-  { key: "favourites", icon: Heart },
   { key: "ranking", icon: Trophy },
-  { key: "history", icon: History },
   { key: "downloads", icon: Download },
 ] as const satisfies readonly { key: UpcomingKey; icon: LucideIcon }[];

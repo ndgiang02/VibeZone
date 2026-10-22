@@ -1,6 +1,15 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, CircleDashed, EyeOff, Link2, Loader2, XCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  CircleDashed,
+  EyeOff,
+  Link2,
+  Loader2,
+  ShieldAlert,
+  XCircle,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { isErrorCode } from "@/lib/api/errors";
@@ -33,6 +42,12 @@ export function StatusBadge({ track }: { track: Track }) {
           {VisibilityIcon ? <VisibilityIcon className="size-4" aria-hidden="true" /> : null}
           {t(`visibility.${track.visibility}`)}
         </span>
+        {track.takenDown ? (
+          <span className="inline-flex items-center gap-1.5 font-medium text-destructive">
+            <ShieldAlert className="size-4" aria-hidden="true" />
+            {t("takenDownBadge")}
+          </span>
+        ) : null}
       </div>
       {track.status === "Failed" && track.processingError ? (
         <p className="text-destructive">

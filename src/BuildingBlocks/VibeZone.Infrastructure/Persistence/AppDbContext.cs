@@ -20,6 +20,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ModuleC
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<DataProtectionKey>().ToTable("data_protection_keys", InfraSchema);
+        modelBuilder.ApplyConfiguration(new Outbox.OutboxMessageConfiguration());
+        modelBuilder.ApplyConfiguration(new Outbox.OutboxConsumptionConfiguration());
 
         foreach (var module in modules.Modules)
         {

@@ -3,16 +3,28 @@
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { primaryNav } from "./nav-items";
+import { libraryNav, primaryNav, secondaryMenu, type NavItem } from "./nav-items";
+
+// Server components pick a list by name: icons are functions and can't cross the server/client boundary.
+const LISTS = { primary: primaryNav, menu: secondaryMenu, library: libraryNav } as const;
 
 /** Sidebar: icon rail on tablets (labels from lg), lime pill for the current page. Bottom: mobile tab bar. */
-export function NavLinks({ variant }: { variant: "sidebar" | "bottom" }) {
+export function NavLinks({
+  variant,
+  list = "primary",
+  items = LISTS[list],
+}: {
+  variant: "sidebar" | "bottom";
+  list?: keyof typeof LISTS;
+  /** Client callers only (e.g. role-dependent links). */
+  items?: readonly NavItem[];
+}) {
   const t = useTranslations("nav");
   const pathname = usePathname(); // without the locale prefix
 
   return (
     <ul className={cn(variant === "sidebar" ? "flex flex-col gap-1" : "flex items-stretch justify-around")}>
-      {primaryNav.map(({ href, key, icon: Icon }) => {
+      {items.map(({ href, key, icon: Icon }) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (
           <li key={href} className={cn(variant === "bottom" && "flex-1")}>

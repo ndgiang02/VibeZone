@@ -10,6 +10,7 @@ import { showcaseEnabled } from "@/features/showcase/showcase";
 import { upcomingLibrary, upcomingMenu, type UpcomingKey } from "./nav-items";
 import { NavLinks } from "./nav-links";
 import { SidebarPlaylists } from "./sidebar-playlists";
+import { StaffLinks } from "./staff-links";
 
 /** Left navigation (≥ md). Tablets get an icon rail with the real destinations only; lg+ the full sidebar. */
 export function Sidebar() {
@@ -30,13 +31,19 @@ export function Sidebar() {
         <SidebarSection title={t("nav.menu")}>
           <nav aria-label={t("nav.primary")} className="flex flex-col gap-1">
             <NavLinks variant="sidebar" />
+            <NavLinks variant="sidebar" list="menu" />
             <UpcomingList items={upcomingMenu} />
           </nav>
         </SidebarSection>
 
-        <SidebarSection title={t("nav.library")} className="max-lg:hidden">
-          <UpcomingList items={upcomingLibrary} />
+        <SidebarSection title={t("nav.library")}>
+          <nav aria-label={t("nav.library")} className="flex flex-col gap-1">
+            <NavLinks variant="sidebar" list="library" />
+            <UpcomingList items={upcomingLibrary} />
+          </nav>
         </SidebarSection>
+
+        <StaffLinks />
 
         <SidebarSection title={t("nav.playlists")} className="max-lg:hidden">
           <SidebarPlaylists />
