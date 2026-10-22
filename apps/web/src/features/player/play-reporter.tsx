@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { api } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 import { socialKeys } from "@/features/social/api";
+import { randomId } from "@/lib/utils";
 import { usePlayerStore } from "./store";
 
 type PlayEvent = components["schemas"]["PlayEventRequest"];
@@ -19,7 +20,7 @@ function clientId(): string | null {
   try {
     let id = localStorage.getItem(CLIENT_ID_KEY);
     if (!id) {
-      id = crypto.randomUUID();
+      id = randomId();
       localStorage.setItem(CLIENT_ID_KEY, id);
     }
     return id;
@@ -46,7 +47,7 @@ export function PlayReporter() {
     const push = (type: "started" | "progress" | "completed", positionSeconds: number) => {
       if (!session) return;
       queue.push({
-        id: crypto.randomUUID(),
+        id: randomId(),
         sessionId: session.id,
         trackId: session.trackId,
         type,
@@ -92,7 +93,7 @@ export function PlayReporter() {
         (state.status === "playing" || state.status === "loading")
       ) {
         if (session && session.listenedMs > session.lastReportedMs) push("progress", previous.currentTime);
-        session = { id: crypto.randomUUID(), trackId, listenedMs: 0, lastReportedMs: 0 };
+        session = { id: randomId(), trackId, listenedMs: 0, lastReportedMs: 0 };
         lastTime = state.currentTime;
         push("started", state.currentTime);
         void flush();
