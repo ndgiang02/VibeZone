@@ -32,11 +32,11 @@ internal static class AuthEndpoints
 
         // Mobile/native clients (ADR-0007): credentials in the body, tokens in the response, no cookies → no CSRF.
         var token = auth.MapGroup("/token").DisableCsrf();
-        token.MapPost("", IssueToken).WithName("IssueToken").Produces<TokenResponse>()
+        token.MapPost("", IssueToken).WithName("IssueToken").Produces<ApiResponse<TokenResponse>>()
             .ProducesProblem(StatusCodes.Status401Unauthorized).ProducesProblem(StatusCodes.Status403Forbidden)
             .RequireRateLimiting(RateLimitPolicies.Auth)
             .WithSummary("Sign in with email + password; returns an access token (Authorization: Bearer) and a rotating refresh token.");
-        token.MapPost("/refresh", RefreshToken).WithName("RefreshToken").Produces<TokenResponse>()
+        token.MapPost("/refresh", RefreshToken).WithName("RefreshToken").Produces<ApiResponse<TokenResponse>>()
             .ProducesProblem(StatusCodes.Status401Unauthorized).RequireRateLimiting(RateLimitPolicies.Auth)
             .WithSummary("Exchange the refresh token for a new pair. Each refresh token works once; reusing one revokes the session.");
         token.MapPost("/revoke", RevokeToken).WithName("RevokeToken").Produces(StatusCodes.Status204NoContent)
@@ -93,7 +93,7 @@ internal static class AuthEndpoints
     private static IResult NoStore(HttpContext http, Result<TokenResponse> result)
     {
         http.Response.Headers.CacheControl = "no-store";
-        return result.ToResult(r => TypedResults.Ok(r));
+        return result.ToResult(ApiResults.Ok);
     }
 
     private static async Task<IResult> Logout(SessionService sessions, ICurrentUser user, HttpContext http, CancellationToken ct)

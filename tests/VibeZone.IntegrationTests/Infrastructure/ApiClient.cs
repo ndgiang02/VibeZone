@@ -57,17 +57,18 @@ public sealed class ApiClient(HttpClient http) : IDisposable
     public async Task<string> FetchCsrfAsync()
     {
         var response = await http.GetFromJsonAsync<JsonElement>("/api/v1/auth/csrf", Ct);
-        return response.GetProperty("token").GetString()!;
+        return response.GetProperty("data").GetProperty("token").GetString()!;
     }
 
     public async Task<HttpStatusCode> LoginAsync(string email, string password, bool rememberMe = false) =>
         (await PostAsync("/api/v1/auth/login", new { email, password, rememberMe })).StatusCode;
 
-    public async Task<JsonElement> GetJsonAsync(string path)
+    /// <summary>GETs <paramref name="path"/>, requires 2xx and returns the envelope's <c>data</c>.</summary>
+    public async Task<JsonElement> GetDataAsync(string path)
     {
         using var response = await http.GetAsync(path, Ct);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        return await response.DataAsync();
     }
 
     public void Dispose() => http.Dispose();
@@ -80,6 +81,15 @@ public static class ResponseExtensions
     {
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         return document.RootElement.Clone();
+    }
+
+    /// <summary>The <c>data</c> of a success envelope (ADR-0008); fails if the body isn't one.</summary>
+    public static async Task<JsonElement> DataAsync(this HttpResponseMessage response)
+    {
+        var json = await response.JsonAsync();
+        Assert.Equal(JsonValueKind.Object, json.ValueKind);
+        Assert.True(json.TryGetProperty("data", out var data), "Response body has no \"data\" envelope.");
+        return data;
     }
 
     /// <summary>The stable error code from Problem Details (null if absent).</summary>

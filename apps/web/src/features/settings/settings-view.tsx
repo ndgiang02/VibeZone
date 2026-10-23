@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { ErrorState, Skeleton } from "@/components/states/states";
 import { errorCode } from "@/lib/api/errors";
 import { useRequireUser } from "@/features/auth/use-require-user";
+import { AvatarEditor } from "./avatar-editor";
 import { ChangePasswordForm } from "./change-password-form";
 import { ProfileForm } from "./profile-form";
 import { SessionsList } from "./sessions-list";
@@ -38,7 +39,10 @@ export function SettingsView() {
   return (
     <div className="flex flex-col gap-6">
       <Section title={t("profile.title")}>
-        <ProfileForm me={me.data} />
+        <div className="flex flex-col gap-6">
+          <AvatarEditor me={me.data} />
+          <ProfileForm me={me.data} />
+        </div>
       </Section>
       <Section title={t("password.title")}>
         <ChangePasswordForm />

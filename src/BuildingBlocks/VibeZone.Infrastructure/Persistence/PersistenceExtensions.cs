@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using VibeZone.Infrastructure.Outbox;
 
 namespace VibeZone.Infrastructure.Persistence;
 
@@ -24,6 +25,7 @@ public static class PersistenceExtensions
         });
 
         services.AddDbContext<AppDbContext>((sp, builder) => Configure(builder, sp.GetRequiredService<NpgsqlDataSource>()));
+        services.AddOutboxWriter();
         return services;
     }
 

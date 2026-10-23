@@ -48,7 +48,7 @@
           "    body: { mode: \"raw\", raw: JSON.stringify({ refreshToken: refresh }) },",
           "  }, (err, res) => {",
           "    if (!err && res.code === 200) {",
-          "      const t = res.json();",
+          "      const t = res.json().data;",
           "      pm.collectionVariables.set(\"accessToken\", t.accessToken);",
           "      pm.collectionVariables.set(\"refreshToken\", t.refreshToken);",
           "      pm.collectionVariables.set(\"accessTokenExpiresAt\", String(Date.now() + t.expiresIn * 1000));",
@@ -66,8 +66,8 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000",
-      "description": "Caddy proxy of the local stack. Android emulator: http://10.0.2.2:3000 (from the app)."
+      "value": "http://localhost:3001",
+      "description": "API site (ADR-0011): local stack port 3001 (Android emulator: http://10.0.2.2:3001); production https://api.<domain>."
     },
     {
       "key": "mailpitUrl",
@@ -123,7 +123,36 @@
       "value": "appuser"
     },
     {
+      "key": "artistId",
+      "value": "",
+      "description": "Set by \"My artist profile\" / \"Become an artist\""
+    },
+    {
       "key": "trackId",
+      "value": ""
+    },
+    {
+      "key": "albumId",
+      "value": "",
+      "description": "Set by \"Create album\""
+    },
+    {
+      "key": "playlistId",
+      "value": "",
+      "description": "Set by \"Create playlist\""
+    },
+    {
+      "key": "q",
+      "value": "son tung",
+      "description": "Search text (accents optional)"
+    },
+    {
+      "key": "streamUrl",
+      "value": "",
+      "description": "Set by \"Playback URLs\" (relative, includes the token)"
+    },
+    {
+      "key": "waveformUrl",
       "value": ""
     },
     {
@@ -138,6 +167,30 @@
     {
       "key": "csrfToken",
       "value": ""
+    },
+    {
+      "key": "commentId",
+      "value": "",
+      "description": "Set by \"Post a comment\""
+    },
+    {
+      "key": "reportId",
+      "value": "",
+      "description": "Pick one from \"Report queue\""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
+    },
+    {
+      "key": "targetUserId",
+      "value": "",
+      "description": "Admin: the user whose roles you change"
+    },
+    {
+      "key": "playSessionId",
+      "value": "",
+      "description": "Set by \"Report playback\" (one per track start)"
     }
   ],
   "item": [
@@ -339,7 +392,7 @@
                 "exec": [
                   "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
                   "if (pm.response.code === 200) {",
-                  "  const t = pm.response.json();",
+                  "  const t = pm.response.json().data;",
                   "  pm.collectionVariables.set(\"accessToken\", t.accessToken);",
                   "  pm.collectionVariables.set(\"refreshToken\", t.refreshToken);",
                   "  pm.collectionVariables.set(\"accessTokenExpiresAt\", String(Date.now() + t.expiresIn * 1000));",
@@ -380,7 +433,7 @@
                 "token"
               ]
             },
-            "description": "200 → {accessToken, tokenType: 'Bearer', expiresIn: 900, refreshToken, refreshTokenExpiresAt}. 401 invalid_credentials (wrong email/password or locked out — indistinguishable). 403 email_not_confirmed. 429 too many attempts. deviceName is shown in the signed-in devices list."
+            "description": "200 → {data: {accessToken, tokenType: 'Bearer', expiresIn: 900, refreshToken, refreshTokenExpiresAt}}. 401 invalid_credentials (wrong email/password or locked out — indistinguishable). 403 email_not_confirmed. 429 too many attempts. deviceName is shown in the signed-in devices list."
           }
         },
         {
@@ -393,7 +446,7 @@
                 "exec": [
                   "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
                   "if (pm.response.code === 200) {",
-                  "  const t = pm.response.json();",
+                  "  const t = pm.response.json().data;",
                   "  pm.collectionVariables.set(\"accessToken\", t.accessToken);",
                   "  pm.collectionVariables.set(\"refreshToken\", t.refreshToken);",
                   "  pm.collectionVariables.set(\"accessTokenExpiresAt\", String(Date.now() + t.expiresIn * 1000));",
@@ -597,7 +650,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set(\"userId\", pm.response.json().data.id);"
                 ]
               }
             }
@@ -616,7 +670,7 @@
                 "me"
               ]
             },
-            "description": "{id, email, handle, displayName, locale, emailConfirmed, roles[]}. 401 when not signed in."
+            "description": "data: {id, email, handle, displayName, locale, emailConfirmed, roles[], avatar: {small, large} | null}. 401 when not signed in."
           }
         },
         {
@@ -694,7 +748,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const other = (pm.response.json().items || []).find((s) => !s.isCurrent);",
+                  "const other = (pm.response.json().data || []).find((s) => !s.isCurrent);",
                   "if (other) pm.collectionVariables.set(\"sessionId\", other.id);"
                 ]
               }
@@ -715,7 +769,7 @@
                 "sessions"
               ]
             },
-            "description": "items[]: {id, createdAt, lastSeenAt, userAgent (deviceName for apps), isCurrent}."
+            "description": "data[]: {id, createdAt, lastSeenAt, userAgent (deviceName for apps), isCurrent}; meta {page, pageSize, total, hasMore}."
           }
         },
         {
@@ -757,7 +811,83 @@
                 "revoke-others"
               ]
             },
-            "description": "200 {revoked: n}."
+            "description": "200 {data: {revoked: n}}."
+          }
+        },
+        {
+          "name": "Set account picture",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "image/jpeg"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "avatar"
+              ]
+            },
+            "description": "Any signed-in user (not only artists). Raw body = the image (JPEG/PNG/WebP, ≥ 200×200 px, ≤ 10 MB); cropped square, metadata removed. 200 → data: {small, large} URLs (also in Me.avatar). Errors: image_invalid, image_too_small, image_too_large. Rate limit: 30/hour per IP."
+          }
+        },
+        {
+          "name": "Account picture",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/avatar/small",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}",
+                "avatar",
+                "small"
+              ]
+            },
+            "description": "image/jpeg, public. 'small' or 'large'. Prefer the URLs in Me.avatar / playlist owner (they change when the picture changes). 404 without a picture."
+          }
+        },
+        {
+          "name": "Remove account picture",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "avatar"
+              ]
+            },
+            "description": "204, idempotent."
           }
         }
       ]
@@ -784,7 +914,7 @@
                 "genres"
               ]
             },
-            "description": "Public reference data: items[] {id, slug, name}."
+            "description": "Public reference data: data[] {slug, name}, meta."
           }
         },
         {
@@ -796,7 +926,7 @@
             },
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/tracks?limit=20",
+              "raw": "{{baseUrl}}/api/v1/tracks?page=1&pageSize=20",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -807,12 +937,16 @@
               ],
               "query": [
                 {
-                  "key": "limit",
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
                   "value": "20"
                 }
               ]
             },
-            "description": "Public, ready tracks, newest first."
+            "description": "Public, ready tracks, newest first. data[] + meta {page, pageSize, total, hasMore}; load the next page while hasMore."
           }
         },
         {
@@ -860,6 +994,17 @@
         },
         {
           "name": "My artist profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) pm.collectionVariables.set(\"artistId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -875,11 +1020,22 @@
                 "artist"
               ]
             },
-            "description": "404 if the user has not created one yet."
+            "description": "404 if the user has not created one yet. data.avatar / data.banner = {small, large} URLs or null."
           }
         },
         {
           "name": "Become an artist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"artistId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -890,7 +1046,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"slug\": \"{{artistSlug}}\",\n  \"name\": \"App Artist\",\n  \"bio\": null\n}",
+              "raw": "{\n  \"bio\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -909,7 +1065,7 @@
                 "artist"
               ]
             },
-            "description": "201. Grants the Artist role (needed to create tracks). 409 if the slug is taken or the user already has one."
+            "description": "201. Name, URL slug and picture are the account's display name, handle and picture (ADR-0013) — set artistSlug to your handle. Grants the Artist role (needed to create tracks). 409 artist_exists if the user already has one."
           }
         },
         {
@@ -918,7 +1074,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/me/tracks",
+              "raw": "{{baseUrl}}/api/v1/me/tracks?page=1&pageSize=50",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -927,9 +1083,19 @@
                 "v1",
                 "me",
                 "tracks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
               ]
             },
-            "description": "All the artist's own tracks, any status."
+            "description": "The artist's own tracks, any status, newest first (paged)."
           }
         },
         {
@@ -941,7 +1107,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"201\", () => pm.response.to.have.status(201));",
-                  "if (pm.response.code === 201) pm.collectionVariables.set(\"trackId\", pm.response.json().id);"
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"trackId\", pm.response.json().data.id);"
                 ]
               }
             }
@@ -974,7 +1140,7 @@
                 "tracks"
               ]
             },
-            "description": "201 → track in status Draft; then upload audio. visibility: Public | Unlisted | Private. 403 if the user is not an artist."
+            "description": "201 → track in status Draft (no audio). Prefer Media → 'Upload a new track', which does it in one request. visibility: Public | Unlisted | Private. 403 if the user is not an artist."
           }
         },
         {
@@ -1034,8 +1200,860 @@
       ]
     },
     {
+      "name": "Albums",
+      "item": [
+        {
+          "name": "Create album",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"albumId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"My first EP\",\n  \"kind\": \"Ep\",\n  \"description\": null,\n  \"releaseDate\": \"2026-10-20\",\n  \"visibility\": \"Public\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/albums",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "albums"
+              ]
+            },
+            "description": "Artist only. kind: Album | Ep | Single; visibility: Public | Unlisted | Private. 201 → data: AlbumDto."
+          }
+        },
+        {
+          "name": "Album",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/albums/{{albumId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "albums",
+                "{{albumId}}"
+              ]
+            },
+            "description": "Album + tracks the viewer can see, in order. Cover = its first track cover. Private: owner only (404)."
+          }
+        },
+        {
+          "name": "Set album tracklist",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackIds\": [\n    \"{{trackId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/albums/{{albumId}}/tracks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "albums",
+                "{{albumId}}",
+                "tracks"
+              ]
+            },
+            "description": "Owner only. The complete tracklist in order (your own tracks, ≤ 100). Tracks left out leave the album."
+          }
+        },
+        {
+          "name": "Update album",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"My first EP (deluxe)\",\n  \"kind\": \"Ep\",\n  \"description\": null,\n  \"releaseDate\": \"2026-10-20\",\n  \"visibility\": \"Public\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/albums/{{albumId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "albums",
+                "{{albumId}}"
+              ]
+            },
+            "description": "Owner only. Send the full object."
+          }
+        },
+        {
+          "name": "My albums",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/albums",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "albums"
+              ]
+            },
+            "description": "The signed-in artist's albums (any visibility)."
+          }
+        },
+        {
+          "name": "Delete album",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/albums/{{albumId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "albums",
+                "{{albumId}}"
+              ]
+            },
+            "description": "204. Tracks are kept."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "item": [
+        {
+          "name": "Search (overview)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search?q={{q}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{q}}"
+                }
+              ]
+            },
+            "description": "Top 6 tracks, artists and albums with totals. Accent-insensitive (\"son tung\" finds \"Sơn Tùng\"), prefix and typo tolerant. Only listed content (Ready public tracks, public albums)."
+          }
+        },
+        {
+          "name": "Search tracks",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/tracks?q={{q}}&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search",
+                "tracks"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{q}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Paged: data[] TrackDto + meta {page, pageSize, total, hasMore}."
+          }
+        },
+        {
+          "name": "Search artists",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/artists?q={{q}}&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search",
+                "artists"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{q}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Paged: data[] ArtistDto."
+          }
+        },
+        {
+          "name": "Search albums",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/albums?q={{q}}&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search",
+                "albums"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{q}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Paged: data[] AlbumDto (public albums only)."
+          }
+        },
+        {
+          "name": "Search playlists",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/playlists?q={{q}}&page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{q}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Public playlists with tracks; without q: newest first."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Playlists",
+      "item": [
+        {
+          "name": "Create playlist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"playlistId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Chill\",\n  \"description\": null,\n  \"visibility\": \"Private\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/playlists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists"
+              ]
+            },
+            "description": "Any signed-in user. visibility: Public | Private. 201 → data: PlaylistDto."
+          }
+        },
+        {
+          "name": "Add track",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackId\": \"{{trackId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}/tracks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}",
+                "tracks"
+              ]
+            },
+            "description": "Owner only; any track you can see. Already there → no-op. 400 playlist_full at 500."
+          }
+        },
+        {
+          "name": "Playlist",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}"
+              ]
+            },
+            "description": "Private: owner only (404). coverUrls = up to 4 track covers for a mosaic."
+          }
+        },
+        {
+          "name": "Playlist tracks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}/tracks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}",
+                "tracks"
+              ]
+            },
+            "description": "In order, without tracks the viewer can't see."
+          }
+        },
+        {
+          "name": "Reorder",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackIds\": [\n    \"{{trackId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}/tracks/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}",
+                "tracks",
+                "order"
+              ]
+            },
+            "description": "Owner only. The tracks you see, in their new order; they swap among their current positions (hidden tracks keep theirs)."
+          }
+        },
+        {
+          "name": "Remove track",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}/tracks/{{trackId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}",
+                "tracks",
+                "{{trackId}}"
+              ]
+            },
+            "description": "204."
+          }
+        },
+        {
+          "name": "My playlists",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/playlists?containsTrack={{trackId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "playlists"
+              ],
+              "query": [
+                {
+                  "key": "containsTrack",
+                  "value": "{{trackId}}",
+                  "description": "Optional: fills containsTrack on each"
+                }
+              ]
+            },
+            "description": "Recently updated first (paged)."
+          }
+        },
+        {
+          "name": "Update playlist",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Chill vibes\",\n  \"description\": \"Late night\",\n  \"visibility\": \"Public\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}"
+              ]
+            },
+            "description": "Owner only. Send the full object."
+          }
+        },
+        {
+          "name": "Delete playlist",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/playlists/{{playlistId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "playlists",
+                "{{playlistId}}"
+              ]
+            },
+            "description": "204."
+          }
+        }
+      ]
+    },
+    {
       "name": "Media",
       "item": [
+        {
+          "name": "Upload a new track (details + audio + cover)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"202\", () => pm.response.to.have.status(202));",
+                  "if (pm.response.code === 202) pm.collectionVariables.set(\"trackId\", pm.response.json().data.trackId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "My new track",
+                  "type": "text"
+                },
+                {
+                  "key": "visibility",
+                  "value": "Private",
+                  "type": "text",
+                  "description": "Public | Unlisted | Private"
+                },
+                {
+                  "key": "genreSlug",
+                  "value": "ambient",
+                  "type": "text",
+                  "description": "Optional"
+                },
+                {
+                  "key": "description",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true,
+                  "description": "Optional"
+                },
+                {
+                  "key": "artwork",
+                  "type": "file",
+                  "src": "",
+                  "description": "Optional cover: JPEG/PNG/WebP, ≥ 200×200 px, ≤ 10 MB"
+                },
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": "",
+                  "description": "Required. Send it last."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/track-uploads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "track-uploads"
+              ]
+            },
+            "description": "One request creates the track and starts processing — all or nothing (on any error no track exists).\nmultipart/form-data with text fields first, then artwork (optional), then audio. 202 → data: upload status; Location: /api/v1/tracks/{id}.\nErrors (400, field in errors): track_title_invalid, track_description_too_long, track_visibility_invalid, genre_unknown, audio_required, unsupported_file_type, file_too_large, artwork_invalid, artwork_too_small, artwork_too_large; multipart_required / multipart_invalid; 403 artist_required.\nFlutter (dio): FormData.fromMap({'title': …, 'visibility': 'Public', 'artwork': await MultipartFile.fromFile(coverPath), 'audio': await MultipartFile.fromFile(path)}) with onSendProgress.\nRate limit: 30 uploads/hour per IP."
+          }
+        },
+        {
+          "name": "Set / replace cover",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "image/jpeg"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/artwork",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "artwork"
+              ]
+            },
+            "description": "Owner only. Raw body = the image (JPEG/PNG/WebP, ≥ 200×200 px, ≤ 10 MB). 200 → data: {small, large} URLs. Cropped to a square; metadata removed."
+          }
+        },
+        {
+          "name": "Remove cover",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/artwork",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "artwork"
+              ]
+            },
+            "description": "204. Owner only."
+          }
+        },
+        {
+          "name": "Cover image",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/artwork/small",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "artwork",
+                "small"
+              ]
+            },
+            "description": "image/jpeg. 'small' (≈320 px) or 'large' (≈1200 px). Use the URLs in track.artwork (they change when the cover changes). Anyone who can see the track; 404 otherwise or without a cover."
+          }
+        },
+        {
+          "name": "Set artist banner",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "image/jpeg"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/artist/banner",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "artist",
+                "banner"
+              ]
+            },
+            "description": "Signed-in artist. Raw body = image (JPEG/PNG/WebP, 3:1, ≥ 600×200, ≤ 10 MB); 800/1600 px wide renditions. 200 → data: {small, large}. Errors: image_invalid, image_too_small, image_too_large; 404 artist_not_found. The artist picture is the account picture (PUT /me/avatar)."
+          }
+        },
+        {
+          "name": "Remove artist banner",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/artist/banner",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "artist",
+                "banner"
+              ]
+            },
+            "description": "204."
+          }
+        },
+        {
+          "name": "Artist banner",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/artists/{{artistId}}/banner/small",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "artists",
+                "{{artistId}}",
+                "banner",
+                "small"
+              ]
+            },
+            "description": "image/jpeg, public. /banner/{small|large}. Prefer the URLs in ArtistDto.banner. 404 without a banner. The artist picture is the account picture (ArtistDto.avatar)."
+          }
+        },
         {
           "name": "Upload audio",
           "request": {
@@ -1075,7 +2093,7 @@
                 "upload"
               ]
             },
-            "description": "Raw request body = the audio file (NOT multipart). Pick the file under Body → binary and set {{uploadLength}} to its size in bytes.\nMP3/WAV/FLAC/AAC/M4A/OGG/Opus, ≤ 200 MB, 1 s–2 h. 202 → processing starts (track status Processing → Ready/Failed).\nErrors: upload_length_required, file_too_large, upload_incomplete (size mismatch / connection dropped), unsupported_file_type, track_not_uploadable / upload_in_progress (409). Processing failures (unsupported_format, no_audio_stream, duration_too_short|long, processing_*) appear in track.processingError.\nFlutter (dio): dio.put(url, data: file.openRead(), options: Options(headers: {'Content-Type': 'application/octet-stream', 'X-Upload-Length': await file.length(), 'X-File-Name': Uri.encodeComponent(name)}), onSendProgress: …).\nRate limit: 30 uploads/hour per IP."
+            "description": "For an existing Draft, or again after Failed/Cancelled — new tracks use \"Upload a new track\". Raw request body = the audio file (NOT multipart). Pick the file under Body → binary and set {{uploadLength}} to its size in bytes.\nMP3/WAV/FLAC/AAC/M4A/OGG/Opus, ≤ 200 MB, 1 s–2 h. 202 → processing starts (track status Processing → Ready/Failed).\nErrors: upload_length_required, file_too_large, upload_incomplete (size mismatch / connection dropped), unsupported_file_type, track_not_uploadable / upload_in_progress (409). Processing failures (unsupported_format, no_audio_stream, duration_too_short|long, processing_*) appear in track.processingError.\nFlutter (dio): dio.put(url, data: file.openRead(), options: Options(headers: {'Content-Type': 'application/octet-stream', 'X-Upload-Length': await file.length(), 'X-File-Name': Uri.encodeComponent(name)}), onSendProgress: …).\nRate limit: 30 uploads/hour per IP."
           }
         },
         {
@@ -1121,7 +2139,70 @@
           }
         },
         {
-          "name": "Stream audio",
+          "name": "Playback URLs (for the player)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json().data;",
+                  "  pm.collectionVariables.set(\"streamUrl\", d.streamUrl);",
+                  "  pm.collectionVariables.set(\"waveformUrl\", d.waveformUrl);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/playback",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "playback"
+              ]
+            },
+            "description": "200 → data: {trackId, streamUrl, waveformUrl, contentType: \"audio/mp4\", sizeBytes, durationMs, expiresAt}. Cache-Control: no-store.\nstreamUrl/waveformUrl are relative to the base URL and carry ?token=vzp_… (valid ~6 h): hand baseUrl + streamUrl to the player with NO headers\n(just_audio: AudioSource.uri(Uri.parse(baseUrl + streamUrl)) — works with background playback, iOS, casting).\nPublic tracks: works without sign-in. Private tracks: owner only (bearer). 404 track_not_found / media_not_ready.\nWhen the player gets 401 playback_token_invalid (expired), call this endpoint again and resume at the same position."
+          }
+        },
+        {
+          "name": "Stream audio (player URL)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Range",
+                "value": "bytes=0-",
+                "description": "Players send ranges; 206 Partial Content / 416"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{streamUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{streamUrl}}"
+              ]
+            },
+            "description": "What the player requests: the URL from \"Playback URLs\", no Authorization header. AAC (audio/mp4), HTTP Range. 401 playback_token_invalid when expired."
+          }
+        },
+        {
+          "name": "Stream audio (credentials)",
           "request": {
             "method": "GET",
             "header": [
@@ -1144,7 +2225,7 @@
                 "stream"
               ]
             },
-            "description": "AAC (audio/mp4) with HTTP Range support. Public tracks need no auth; private ones need the owner's bearer token — with just_audio pass headers: {'Authorization': 'Bearer …'} on AudioSource.uri. 404 when not visible or not ready."
+            "description": "Same stream authorised by bearer/cookie instead of a token (the web app uses this). Public tracks need no auth. 404 when not visible or not ready."
           }
         },
         {
@@ -1165,7 +2246,948 @@
                 "waveform"
               ]
             },
-            "description": "{version, durationMs, peaks: float[~1000] in 0..1}. Same visibility rules as streaming."
+            "description": "data: {version, durationMs, peaks: float[~1000] in 0..1}. Same visibility rules as streaming; also accepts ?token= (use waveformUrl)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Social",
+      "description": "Likes, follows and timed comments (M4). Writes are rate-limited (60/min per account).",
+      "item": [
+        {
+          "name": "Track engagement",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/engagement",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "engagement"
+              ]
+            },
+            "description": "data: {likeCount, commentCount, liked}. Anyone who can see the track (liked=false when signed out)."
+          }
+        },
+        {
+          "name": "Like track",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/like",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "like"
+              ]
+            },
+            "description": "Idempotent. Track must be playable for you. 200 → engagement. The artist gets a notification (not for their own tracks)."
+          }
+        },
+        {
+          "name": "Unlike track",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/like",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "like"
+              ]
+            },
+            "description": "Idempotent. 200 → engagement."
+          }
+        },
+        {
+          "name": "My liked track ids",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/likes/ids",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "likes",
+                "ids"
+              ]
+            },
+            "description": "All ids (≤ 5000, newest first) — mark hearts in lists without one request per track."
+          }
+        },
+        {
+          "name": "List comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/comments?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "comments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Top-level comments newest first (paged); each has replies[] oldest first. timestampMs = moment of the track (ms) or null. Plain text — render as text."
+          }
+        },
+        {
+          "name": "Post a comment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"commentId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Love this drop!\",\n  \"timestampMs\": 42000,\n  \"parentId\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "comments"
+              ]
+            },
+            "description": "1–1000 chars. timestampMs pins it to the waveform (top-level only). parentId → reply (a reply to a reply attaches to its top-level comment). 201. Errors: comment_body_invalid, comment_timestamp_invalid, comment_not_found (parent)."
+          }
+        },
+        {
+          "name": "Edit comment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Edited text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comments/{{commentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comments",
+                "{{commentId}}"
+              ]
+            },
+            "description": "Author only (404 otherwise)."
+          }
+        },
+        {
+          "name": "Delete comment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comments/{{commentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comments",
+                "{{commentId}}"
+              ]
+            },
+            "description": "204. Author, the track's owner or a moderator; 404 for others."
+          }
+        },
+        {
+          "name": "Follow summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/artists/{{artistId}}/followers/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "artists",
+                "{{artistId}}",
+                "followers",
+                "summary"
+              ]
+            },
+            "description": "data: {followerCount, following}."
+          }
+        },
+        {
+          "name": "Follow artist",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/artists/{{artistId}}/follow",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "artists",
+                "{{artistId}}",
+                "follow"
+              ]
+            },
+            "description": "Idempotent. 400 follow_self for your own profile. The artist gets a notification."
+          }
+        },
+        {
+          "name": "Unfollow artist",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/artists/{{artistId}}/follow",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "artists",
+                "{{artistId}}",
+                "follow"
+              ]
+            },
+            "description": "Idempotent."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Library & charts",
+      "item": [
+        {
+          "name": "Liked tracks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/likes?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "likes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "data: [{likedAt, track: TrackDto}], newest like first. Tracks you can no longer see are left out (total still counts them)."
+          }
+        },
+        {
+          "name": "Listening history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/history?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Recently played: [{playedAt, track}], one entry per track, most recent first."
+          }
+        },
+        {
+          "name": "Followed artists",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/following",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "following"
+              ]
+            },
+            "description": "[{id, slug, name, avatarUrl, followedAt}] newest first (paged)."
+          }
+        },
+        {
+          "name": "Trending",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/trending?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "trending"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Chart: valid listens + 2 × likes over the last 7 days, recent days weigh more. Same for everyone (not personalised). Top 100, paged."
+          }
+        },
+        {
+          "name": "Related tracks",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/related",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "related"
+              ]
+            },
+            "description": "≤ 12 public tracks by the same artist or in the same genre (label them as such in the UI — not recommendations)."
+          }
+        },
+        {
+          "name": "Track stats",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracks/{{trackId}}/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tracks",
+                "{{trackId}}",
+                "stats"
+              ]
+            },
+            "description": "data: {plays (started), listens (valid)}, all time."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Report playback",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get(\"playSessionId\")) pm.collectionVariables.set(\"playSessionId\", crypto.randomUUID());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientId\": null,\n  \"events\": [\n    {\n      \"id\": \"{{$guid}}\",\n      \"sessionId\": \"{{playSessionId}}\",\n      \"trackId\": \"{{trackId}}\",\n      \"type\": \"started\",\n      \"positionMs\": 0,\n      \"listenedMs\": 0,\n      \"clientTimestamp\": null\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plays",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "plays"
+              ]
+            },
+            "description": "Send from the player: \"started\" when a track starts (new sessionId per start), \"progress\" every ~15 s of actual listening, \"completed\" at the end.\nlistenedMs = playback time accumulated in this session (seeks don't count); the server caps it by wall-clock time since the session started.\nA valid listen = ≥ 30 s (half of tracks under 60 s), once per listener and track per 30 minutes. Event ids are idempotency keys: retry a failed batch with the same ids.\nSigned-out players may send clientId (a random UUID kept on the device) so their listens de-duplicate. 1–50 events per batch; 202 → {accepted}. Rate limit 60 batches/min."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "Realtime: SignalR hub {{baseUrl}}/api/v1/hubs/notifications (apps: ?access_token={{accessToken}}) sends 'unread' with {count}; then refetch.",
+      "item": [
+        {
+          "name": "My notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/notifications?unreadOnly=false&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "unreadOnly",
+                  "value": "false"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Newest first. type: TrackLiked, ArtistFollowed, CommentPosted, CommentReplied, TrackReady, TrackFailed, ReportResolved, ContentRemoved. Link with trackId / artistSlug; code = error/outcome/reason."
+          }
+        },
+        {
+          "name": "Unread count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/notifications/unread-count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "notifications",
+                "unread-count"
+              ]
+            },
+            "description": "data: {count}."
+          }
+        },
+        {
+          "name": "Mark one read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            },
+            "description": "204; 404 if it isn't yours."
+          }
+        },
+        {
+          "name": "Mark all read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "notifications",
+                "read-all"
+              ]
+            },
+            "description": "204."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Moderation",
+      "item": [
+        {
+          "name": "Report content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subjectType\": \"Track\",\n  \"subjectId\": \"{{trackId}}\",\n  \"reason\": \"Copyright\",\n  \"details\": \"Original: https://example.com/…\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reports"
+              ]
+            },
+            "description": "subjectType: Track | Comment | Playlist; reason: Copyright | Abuse | Spam | Other. 201. Errors: report_own_content (400), report_subject_not_found (404), report_exists (409 — one open report per item)."
+          }
+        },
+        {
+          "name": "Report queue (moderators)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/moderation/reports?status=Open&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "moderation",
+                "reports"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Open"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Moderator/Admin. status=Open (oldest first) | Actioned | Rejected; omit for all. 403 for other users."
+          }
+        },
+        {
+          "name": "Resolve report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"remove\",\n  \"note\": \"Confirmed copyright claim\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/moderation/reports/{{reportId}}/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "moderation",
+                "reports",
+                "{{reportId}}",
+                "resolve"
+              ]
+            },
+            "description": "Moderator/Admin. action: remove (takes the content down and settles every open report on it) | dismiss. Audited; reporters and the owner are notified. 409 report_not_open."
+          }
+        },
+        {
+          "name": "Restore content",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/moderation/content/Track/{{trackId}}/restore",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "moderation",
+                "content",
+                "Track",
+                "{{trackId}}",
+                "restore"
+              ]
+            },
+            "description": "Moderator/Admin. Track or Playlist. 204. Audited."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Admin role only (403 otherwise).",
+      "item": [
+        {
+          "name": "Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users?q=&role=&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "role",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Grant role",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/{{targetUserId}}/roles/Moderator",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users",
+                "{{targetUserId}}",
+                "roles",
+                "Moderator"
+              ]
+            },
+            "description": "Moderator or Admin. Idempotent, audited, effective immediately."
+          }
+        },
+        {
+          "name": "Revoke role",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/{{targetUserId}}/roles/Moderator",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users",
+                "{{targetUserId}}",
+                "roles",
+                "Moderator"
+              ]
+            },
+            "description": "400 role_self_admin when removing your own Admin."
+          }
+        },
+        {
+          "name": "All tracks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/tracks?q=&takenDown=&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "tracks"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "takenDown",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Moderators too. Every non-deleted track, any status/visibility."
+          }
+        },
+        {
+          "name": "Processing jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/jobs?status=&page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "jobs"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Job summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/jobs/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "jobs",
+                "summary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Outbox summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/outbox",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "outbox"
+              ]
+            },
+            "description": "{pending, deadLettered, processedLastDay}."
+          }
+        },
+        {
+          "name": "Audit log",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/audit-log?page=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "audit-log"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
           }
         }
       ]
@@ -1182,7 +3204,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.collectionVariables.set(\"csrfToken\", pm.response.json().token);"
+                  "pm.collectionVariables.set(\"csrfToken\", pm.response.json().data.token);"
                 ]
               }
             }

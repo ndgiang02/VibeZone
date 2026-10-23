@@ -26,7 +26,7 @@ describe("GenreBrowser", () => {
   it("renders genres returned by the API", async () => {
     const fetchMock = stubFetch(
       jsonResponse({
-        items: [
+        data: [
           { slug: "house", name: "House" },
           { slug: "v-pop", name: "V-Pop" },
         ],
@@ -42,7 +42,7 @@ describe("GenreBrowser", () => {
   });
 
   it("shows an empty state when there are no genres", async () => {
-    stubFetch(jsonResponse({ items: [] }));
+    stubFetch(jsonResponse({ data: [] }));
 
     renderWithProviders(<GenreBrowser />);
 
@@ -55,7 +55,7 @@ describe("GenreBrowser", () => {
     const fetchMock = stubFetch(
       jsonResponse(problem, 500),
       jsonResponse(problem, 500),
-      jsonResponse({ items: [{ slug: "jazz", name: "Jazz" }] }),
+      jsonResponse({ data: [{ slug: "jazz", name: "Jazz" }] }),
     );
 
     renderWithProviders(<GenreBrowser />);

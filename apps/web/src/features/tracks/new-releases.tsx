@@ -2,41 +2,67 @@
 
 import { Music } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { EmptyState, ErrorState, Skeleton } from "@/components/states/states";
+import { EmptyState, ErrorState } from "@/components/states/states";
 import { errorCode } from "@/lib/api/errors";
+import { CardGridSkeleton, MediaSection } from "@/features/home/media-section";
+import { demoHotSongs } from "@/features/showcase/data";
+import { DemoBadge } from "@/features/showcase/demo-badge";
+import { DemoCard } from "@/features/showcase/demo-card";
+import { showcaseEnabled } from "@/features/showcase/showcase";
 import { useNewReleases } from "./api";
-import { TrackList } from "./track-list";
+import { TrackCard } from "./track-card";
 
-/** Newest public, ready tracks — a real chronological list, not a recommendation. */
+/** How many new releases the home page loads (shared with the banner and the artist panel: one request). */
+export const HOME_RELEASES = 12;
+
+/**
+ * Newest public, ready tracks — a real chronological list, not a recommendation. Only when the catalog is
+ * empty (never on error) does the showcase fill the slot with badged sample songs.
+ */
 export function NewReleases() {
-  const t = useTranslations("home.newReleases");
+  const t = useTranslations("home");
   const tErrors = useTranslations("errors");
   const tCommon = useTranslations("common");
-  const releases = useNewReleases(12);
+  const releases = useNewReleases(HOME_RELEASES);
+
+  if (releases.isSuccess && releases.data.length === 0 && showcaseEnabled) {
+    return (
+      <MediaSection
+        title={t("hotSongs")}
+        badge={<DemoBadge />}
+        note={t("demo.note")}
+        items={demoHotSongs}
+        getKey={(item) => item.id}
+        renderItem={(item) => <DemoCard item={item} />}
+      />
+    );
+  }
 
   return (
-    <section aria-labelledby="new-releases" className="flex flex-col gap-4">
-      <h2 id="new-releases" className="text-title font-semibold">
-        {t("title")}
-      </h2>
-      {releases.isPending ? (
-        <div className="flex flex-col gap-2" aria-busy="true" aria-label={tCommon("loading")}>
-          {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} className="h-16" />
-          ))}
-        </div>
-      ) : releases.isError ? (
-        <ErrorState
-          title={t("errorTitle")}
-          description={tErrors(errorCode(releases.error))}
-          onRetry={() => void releases.refetch()}
-          retryLabel={tCommon("retry")}
-        />
-      ) : releases.data.length === 0 ? (
-        <EmptyState icon={Music} title={t("emptyTitle")} description={t("emptyBody")} />
-      ) : (
-        <TrackList tracks={releases.data} />
-      )}
-    </section>
+    <MediaSection
+      title={t("newReleases.title")}
+      busy={releases.isPending}
+      items={releases.data ?? []}
+      getKey={(track) => track.id}
+      renderItem={(track) => <TrackCard track={track} context={releases.data ?? []} />}
+      fallback={
+        releases.isPending ? (
+          <CardGridSkeleton label={tCommon("loading")} />
+        ) : releases.isError ? (
+          <ErrorState
+            title={t("newReleases.errorTitle")}
+            description={tErrors(errorCode(releases.error))}
+            onRetry={() => void releases.refetch()}
+            retryLabel={tCommon("retry")}
+          />
+        ) : releases.data.length === 0 ? (
+          <EmptyState
+            icon={Music}
+            title={t("newReleases.emptyTitle")}
+            description={t("newReleases.emptyBody")}
+          />
+        ) : undefined
+      }
+    />
   );
 }

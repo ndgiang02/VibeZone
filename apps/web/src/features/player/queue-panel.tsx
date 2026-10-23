@@ -64,7 +64,7 @@ export function QueuePanel({ onClose }: { onClose: () => void }) {
                 className="flex min-w-0 flex-1 items-center gap-3 text-left"
                 aria-current={i === index ? "true" : undefined}
               >
-                <TrackArt id={track.id} className="size-9" />
+                <TrackArt id={track.id} artwork={track.artwork} className="size-9" />
                 <span className="min-w-0">
                   <span className={cn("block truncate text-sm font-medium", i === index && "text-primary")}>
                     {track.title}

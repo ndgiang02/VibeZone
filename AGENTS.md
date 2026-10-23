@@ -55,8 +55,8 @@ docs/                             architecture, adr, runbooks, progress, api (Po
 docker-compose.yml, .env.example  local dependencies
 ```
 
-Modules: Identity (exists), Catalog (exists), Playlists, Media, Social, Analytics, Notifications,
-Moderation (ADR-0001). **Adding a module**: create the project, implement `IModule`
+Modules: Identity, Catalog, Media, Playlists (exist); Social, Analytics, Notifications, Moderation
+(planned, ADR-0001). **Adding a module**: create the project, implement `IModule`
 (see `CatalogModule`), register it in `AppModules.Create()`, add it to the solution and to the
 API Dockerfile restore layer. Architecture tests pick it up automatically.
 
@@ -104,7 +104,8 @@ Errors returned as RFC 9457 Problem Details. Central package management
 Server Components by default, `"use client"` only where needed. API types generated from
 OpenAPI. Components: PascalCase files; hooks `useX`; Zustand stores in `src/stores`.
 
-**UI**: dark-first design tokens (charcoal background, coral-orange accent) defined once as CSS
+**UI**: dark-first design tokens (near-black `#050505` background, lime `#A8D64A` accent used sparingly:
+active nav, primary actions, playback progress, focus) defined once as CSS
 variables/Tailwind theme; every data view has loading, empty, error and success states;
 keyboard accessible, visible focus, ARIA on player controls; no autoplay before user gesture.
 
@@ -114,6 +115,12 @@ keyboard accessible, visible focus, ARIA on player controls; no autoplay before 
 hardcode UI text. Keys are type-checked; a unit test enforces identical keys and placeholders in both
 files. Navigation uses `@/i18n/navigation` (`Link`, `useRouter`, `usePathname`), not `next/link` /
 `next/navigation`. Email templates are localized server-side from the user's profile locale.
+
+**API responses** (ADR-0008): success bodies are `ApiResults.Ok/Created/Accepted(dto)` → `{ "data": … }`;
+collections are `ApiResults.List(items)` / `ApiResults.Page(paged)` → `{ "data": [ … ], "meta": { page,
+pageSize, total, hasMore } }`; declare them with `.Produces<ApiResponse<T>>()` / `.Produces<ApiListResponse<T>>()`.
+Lists that can grow take `page`/`pageSize` (`PageRequest`, max 50). 204, binary streams and health
+endpoints are not wrapped. The web `unwrap()` returns `data`; tests read it with `DataAsync()`.
 
 **API errors**: endpoints return Problem Details with a stable snake_case `code` (and
 `errors[field] = [code]` for field validation). Add every new code to `messages/*/errors`; the web
@@ -127,7 +134,10 @@ app maps codes → text (`errorCode()`, `applyServerErrors()`), never rendering 
 rendered per request for the CSP nonce (ADR-0006) — do not re-enable `cacheComponents`.
 
 **Mock data**: allowed only in tests, Storybook-style previews, or dev seed commands that are
-clearly labelled. Never to fake a feature in the running app.
+clearly labelled. Never to fake a feature in the running app. The one exception is the web **UI
+showcase** (`apps/web/src/features/showcase`): sample cards/playlists/artists shown only when
+`showcaseEnabled` (`next dev`, or `NEXT_PUBLIC_SHOWCASE=true`), always badged "Demo", never playable,
+never persisted, and never shown in place of an API error. Production builds have it off.
 
 ## 7. Testing & verification workflow
 

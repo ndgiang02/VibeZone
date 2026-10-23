@@ -4,14 +4,15 @@ using VibeZone.SharedKernel;
 
 namespace VibeZone.Modules.Catalog.Application.Tracks;
 
-/// <summary>Self-serve artist profiles: any signed-in (hence email-verified) user can become an artist.</summary>
-public sealed class ArtistService(ICatalogRepository repository, IUserRoles roles, TimeProvider time)
+/// <summary>
+/// Self-serve artist profiles: any signed-in (hence email-verified) user can become an artist. The profile is the
+/// account's public face — its name, URL and picture are the account's (ADR-0013).
+/// </summary>
+public sealed class ArtistService(ICatalogRepository repository, AlbumService albums, IUserRoles roles, IUserDirectory users, TimeProvider time)
 {
     public async Task<Result<ArtistDto>> CreateForUserAsync(Guid userId, CreateArtistRequest request, CancellationToken cancellationToken)
     {
-        var slug = Artist.NormalizeSlug(request.Slug);
-        var name = Artist.NormalizeName(request.Name);
-        if (Artist.Validate(slug, name, request.Bio) is { } invalid)
+        if (Artist.ValidateBio(request.Bio) is { } invalid)
         {
             return invalid;
         }
@@ -21,12 +22,12 @@ public sealed class ArtistService(ICatalogRepository repository, IUserRoles role
             return DomainError.Conflict("artist_exists", "You already have an artist profile.");
         }
 
-        if (await repository.ArtistSlugTakenAsync(slug, cancellationToken))
+        if (await users.FindProfileAsync(userId, cancellationToken) is not { } profile)
         {
-            return DomainError.Conflict("artist_slug_taken", "This artist URL is taken.", "slug");
+            return DomainError.NotFound("user_not_found", "User not found.");
         }
 
-        var artist = Artist.Create(userId, slug, name, request.Bio, time.GetUtcNow());
+        var artist = Artist.Create(userId, profile.Handle, profile.DisplayName, profile.AvatarId, request.Bio, time.GetUtcNow());
         repository.Add(artist);
         await repository.SaveChangesAsync(cancellationToken);
         await roles.GrantAsync(userId, Roles.Artist, cancellationToken);
@@ -53,6 +54,6 @@ public sealed class ArtistService(ICatalogRepository repository, IUserRoles role
             .Where(r => isOwner || r.Track.Visibility == TrackVisibility.Public) // unlisted: link only
             .Select(r => r.ToDto(isOwner))
             .ToList();
-        return new ArtistProfileDto(artist.ToDto(), tracks);
+        return new ArtistProfileDto(artist.ToDto(), tracks, await albums.ListForArtistAsync(artist, isOwner, viewerIsModerator, cancellationToken));
     }
 }

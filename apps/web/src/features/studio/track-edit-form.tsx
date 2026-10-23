@@ -3,26 +3,30 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { FormMessage } from "@/components/forms/form-message";
 import { SubmitButton } from "@/components/forms/submit-button";
 import { TextField } from "@/components/forms/text-field";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { ErrorCode } from "@/lib/api/errors";
 import { applyServerErrors } from "@/features/auth/server-errors";
+import { useUpdateTrack } from "@/features/catalog/api";
 import { useGenres } from "@/features/catalog/use-genres";
-import { useCreateTrack } from "@/features/tracks/api";
+import type { Track } from "@/features/tracks/api";
 
 const selectClass = "h-10 rounded-lg border border-input bg-transparent px-3 text-sm dark:bg-input/30";
 
-/** Step 1: track metadata (creates a Draft). Step 2 is the upload on the track's row. */
-export function NewTrackForm({ onCreated }: { onCreated: (trackId: string) => void }) {
+/** Inline editor for a track's details (PATCH sends the full object). */
+export function TrackEditForm({ track, onDone }: { track: Track; onDone: () => void }) {
   const t = useTranslations("studio.newTrack");
+  const tEdit = useTranslations("studio.edit");
   const tTrack = useTranslations("track");
+  const tCommon = useTranslations("common");
   const tErrors = useTranslations("errors");
   const genres = useGenres();
-  const create = useCreateTrack();
+  const update = useUpdateTrack(track.id);
   const [formError, setFormError] = useState<ErrorCode | null>(null);
   const schema = z.object({
     title: z.string().trim().min(1, t("titleInvalid")).max(120, t("titleInvalid")),
@@ -32,22 +36,24 @@ export function NewTrackForm({ onCreated }: { onCreated: (trackId: string) => vo
   });
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { title: "", genreSlug: "", visibility: "Public", description: "" },
+    defaultValues: {
+      title: track.title,
+      genreSlug: track.genre?.slug ?? "",
+      visibility: track.visibility,
+      description: track.description ?? "",
+    },
   });
 
-  const visibility = useWatch({ control: form.control, name: "visibility" });
-
-  const onSubmit = form.handleSubmit(async (values) => {
+  const submit = async (values: z.infer<typeof schema>) => {
     setFormError(null);
     try {
-      const track = await create.mutateAsync({
+      await update.mutateAsync({
         title: values.title,
         genreSlug: values.genreSlug || null,
         visibility: values.visibility,
         description: values.description || null,
       });
-      form.reset();
-      onCreated(track.id);
+      onDone();
     } catch (error) {
       setFormError(
         applyServerErrors(error, ["title", "genreSlug", "visibility", "description"], form.setError, (c) =>
@@ -55,10 +61,14 @@ export function NewTrackForm({ onCreated }: { onCreated: (trackId: string) => vo
         ),
       );
     }
-  });
+  };
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+    <form
+      onSubmit={(event) => void form.handleSubmit(submit)(event)}
+      noValidate
+      className="flex animate-in flex-col gap-4 rounded-xl border bg-surface-card p-4 duration-300 fade-in slide-in-from-top-1"
+    >
       {formError ? <FormMessage tone="error">{tErrors(formError)}</FormMessage> : null}
       <TextField
         label={t("title")}
@@ -67,9 +77,9 @@ export function NewTrackForm({ onCreated }: { onCreated: (trackId: string) => vo
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="track-genre">{t("genre")}</Label>
+          <Label htmlFor={`edit-genre-${track.id}`}>{t("genre")}</Label>
           <select
-            id="track-genre"
+            id={`edit-genre-${track.id}`}
             className={selectClass}
             disabled={genres.isPending}
             {...form.register("genreSlug")}
@@ -83,26 +93,18 @@ export function NewTrackForm({ onCreated }: { onCreated: (trackId: string) => vo
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="track-visibility">{t("visibility")}</Label>
-          <select
-            id="track-visibility"
-            className={selectClass}
-            aria-describedby="track-visibility-hint"
-            {...form.register("visibility")}
-          >
+          <Label htmlFor={`edit-vis-${track.id}`}>{t("visibility")}</Label>
+          <select id={`edit-vis-${track.id}`} className={selectClass} {...form.register("visibility")}>
             <option value="Public">{tTrack("visibility.Public")}</option>
             <option value="Unlisted">{tTrack("visibility.Unlisted")}</option>
             <option value="Private">{tTrack("visibility.Private")}</option>
           </select>
-          <p id="track-visibility-hint" className="text-xs text-muted-foreground">
-            {t(`visibilityHint.${visibility}`)}
-          </p>
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="track-description">{t("description")}</Label>
+        <Label htmlFor={`edit-desc-${track.id}`}>{t("description")}</Label>
         <textarea
-          id="track-description"
+          id={`edit-desc-${track.id}`}
           rows={3}
           className="rounded-lg border border-input bg-transparent px-3 py-2 text-sm dark:bg-input/30"
           aria-invalid={form.formState.errors.description ? true : undefined}
@@ -112,9 +114,12 @@ export function NewTrackForm({ onCreated }: { onCreated: (trackId: string) => vo
           <p className="text-xs text-destructive">{form.formState.errors.description.message}</p>
         ) : null}
       </div>
-      <SubmitButton pending={create.isPending} className="self-start">
-        {t("submit")}
-      </SubmitButton>
+      <div className="flex gap-2">
+        <SubmitButton pending={update.isPending}>{tEdit("save")}</SubmitButton>
+        <Button type="button" variant="ghost" size="lg" className="h-10" onClick={onDone}>
+          {tCommon("cancel")}
+        </Button>
+      </div>
     </form>
   );
 }

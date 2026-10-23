@@ -29,6 +29,15 @@ public sealed class UserProfile
 
     public DateTimeOffset UpdatedAt { get; private set; }
 
+    /// <summary>Version of the current account picture (stored by the Media module), or null.</summary>
+    public Guid? AvatarId { get; private set; }
+
+    public void SetAvatar(Guid? imageId, DateTimeOffset now)
+    {
+        AvatarId = imageId;
+        UpdatedAt = now;
+    }
+
     public static string NormalizeDisplayName(string? value) => string.Join(' ', (value ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
     public static DomainError? ValidateDisplayName(string normalized) =>

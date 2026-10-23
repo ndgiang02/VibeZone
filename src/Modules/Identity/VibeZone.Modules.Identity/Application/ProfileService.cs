@@ -1,3 +1,4 @@
+using VibeZone.Modules.Identity.Contracts;
 using VibeZone.Modules.Identity.Domain;
 using VibeZone.SharedKernel;
 
@@ -10,11 +11,15 @@ public sealed record MeDto(
     string DisplayName,
     string Locale,
     bool EmailConfirmed,
-    IReadOnlyList<string> Roles);
+    IReadOnlyList<string> Roles,
+    UserAvatarDto? Avatar);
+
+/// <summary>Account picture: square JPEG, small ≈ 160 px, large ≈ 640 px.</summary>
+public sealed record UserAvatarDto(string Small, string Large);
 
 public sealed record UpdateProfileRequest(string? DisplayName, string? Locale);
 
-public sealed class ProfileService(IUserAccounts accounts, IUserProfiles profiles, TimeProvider time)
+public sealed class ProfileService(IUserAccounts accounts, IUserProfiles profiles, IEnumerable<IPublicProfileListener> listeners, TimeProvider time)
 {
     public async Task<Result<MeDto>> GetMeAsync(Guid userId, CancellationToken cancellationToken)
     {
@@ -26,7 +31,10 @@ public sealed class ProfileService(IUserAccounts accounts, IUserProfiles profile
         }
 
         var roles = await accounts.GetRolesAsync(userId, cancellationToken);
-        return new MeDto(account.Id, account.Email, account.Handle, profile.DisplayName, profile.Locale, account.EmailConfirmed, roles);
+        var avatar = profile.AvatarId is { } imageId
+            ? new UserAvatarDto(UserAvatarPaths.For(userId, imageId, "small"), UserAvatarPaths.For(userId, imageId, "large"))
+            : null;
+        return new MeDto(account.Id, account.Email, account.Handle, profile.DisplayName, profile.Locale, account.EmailConfirmed, roles, avatar);
     }
 
     public async Task<Result<MeDto>> UpdateProfileAsync(Guid userId, UpdateProfileRequest request, CancellationToken cancellationToken)
@@ -42,13 +50,24 @@ public sealed class ProfileService(IUserAccounts accounts, IUserProfiles profile
             return DomainError.Validation("locale_unsupported", "Unsupported language.", "locale");
         }
 
+        var account = await accounts.FindByIdAsync(userId, cancellationToken);
         var profile = await profiles.FindAsync(userId, cancellationToken);
-        if (profile is null)
+        if (account is null || profile is null)
         {
             return DomainError.NotFound("user_not_found", "User not found.");
         }
 
+        var renamed = profile.DisplayName != displayName;
         profile.Update(displayName, request.Locale ?? profile.Locale, time.GetUtcNow());
+        if (renamed)
+        {
+            // The artist profile shows the account's name (ADR-0013): same transaction.
+            foreach (var listener in listeners)
+            {
+                await listener.StageProfileChangedAsync(new PublicProfile(userId, account.Handle, displayName, profile.AvatarId), cancellationToken);
+            }
+        }
+
         await profiles.SaveChangesAsync(cancellationToken);
         return await GetMeAsync(userId, cancellationToken);
     }

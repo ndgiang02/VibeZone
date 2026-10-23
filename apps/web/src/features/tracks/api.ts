@@ -13,6 +13,9 @@ export type Waveform = { version: number; durationMs: number; peaks: number[] };
 export const trackKeys = {
   all: ["tracks"] as const,
   newReleases: ["tracks", "new-releases"] as const,
+  trending: ["tracks", "trending"] as const,
+  related: (id: string) => ["tracks", "related", id] as const,
+  stats: (id: string) => ["tracks", "stats", id] as const,
   detail: (id: string) => ["tracks", "detail", id] as const,
   mine: ["tracks", "mine"] as const,
   upload: (id: string) => ["tracks", "upload", id] as const,
@@ -30,7 +33,37 @@ export function useNewReleases(limit = 24) {
   return useQuery({
     queryKey: [...trackKeys.newReleases, limit],
     queryFn: async ({ signal }) =>
-      unwrap(await api.GET("/api/v1/tracks", { params: { query: { limit } }, signal })).items,
+      unwrap(await api.GET("/api/v1/tracks", { params: { query: { pageSize: limit } }, signal })),
+  });
+}
+
+/** Trending (valid listens and likes over the last 7 days), best first. */
+export function useTrending(limit = 24) {
+  return useQuery({
+    queryKey: [...trackKeys.trending, limit],
+    queryFn: async ({ signal }) =>
+      unwrap(await api.GET("/api/v1/tracks/trending", { params: { query: { pageSize: limit } }, signal })),
+  });
+}
+
+/** Same artist or same genre — not personalised. */
+export function useRelatedTracks(trackId: string) {
+  return useQuery({
+    queryKey: trackKeys.related(trackId),
+    queryFn: async ({ signal }) =>
+      unwrap(await api.GET("/api/v1/tracks/{trackId}/related", { params: { path: { trackId } }, signal })),
+  });
+}
+
+export function useTrackStats(trackId: string) {
+  return useQuery({
+    queryKey: trackKeys.stats(trackId),
+    queryFn: async ({ signal }) => {
+      const stats = unwrap(
+        await api.GET("/api/v1/tracks/{trackId}/stats", { params: { path: { trackId } }, signal }),
+      );
+      return { plays: Number(stats.plays), listens: Number(stats.listens) };
+    },
   });
 }
 
@@ -75,10 +108,16 @@ export function useCreateArtist() {
   });
 }
 
+/** Studio shows the newest tracks only (API maximum page size); paging the list is a later task. */
+const MY_TRACKS_PAGE_SIZE = 50;
+
 export function useMyTracks(enabled: boolean) {
   return useQuery({
     queryKey: trackKeys.mine,
-    queryFn: async ({ signal }) => unwrap(await api.GET("/api/v1/me/tracks", { signal })).items,
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await api.GET("/api/v1/me/tracks", { params: { query: { pageSize: MY_TRACKS_PAGE_SIZE } }, signal }),
+      ),
     enabled,
     // While something is processing, refresh so the status flips to Ready/Failed without a reload.
     refetchInterval: (query) => (query.state.data?.some((t) => t.status === "Processing") ? 3000 : false),
@@ -136,4 +175,17 @@ export function useWaveform(trackId: string, enabled: boolean) {
 
 export function isNotFound(error: unknown) {
   return error instanceof ApiError && error.status === 404;
+}
+
+/** The artist profile and artist pages (the banner is shown only there). */
+export function invalidateArtistBanner(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: ["artists"] });
+}
+
+export function useRemoveArtistBanner() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => ensureOk(await api.DELETE("/api/v1/me/artist/banner")),
+    onSuccess: () => invalidateArtistBanner(queryClient),
+  });
 }

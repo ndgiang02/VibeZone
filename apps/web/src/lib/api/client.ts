@@ -31,7 +31,7 @@ export function getCsrfToken(): Promise<string> {
     .fetch(new Request(new URL("/api/v1/auth/csrf", baseUrl()), { cache: "no-store" }))
     .then(async (response) => {
       if (!response.ok) throw new ApiError(response.status);
-      return ((await response.json()) as { token: string }).token;
+      return ((await response.json()) as { data: { token: string } }).data.token;
     })
     .catch((error: unknown) => {
       csrfToken = null;
@@ -118,9 +118,10 @@ export class ApiError extends Error {
   }
 }
 
-export function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T {
+/** Success bodies are `{ data, meta? }` (ADR-0008); returns `data`, throws ApiError for anything else. */
+export function unwrap<T>(result: { data?: { data: T }; error?: unknown; response: Response }): T {
   if (result.response.ok && result.data !== undefined) {
-    return result.data;
+    return result.data.data;
   }
   throw new ApiError(result.response.status, result.error as ProblemDetails | undefined);
 }
@@ -130,4 +131,30 @@ export function ensureOk(result: { error?: unknown; response: Response }): void 
   if (!result.response.ok) {
     throw new ApiError(result.response.status, result.error as ProblemDetails | undefined);
   }
+}
+
+export type PageMeta = { page: number; pageSize: number; total: number; hasMore: boolean };
+
+/** Paged collections are `{ data: [...], meta }` (ADR-0008); numbers may arrive as strings, so normalise. */
+export function unwrapPage<T>(result: {
+  data?: {
+    data: T[];
+    meta: { page: number | string; pageSize: number | string; total: number | string; hasMore: boolean };
+  };
+  error?: unknown;
+  response: Response;
+}): { items: T[]; meta: PageMeta } {
+  if (result.response.ok && result.data !== undefined) {
+    const meta = result.data.meta;
+    return {
+      items: result.data.data,
+      meta: {
+        page: Number(meta.page),
+        pageSize: Number(meta.pageSize),
+        total: Number(meta.total),
+        hasMore: meta.hasMore,
+      },
+    };
+  }
+  throw new ApiError(result.response.status, result.error as ProblemDetails | undefined);
 }

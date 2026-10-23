@@ -70,14 +70,59 @@ public sealed class Track
 
     public DateTimeOffset? DeletedAt { get; private set; }
 
+    /// <summary>Version of the current cover artwork (stored by the Media module), or null if none.</summary>
+    public Guid? ArtworkId { get; private set; }
+
+    /// <summary>The album this track belongs to (same artist), if any.</summary>
+    public Guid? AlbumId { get; private set; }
+
+    /// <summary>1-based position on <see cref="AlbumId"/>.</summary>
+    public int? TrackNumber { get; private set; }
+
+    public void SetAlbum(Guid? albumId, int? trackNumber, DateTimeOffset now)
+    {
+        AlbumId = albumId;
+        TrackNumber = albumId is null ? null : trackNumber;
+        UpdatedAt = now;
+    }
+
     public bool CanStartProcessing => Status is TrackStatus.Draft or TrackStatus.Failed or TrackStatus.Cancelled;
 
-    /// <summary>The single visibility rule (docs/architecture/data-model.md "Ownership and visibility").</summary>
-    public bool IsVisibleTo(bool viewerOwnsIt, bool viewerIsModerator) =>
-        DeletedAt is null && (viewerOwnsIt || viewerIsModerator || (Status == TrackStatus.Ready && Visibility != TrackVisibility.Private));
+    /// <summary>When moderation took the track down (null if it is up).</summary>
+    public DateTimeOffset? TakenDownAt { get; private set; }
 
+    /// <summary>Report reason code behind the takedown (copyright, abuse, spam, other).</summary>
+    public string? TakedownReason { get; private set; }
+
+    public bool IsTakenDown => TakenDownAt is not null;
+
+    /// <summary>
+    /// The single visibility rule (docs/architecture/data-model.md "Ownership and visibility"). A taken-down track
+    /// stays visible to its owner (so Studio can show why) and to moderators, and is hidden from everyone else.
+    /// </summary>
+    public bool IsVisibleTo(bool viewerOwnsIt, bool viewerIsModerator) =>
+        DeletedAt is null && (viewerOwnsIt || viewerIsModerator || (!IsTakenDown && Status == TrackStatus.Ready && Visibility != TrackVisibility.Private));
+
+    /// <summary>Taken-down tracks play for moderators only (to review them), not for their owner.</summary>
     public bool IsPlayableBy(bool viewerOwnsIt, bool viewerIsModerator) =>
-        Status == TrackStatus.Ready && IsVisibleTo(viewerOwnsIt, viewerIsModerator);
+        Status == TrackStatus.Ready && IsVisibleTo(viewerOwnsIt, viewerIsModerator) && (!IsTakenDown || viewerIsModerator);
+
+    /// <summary>Listed in feeds, search, trending, related and artist pages (unlisted tracks are link-only).</summary>
+    public bool IsListed => DeletedAt is null && !IsTakenDown && Status == TrackStatus.Ready && Visibility == TrackVisibility.Public;
+
+    public void TakeDown(string reasonCode, DateTimeOffset now)
+    {
+        TakenDownAt ??= now;
+        TakedownReason = reasonCode;
+        UpdatedAt = now;
+    }
+
+    public void Restore(DateTimeOffset now)
+    {
+        TakenDownAt = null;
+        TakedownReason = null;
+        UpdatedAt = now;
+    }
 
     public static string NormalizeTitle(string? title) => string.Join(' ', (title ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
@@ -94,6 +139,12 @@ public sealed class Track
         Description = NormalizeDescription(description);
         GenreId = genreId;
         Visibility = visibility;
+        UpdatedAt = now;
+    }
+
+    public void SetArtwork(Guid? artworkId, DateTimeOffset now)
+    {
+        ArtworkId = artworkId;
         UpdatedAt = now;
     }
 

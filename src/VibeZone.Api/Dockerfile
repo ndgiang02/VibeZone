@@ -15,6 +15,15 @@ COPY src/Modules/Catalog/VibeZone.Modules.Catalog.Contracts/VibeZone.Modules.Cat
 COPY src/Modules/Identity/VibeZone.Modules.Identity/VibeZone.Modules.Identity.csproj src/Modules/Identity/VibeZone.Modules.Identity/
 COPY src/Modules/Identity/VibeZone.Modules.Identity.Contracts/VibeZone.Modules.Identity.Contracts.csproj src/Modules/Identity/VibeZone.Modules.Identity.Contracts/
 COPY src/Modules/Media/VibeZone.Modules.Media/VibeZone.Modules.Media.csproj src/Modules/Media/VibeZone.Modules.Media/
+COPY src/Modules/Playlists/VibeZone.Modules.Playlists/VibeZone.Modules.Playlists.csproj src/Modules/Playlists/VibeZone.Modules.Playlists/
+COPY src/Modules/Playlists/VibeZone.Modules.Playlists.Contracts/VibeZone.Modules.Playlists.Contracts.csproj src/Modules/Playlists/VibeZone.Modules.Playlists.Contracts/
+COPY src/Modules/Social/VibeZone.Modules.Social/VibeZone.Modules.Social.csproj src/Modules/Social/VibeZone.Modules.Social/
+COPY src/Modules/Social/VibeZone.Modules.Social.Contracts/VibeZone.Modules.Social.Contracts.csproj src/Modules/Social/VibeZone.Modules.Social.Contracts/
+COPY src/Modules/Analytics/VibeZone.Modules.Analytics/VibeZone.Modules.Analytics.csproj src/Modules/Analytics/VibeZone.Modules.Analytics/
+COPY src/Modules/Analytics/VibeZone.Modules.Analytics.Contracts/VibeZone.Modules.Analytics.Contracts.csproj src/Modules/Analytics/VibeZone.Modules.Analytics.Contracts/
+COPY src/Modules/Notifications/VibeZone.Modules.Notifications/VibeZone.Modules.Notifications.csproj src/Modules/Notifications/VibeZone.Modules.Notifications/
+COPY src/Modules/Moderation/VibeZone.Modules.Moderation/VibeZone.Modules.Moderation.csproj src/Modules/Moderation/VibeZone.Modules.Moderation/
+COPY src/Modules/Moderation/VibeZone.Modules.Moderation.Contracts/VibeZone.Modules.Moderation.Contracts.csproj src/Modules/Moderation/VibeZone.Modules.Moderation.Contracts/
 COPY src/VibeZone.Migrations/VibeZone.Migrations.csproj src/VibeZone.Migrations/
 COPY src/VibeZone.Api/VibeZone.Api.csproj src/VibeZone.Api/
 RUN dotnet restore src/VibeZone.Api/VibeZone.Api.csproj

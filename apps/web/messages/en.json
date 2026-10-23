@@ -8,7 +8,14 @@
     "save": "Save",
     "saving": "Saving…",
     "skipToContent": "Skip to content",
-    "homeLink": "VibeZone home"
+    "homeLink": "VibeZone home",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "signInFirst": "Sign in to use this."
   },
   "nav": {
     "primary": "Primary",
@@ -23,7 +30,26 @@
       "vi": "Tiếng Việt",
       "en": "English"
     },
-    "studio": "Studio"
+    "studio": "Studio",
+    "menu": "Menu",
+    "library": "Library",
+    "playlists": "My playlists",
+    "soon": "Soon",
+    "comingSoon": "{label} — coming soon",
+    "yourFm": "Your FM",
+    "forYou": "For you",
+    "charts": "Charts",
+    "favourites": "Favourites",
+    "ranking": "My ranking",
+    "history": "History",
+    "downloads": "Downloads",
+    "back": "Go back",
+    "forward": "Go forward",
+    "discover": "Discover",
+    "notifications": "Notifications",
+    "moderation": "Moderation",
+    "admin": "Admin",
+    "staff": "Staff"
   },
   "home": {
     "eyebrow": "VibeZone",
@@ -42,6 +68,42 @@
       "errorTitle": "Couldn't load new releases",
       "emptyTitle": "No tracks yet",
       "emptyBody": "New public tracks appear here as soon as artists publish them."
+    },
+    "banner": {
+      "playAll": "Play all",
+      "stats": "{count, plural, one {# track} other {# tracks}} · {duration}",
+      "statsEmpty": "Fresh tracks land here as artists publish them."
+    },
+    "viewAll": "View all",
+    "showLess": "Show less",
+    "mostPlayed": "Most played",
+    "recommended": "Recommended for you",
+    "hotSongs": "Hot songs",
+    "artists": {
+      "title": "Artists",
+      "empty": "Artists appear here once they publish tracks."
+    },
+    "demo": {
+      "badge": "Demo",
+      "note": "Sample content to preview the design — not real data, not playable."
+    },
+    "kinds": {
+      "playlist": "Playlist",
+      "radio": "Radio",
+      "album": "Album",
+      "mix": "Mix"
+    },
+    "trending": {
+      "title": "Trending this week",
+      "note": "Based on listens and likes in the last 7 days — the same for everyone.",
+      "errorTitle": "Couldn't load trending tracks",
+      "emptyTitle": "Nothing trending yet",
+      "emptyBody": "Tracks appear here once people start listening."
+    },
+    "recent": {
+      "title": "Recently played",
+      "emptyTitle": "Nothing played yet",
+      "emptyBody": "Press play on any track and it shows up here."
     }
   },
   "auth": {
@@ -112,7 +174,8 @@
       "displayName": "Display name",
       "language": "Language",
       "languageHint": "Used for the interface and the emails we send you.",
-      "saved": "Profile saved."
+      "saved": "Profile saved.",
+      "artistNote": "Your display name and picture are also your artist name and picture."
     },
     "password": {
       "title": "Password",
@@ -132,6 +195,11 @@
       "revokeOthers": "Sign out all other devices",
       "revokedOthers": "{count, plural, =0 {No other devices were signed in.} one {Signed out # device.} other {Signed out # devices.}}",
       "errorTitle": "Couldn't load your devices"
+    },
+    "avatar": {
+      "change": "Change picture",
+      "remove": "Remove",
+      "hint": "JPEG, PNG or WebP, at least 200 × 200 px, up to {max} MB. Cropped to a square."
     }
   },
   "validation": {
@@ -166,9 +234,6 @@
     "track_not_found": "Track not found.",
     "artist_not_found": "Artist not found.",
     "artist_exists": "You already have an artist profile.",
-    "artist_slug_taken": "This profile URL is taken.",
-    "artist_slug_invalid": "Use 3–40 lowercase letters, numbers and single hyphens.",
-    "artist_name_invalid": "Artist name must be 1–80 characters.",
     "artist_bio_too_long": "Bio must be at most 1000 characters.",
     "artist_required": "Create an artist profile first.",
     "track_title_invalid": "Title must be 1–120 characters.",
@@ -183,6 +248,7 @@
     "unsupported_file_type": "This doesn't look like a supported audio file.",
     "no_active_upload": "There's no upload in progress.",
     "media_not_ready": "Audio isn't available yet.",
+    "playback_token_invalid": "This playback link has expired. Try playing the track again.",
     "no_audio_stream": "The file contains no audio.",
     "unsupported_format": "This audio format isn't supported.",
     "duration_too_short": "The audio is too short.",
@@ -191,7 +257,50 @@
     "transcode_failed": "The audio couldn't be converted.",
     "processing_timeout": "Processing took too long.",
     "processing_error": "Processing failed. Try uploading again.",
-    "processing_attempts_exhausted": "Processing failed several times. Try uploading again."
+    "processing_attempts_exhausted": "Processing failed several times. Try uploading again.",
+    "audio_required": "Choose an audio file.",
+    "artwork_invalid": "That image can't be read. Use a JPEG, PNG or WebP image.",
+    "artwork_too_small": "Cover art must be at least 200 × 200 px.",
+    "artwork_too_large": "The cover image is too large.",
+    "artwork_not_found": "This track has no cover art.",
+    "multipart_required": "The upload request is invalid.",
+    "multipart_invalid": "The upload data was malformed. Try again.",
+    "image_invalid": "That image can't be read. Use a JPEG, PNG or WebP image.",
+    "image_too_small": "The image is too small: profile pictures need 200 × 200 px, banners 600 × 200 px.",
+    "image_too_large": "The image is too large.",
+    "image_not_found": "Image not found.",
+    "album_not_found": "Album not found.",
+    "album_title_invalid": "Album titles must be 1–120 characters.",
+    "album_description_too_long": "Album descriptions can be at most 2000 characters.",
+    "album_kind_invalid": "Unknown album type.",
+    "album_tracks_invalid": "Albums hold up to 100 of your own tracks.",
+    "playlist_not_found": "Playlist not found.",
+    "playlist_title_invalid": "Playlist names must be 1–100 characters.",
+    "playlist_description_too_long": "Playlist descriptions can be at most 1000 characters.",
+    "playlist_visibility_invalid": "Unknown visibility.",
+    "playlist_full": "This playlist already has 500 tracks.",
+    "playlist_order_mismatch": "The playlist changed; reload the page.",
+    "comment_not_found": "That comment doesn't exist any more.",
+    "comment_body_invalid": "Comments must be 1–1000 characters.",
+    "comment_timestamp_invalid": "That moment isn't within the track.",
+    "follow_self": "You can't follow your own artist profile.",
+    "play_batch_invalid": "Couldn't record playback.",
+    "play_event_invalid": "Couldn't record playback.",
+    "notification_not_found": "That notification doesn't exist.",
+    "report_subject_invalid": "This can't be reported.",
+    "report_reason_invalid": "Choose a reason.",
+    "report_details_too_long": "Use at most 1000 characters.",
+    "report_note_too_long": "Use at most 1000 characters.",
+    "report_subject_not_found": "This content doesn't exist any more.",
+    "report_own_content": "You can't report your own content.",
+    "report_exists": "You already reported this — a moderator will review it.",
+    "report_not_found": "That report doesn't exist.",
+    "report_action_invalid": "Choose remove or dismiss.",
+    "report_not_open": "This report was already handled.",
+    "restore_not_supported": "Only tracks and playlists can be restored.",
+    "role_not_assignable": "Only Moderator and Admin can be assigned.",
+    "role_self_admin": "You can't remove your own Admin role.",
+    "user_not_found": "That user doesn't exist."
   },
   "notFound": {
     "title": "Page not found",
@@ -254,7 +363,20 @@
       "Public": "Public",
       "Unlisted": "Unlisted",
       "Private": "Private"
-    }
+    },
+    "label": "Song",
+    "moreFrom": "More from {artist}",
+    "viewArtist": "View artist",
+    "listen": "Listen",
+    "waveformHint": "Click the waveform to play from any point.",
+    "onAlbum": "On the album",
+    "addToPlaylist": "Add to playlist",
+    "takenDown": "This track was removed by moderation and is only visible to its owner and moderators.",
+    "takenDownBadge": "Removed by moderation",
+    "listensLabel": "Listens",
+    "listens": "{count, plural, one {# listen} other {# listens}}",
+    "related": "Related tracks",
+    "relatedHint": "Same artist or same genre."
   },
   "artist": {
     "label": "Artist",
@@ -262,33 +384,37 @@
     "noTracksTitle": "No tracks yet",
     "noTracksBody": "This artist hasn't published anything public yet.",
     "notFoundTitle": "Artist not found",
-    "notFoundBody": "Check the link and try again."
+    "notFoundBody": "Check the link and try again.",
+    "playAll": "Play all",
+    "shufflePlay": "Shuffle",
+    "stats": "{count, plural, one {# track} other {# tracks}} · {duration}",
+    "about": "About",
+    "joined": "On VibeZone since {date}",
+    "noBio": "This artist hasn’t written a bio yet.",
+    "albums": "Albums & EPs"
   },
   "studio": {
     "title": "Studio",
-    "subtitle": "Create tracks, upload audio and follow processing.",
+    "subtitle": "Upload tracks with their cover art and follow processing.",
     "signedInAs": "Publishing as",
     "myTracks": "Your tracks",
     "emptyTitle": "No tracks yet",
-    "emptyBody": "Create your first track, then upload its audio.",
+    "emptyBody": "Tracks you upload show up here.",
     "processing": "Converting audio and computing the waveform… This page updates automatically.",
     "cancelProcessing": "Cancel",
     "delete": "Delete {title}",
     "deleteConfirm": "Delete \"{title}\"? This can't be undone from the studio.",
     "becomeArtist": {
       "title": "Become an artist",
-      "subtitle": "Create your artist profile to upload and share music.",
-      "name": "Artist name",
-      "nameInvalid": "Use 1–80 characters.",
-      "slug": "Profile URL",
-      "slugHint": "3–40 characters: lowercase letters, numbers and single hyphens.",
-      "slugInvalid": "Use 3–40 lowercase letters, numbers and single hyphens.",
+      "subtitle": "Turn on your artist profile to upload and share music.",
+      "sameAccount": "Your artist profile uses this account's display name, username and profile picture. Change them in Settings — changes apply everywhere.",
+      "profileUrl": "Your artist page",
       "bio": "Bio (optional)",
       "bioTooLong": "Use at most 1000 characters.",
       "submit": "Create artist profile"
     },
     "newTrack": {
-      "heading": "New track",
+      "heading": "Upload a track",
       "title": "Title",
       "titleInvalid": "Use 1–120 characters.",
       "genre": "Genre",
@@ -301,7 +427,28 @@
       },
       "description": "Description (optional)",
       "descriptionTooLong": "Use at most 2000 characters.",
-      "submit": "Create track"
+      "submit": "Upload",
+      "audio": "Audio file",
+      "audioChoose": "Choose an audio file or drop it here",
+      "audioRequired": "Choose an audio file.",
+      "audioReplace": "Replace",
+      "audioRemove": "Remove {name}",
+      "artwork": "Cover art",
+      "artworkOptional": "Optional",
+      "artworkChoose": "Add cover art",
+      "artworkHint": "JPEG, PNG or WebP · at least 200 × 200 px · up to {max} MB. Cropped to a square.",
+      "artworkChange": "Change",
+      "artworkRemove": "Remove cover art",
+      "artworkTooLarge": "Images can be at most {max} MB.",
+      "artworkType": "Use a JPEG, PNG or WebP image.",
+      "details": "Track details",
+      "uploading": "Uploading",
+      "uploadingDetail": "{done} of {total} · {percent}%",
+      "finishing": "Saving…",
+      "cancel": "Cancel upload",
+      "successTitle": "Uploaded!",
+      "successBody": "\"{title}\" is being processed — it'll be ready in a few minutes.",
+      "another": "Upload another"
     },
     "upload": {
       "choose": "Choose an audio file or drop it here",
@@ -309,6 +456,372 @@
       "uploading": "Uploading {name}",
       "progress": "Upload progress",
       "cancel": "Cancel"
+    },
+    "changeCover": "Change the cover of {title}",
+    "coverUpdated": "Cover updated.",
+    "retryUpload": "Upload the audio again",
+    "profile": {
+      "title": "Artist profile",
+      "publishingAs": "Publishing as",
+      "addBanner": "Add banner",
+      "changeBanner": "Change banner",
+      "removeBanner": "Remove banner",
+      "viewProfile": "View artist page",
+      "editInSettings": "Change name and picture in Settings",
+      "hint": "Banner: 3:1, at least 600 × 200 px. JPEG, PNG or WebP, up to {max} MB."
+    },
+    "albums": {
+      "heading": "Albums & EPs",
+      "create": "Create album",
+      "title": "Album title",
+      "titleInvalid": "Use 1–120 characters.",
+      "kind": "Type",
+      "releaseDate": "Release date",
+      "visibility": "Visibility",
+      "description": "Description (optional)",
+      "empty": "No albums yet.",
+      "tracks": "Tracks on the album",
+      "editTracks": "Choose tracks",
+      "pickerHint": "Tick the album's tracks; use the arrows to order them.",
+      "saveTracks": "Save tracklist",
+      "saved": "Saved.",
+      "deleteConfirm": "Delete the album \"{title}\"? Its tracks are kept.",
+      "delete": "Delete album",
+      "noTracks": "You have no tracks yet.",
+      "view": "View album",
+      "selected": "{count, plural, one {# track selected} other {# tracks selected}}"
+    },
+    "edit": {
+      "edit": "Edit {title}",
+      "save": "Save",
+      "saved": "Changes saved."
+    }
+  },
+  "search": {
+    "label": "Search",
+    "placeholder": "Search songs, artists, albums...",
+    "clear": "Clear search",
+    "resultsTitle": "Results for “{query}”",
+    "scopeNote": "Searches track, artist, album and public playlist names — accents optional.",
+    "noResultsTitle": "No matches",
+    "noResultsBody": "Try a different song, artist or genre.",
+    "tracks": "Songs",
+    "artists": "Artists",
+    "genres": "Genres",
+    "pageTitle": "Search",
+    "albums": "Albums",
+    "playlists": "Playlists",
+    "startTitle": "What do you want to hear?",
+    "startBody": "Type a track, artist, album or playlist name in the search box above.",
+    "total": "{count, plural, one {# result} other {# results}}"
+  },
+  "nowPlaying": {
+    "title": "Now playing",
+    "emptyTitle": "Nothing playing",
+    "emptyBody": "Pick a track to start listening."
+  },
+  "album": {
+    "label": "Album",
+    "kind": {
+      "Album": "Album",
+      "Ep": "EP",
+      "Single": "Single"
+    },
+    "tracks": "Tracklist",
+    "playAll": "Play album",
+    "shufflePlay": "Shuffle",
+    "stats": "{count, plural, one {# track} other {# tracks}} · {duration}",
+    "emptyTitle": "No playable tracks on this album yet",
+    "emptyBody": "Its tracks appear once they're ready.",
+    "notFoundTitle": "Album not found",
+    "notFoundBody": "It may be private, deleted, or the link is wrong.",
+    "manage": "Manage in Studio",
+    "released": "Released {date}"
+  },
+  "playlist": {
+    "label": "Playlist",
+    "by": "by {name}",
+    "stats": "{count, plural, one {# track} other {# tracks}}",
+    "playAll": "Play",
+    "shufflePlay": "Shuffle",
+    "title": "Playlist name",
+    "titleInvalid": "Use 1–100 characters.",
+    "description": "Description (optional)",
+    "descriptionTooLong": "Use at most 1000 characters.",
+    "visibility": {
+      "Public": "Public",
+      "Private": "Private"
+    },
+    "visibilityHint": {
+      "Public": "Anyone can find and play it.",
+      "Private": "Only you can see it."
+    },
+    "create": "Create playlist",
+    "created": "Playlist created.",
+    "save": "Save changes",
+    "edit": "Edit playlist",
+    "delete": "Delete playlist",
+    "deleteConfirm": "Delete the playlist \"{title}\"? This can't be undone.",
+    "emptyTitle": "This playlist is empty",
+    "emptyBody": "Add tracks with \"Add to playlist\" on any track.",
+    "notFoundTitle": "Playlist not found",
+    "notFoundBody": "It may be private, deleted, or the link is wrong.",
+    "remove": "Remove {title} from the playlist",
+    "moveUp": "Move {title} up",
+    "moveDown": "Move {title} down",
+    "dragHint": "Drag to reorder, or use the arrow buttons / Alt + ↑↓.",
+    "hiddenTracks": "{count, plural, one {# track is} other {# tracks are}} hidden (private, deleted or not ready).",
+    "addTo": "Add to playlist",
+    "addToTitle": "Add \"{title}\" to…",
+    "added": "Added to {playlist}",
+    "alreadyIn": "Already in {playlist}",
+    "newPlaylist": "New playlist…",
+    "noPlaylists": "You have no playlists yet.",
+    "quickCreatePlaceholder": "New playlist name",
+    "moved": "Moved {title} to position {position}.",
+    "visibilityLabel": "Visibility",
+    "takenDown": "This playlist was removed by moderation and is only visible to you and moderators."
+  },
+  "library": {
+    "title": "Library",
+    "subtitle": "Your playlists and the artists you follow.",
+    "emptyTitle": "No playlists yet",
+    "emptyBody": "Create your first one with the form.",
+    "newTitle": "New playlist",
+    "following": {
+      "title": "Artists you follow",
+      "emptyTitle": "You don't follow anyone yet",
+      "emptyBody": "Follow artists from their page to find them here."
+    }
+  },
+  "discover": {
+    "title": "Discover",
+    "subtitle": "Genres, community playlists and new releases.",
+    "playlists": "Community playlists",
+    "playlistsEmpty": "No public playlists yet.",
+    "genres": "Genres",
+    "newReleases": "New releases"
+  },
+  "social": {
+    "like": "Like {title}",
+    "unlike": "Unlike {title}",
+    "likeShort": "Like",
+    "signInToLike": "Sign in to like tracks",
+    "follow": "Follow",
+    "following": "Following",
+    "followers": "{count, plural, one {# follower} other {# followers}}"
+  },
+  "comments": {
+    "title": "Comments",
+    "signIn": "Sign in to comment",
+    "emptyTitle": "No comments yet",
+    "emptyBody": "Be the first to say something about this track.",
+    "label": "Your comment",
+    "replyLabel": "Reply to {name}",
+    "placeholder": "Write a comment…",
+    "replyPlaceholder": "Write a reply…",
+    "pinAt": "Pin at {time}",
+    "cancel": "Cancel",
+    "reply": "Reply",
+    "post": "Comment",
+    "edited": "(edited)",
+    "playAt": "Play from {time}",
+    "editLabel": "Edit your comment",
+    "save": "Save",
+    "edit": "Edit comment",
+    "delete": "Delete comment",
+    "deleteConfirm": "Delete this comment?"
+  },
+  "report": {
+    "open": {
+      "Track": "Report track",
+      "Comment": "Report comment",
+      "Playlist": "Report playlist"
+    },
+    "short": "Report",
+    "sentTitle": "Thanks for reporting",
+    "sentBody": "A moderator will review it. You'll get a notification when it's handled.",
+    "close": "Close",
+    "reason": "What's wrong?",
+    "reasons": {
+      "Copyright": {
+        "label": "Copyright",
+        "hint": "It uses music or artwork without the owner's permission."
+      },
+      "Abuse": {
+        "label": "Abuse or hate",
+        "hint": "Harassment, threats, hate speech or harmful content."
+      },
+      "Spam": {
+        "label": "Spam",
+        "hint": "Advertising, scams or repeated junk."
+      },
+      "Other": {
+        "label": "Something else",
+        "hint": "Tell us more in the details."
+      }
+    },
+    "details": "Details (optional)",
+    "detailsPlaceholder": "Links, the original work, what exactly is wrong…",
+    "cancel": "Cancel",
+    "submit": "Send report"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Likes, follows, comments, processing and moderation updates.",
+    "bell": "Notifications",
+    "bellUnread": "Notifications, {count} unread",
+    "markAllRead": "Mark all as read",
+    "empty": "You're all caught up.",
+    "seeAll": "See all notifications",
+    "emptyTitle": "No notifications yet",
+    "emptyBody": "When people like, follow or comment, you'll see it here.",
+    "someone": "Someone",
+    "unread": "Unread",
+    "text": {
+      "trackLiked": "{actor} liked “{title}”",
+      "artistFollowed": "{actor} started following you",
+      "commentPosted": "{actor} commented on “{title}”",
+      "commentReplied": "{actor} replied to your comment on “{title}”",
+      "trackReady": "“{title}” is ready to play",
+      "trackFailed": "Processing “{title}” failed: {reason}",
+      "reportActioned": "Thanks — we removed “{title}” after your report.",
+      "reportRejected": "We reviewed your report on “{title}” and found no violation.",
+      "contentRemoved": "Your {subject} “{title}” was removed by moderation ({reason})."
+    },
+    "subjects": {
+      "track": "track",
+      "comment": "comment",
+      "playlist": "playlist"
+    },
+    "reasons": {
+      "copyright": "copyright",
+      "abuse": "abuse",
+      "spam": "spam",
+      "other": "other"
+    }
+  },
+  "liked": {
+    "title": "Liked tracks",
+    "subtitle": "Everything you hearted, newest first.",
+    "emptyTitle": "No liked tracks yet",
+    "emptyBody": "Tap the heart on any track to keep it here."
+  },
+  "history": {
+    "title": "Listening history",
+    "subtitle": "Tracks you played recently.",
+    "emptyTitle": "Nothing played yet",
+    "emptyBody": "Tracks you listen to show up here."
+  },
+  "charts": {
+    "title": "Charts",
+    "subtitle": "Trending this week: listens of 30 s or more and likes over the last 7 days.",
+    "emptyTitle": "No chart yet",
+    "emptyBody": "The chart fills up as people listen to and like tracks."
+  },
+  "moderation": {
+    "title": "Moderation",
+    "subtitle": "Review reports from listeners. Removing content notifies its owner and every reporter, and is logged.",
+    "forbiddenTitle": "Moderators only",
+    "forbiddenBody": "You need the Moderator or Admin role to open this page.",
+    "tabs": {
+      "Open": "Open",
+      "Actioned": "Removed",
+      "Rejected": "Dismissed",
+      "all": "All"
+    },
+    "emptyTitle": "No reports here",
+    "emptyBody": "New reports from listeners appear in the Open tab.",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page}",
+    "subjects": {
+      "Track": "Track",
+      "Comment": "Comment",
+      "Playlist": "Playlist"
+    },
+    "reportedBy": "Reported by {name} · {when}",
+    "subjectGone": "This content no longer exists.",
+    "owner": "Owner: {name}",
+    "removed": "Removed",
+    "note": "Note (optional, kept in the audit log)",
+    "remove": "Remove content",
+    "removeConfirm": "Remove this content? Its owner and the reporters will be notified.",
+    "dismiss": "Dismiss",
+    "handledBy": "Handled by {name} · {when}",
+    "restore": "Restore"
+  },
+  "admin": {
+    "title": "Admin",
+    "subtitle": "Users and roles, content, processing jobs and the audit log.",
+    "forbiddenTitle": "Admins only",
+    "forbiddenBody": "You need the Admin role to open this page.",
+    "empty": "Nothing to show.",
+    "tabs": {
+      "overview": "Overview",
+      "users": "Users",
+      "tracks": "Tracks",
+      "jobs": "Jobs",
+      "audit": "Audit log"
+    },
+    "overview": {
+      "users": "Users",
+      "openReports": "Open reports",
+      "openQueue": "Open the queue",
+      "takenDown": "Removed tracks",
+      "failedJobs": "Failed processing jobs",
+      "outboxPending": "Pending events",
+      "outboxDetail": "{dead} gave up · {processed} delivered in 24 h"
+    },
+    "users": {
+      "search": "Search by handle, name or email",
+      "roleFilter": "Role",
+      "allRoles": "All roles",
+      "roles": {
+        "Artist": "Artist",
+        "Moderator": "Moderator",
+        "Admin": "Admin"
+      },
+      "user": "User",
+      "email": "Email",
+      "joined": "Joined",
+      "rolesHeader": "Roles",
+      "unverified": "not verified",
+      "selfAdmin": "You can't remove your own Admin role.",
+      "grant": "+ {role}",
+      "revoke": "{role} ✓"
+    },
+    "tracks": {
+      "search": "Search by title",
+      "onlyTakenDown": "Only removed tracks",
+      "track": "Track",
+      "status": "Status",
+      "visibility": "Visibility",
+      "moderation": "Moderation",
+      "restore": "Restore"
+    },
+    "jobs": {
+      "statusFilter": "Status",
+      "allStatuses": "All statuses",
+      "status": {
+        "Uploaded": "Queued",
+        "Processing": "Processing",
+        "Completed": "Completed",
+        "Failed": "Failed",
+        "Cancelled": "Cancelled"
+      },
+      "file": "File",
+      "statusHeader": "Status",
+      "attempts": "Attempts",
+      "created": "Created",
+      "error": "Error"
+    },
+    "audit": {
+      "when": "When",
+      "actor": "Who",
+      "action": "Action",
+      "subject": "Subject",
+      "details": "Details"
     }
   }
 }

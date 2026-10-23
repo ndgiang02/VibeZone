@@ -8,4 +8,10 @@ public static class RateLimitPolicies
 
     /// <summary>Audio uploads: per-IP hourly limit (each upload can be hundreds of MB and starts a transcode).</summary>
     public const string Uploads = "uploads";
+
+    /// <summary>Likes, follows, comments and reports: per-user (else per-IP) limit against spam.</summary>
+    public const string Social = "social";
+
+    /// <summary>Play-event batches from players: per-user (else per-IP) limit.</summary>
+    public const string Plays = "plays";
 }

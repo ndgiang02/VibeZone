@@ -24,7 +24,7 @@ public sealed class TokenAuthTests(PostgresFixture postgres, MailpitFixture mail
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.False(response.Headers.Contains("Set-Cookie"));
         Assert.True(response.Headers.CacheControl?.NoStore);
-        var tokens = await response.JsonAsync();
+        var tokens = await response.DataAsync();
         Assert.Equal("Bearer", tokens.GetProperty("tokenType").GetString());
         Assert.Equal(900, tokens.GetProperty("expiresIn").GetInt32());
         Assert.StartsWith("vza_", tokens.GetProperty("accessToken").GetString(), StringComparison.Ordinal);
@@ -32,7 +32,7 @@ public sealed class TokenAuthTests(PostgresFixture postgres, MailpitFixture mail
 
         using var me = await SendAsync(app, HttpMethod.Get, "/api/v1/me", Access(tokens));
         Assert.Equal(HttpStatusCode.OK, me.StatusCode);
-        Assert.Equal(user.Handle, (await me.JsonAsync()).GetProperty("handle").GetString());
+        Assert.Equal(user.Handle, (await me.DataAsync()).GetProperty("handle").GetString());
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public sealed class TokenAuthTests(PostgresFixture postgres, MailpitFixture mail
         using var update = await SendAsync(app, HttpMethod.Patch, "/api/v1/me/profile", Access(tokens), new { displayName = "From the app", locale = "vi" });
 
         Assert.Equal(HttpStatusCode.OK, update.StatusCode);
-        Assert.Equal("From the app", (await update.JsonAsync()).GetProperty("displayName").GetString());
+        Assert.Equal("From the app", (await update.DataAsync()).GetProperty("displayName").GetString());
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public sealed class TokenAuthTests(PostgresFixture postgres, MailpitFixture mail
 
         using var refreshed = await app.PostAsJsonAsync("/api/v1/auth/token/refresh", new { refreshToken = Refresh(first) }, Ct);
         Assert.Equal(HttpStatusCode.OK, refreshed.StatusCode);
-        var second = await refreshed.JsonAsync();
+        var second = await refreshed.DataAsync();
         Assert.NotEqual(Refresh(first), Refresh(second));
         Assert.NotEqual(Access(first), Access(second));
         using (var me = await SendAsync(app, HttpMethod.Get, "/api/v1/me", Access(second)))
@@ -149,7 +149,7 @@ public sealed class TokenAuthTests(PostgresFixture postgres, MailpitFixture mail
         using var app = MobileClient();
         var tokens = await IssueAsync(app, user, deviceName: "Pixel 8");
 
-        var fromApp = (await (await SendAsync(app, HttpMethod.Get, "/api/v1/me/sessions", Access(tokens))).JsonAsync()).GetProperty("items").EnumerateArray().ToList();
+        var fromApp = (await (await SendAsync(app, HttpMethod.Get, "/api/v1/me/sessions", Access(tokens))).DataAsync()).EnumerateArray().ToList();
         Assert.Equal(2, fromApp.Count);
         var phone = Assert.Single(fromApp, s => s.GetProperty("isCurrent").GetBoolean());
         Assert.Equal("Pixel 8", phone.GetProperty("userAgent").GetString());
@@ -227,7 +227,7 @@ public sealed class TokenAuthTests(PostgresFixture postgres, MailpitFixture mail
     {
         using var response = await app.PostAsJsonAsync("/api/v1/auth/token", new { user.Email, user.Password, deviceName }, Ct);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        return await response.JsonAsync();
+        return await response.DataAsync();
     }
 
     private static async Task<HttpResponseMessage> SendAsync(HttpClient app, HttpMethod method, string path, string accessToken, object? body = null)

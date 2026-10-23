@@ -21,7 +21,7 @@ public sealed class RegistrationTests(PostgresFixture postgres, MailpitFixture m
         Assert.Equal(HttpStatusCode.NoContent, verify.StatusCode);
 
         Assert.Equal(HttpStatusCode.NoContent, await client.LoginAsync(user.Email, user.Password));
-        var me = await client.GetJsonAsync("/api/v1/me");
+        var me = await client.GetDataAsync("/api/v1/me");
         Assert.Equal(user.Handle, me.GetProperty("handle").GetString());
         Assert.Equal(user.Email, me.GetProperty("email").GetString());
         Assert.Equal("Test User", me.GetProperty("displayName").GetString());

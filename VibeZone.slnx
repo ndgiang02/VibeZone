@@ -20,6 +20,25 @@
   <Folder Name="/src/Modules/Media/">
     <Project Path="src/Modules/Media/VibeZone.Modules.Media/VibeZone.Modules.Media.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Playlists/">
+    <Project Path="src/Modules/Playlists/VibeZone.Modules.Playlists.Contracts/VibeZone.Modules.Playlists.Contracts.csproj" />
+    <Project Path="src/Modules/Playlists/VibeZone.Modules.Playlists/VibeZone.Modules.Playlists.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Social/">
+    <Project Path="src/Modules/Social/VibeZone.Modules.Social.Contracts/VibeZone.Modules.Social.Contracts.csproj" />
+    <Project Path="src/Modules/Social/VibeZone.Modules.Social/VibeZone.Modules.Social.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Analytics/">
+    <Project Path="src/Modules/Analytics/VibeZone.Modules.Analytics.Contracts/VibeZone.Modules.Analytics.Contracts.csproj" />
+    <Project Path="src/Modules/Analytics/VibeZone.Modules.Analytics/VibeZone.Modules.Analytics.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Notifications/">
+    <Project Path="src/Modules/Notifications/VibeZone.Modules.Notifications/VibeZone.Modules.Notifications.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Moderation/">
+    <Project Path="src/Modules/Moderation/VibeZone.Modules.Moderation.Contracts/VibeZone.Modules.Moderation.Contracts.csproj" />
+    <Project Path="src/Modules/Moderation/VibeZone.Modules.Moderation/VibeZone.Modules.Moderation.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/VibeZone.ArchitectureTests/VibeZone.ArchitectureTests.csproj" />
     <Project Path="tests/VibeZone.IntegrationTests/VibeZone.IntegrationTests.csproj" />

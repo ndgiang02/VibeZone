@@ -16,9 +16,10 @@ reality diverges.
 
 ```
                          ┌──────────────────────────────────────────┐
- Browser ── HTTPS ──►    │  Reverse proxy (prod: Caddy/nginx/ingress)│   single public origin
+ Browser ── HTTPS ──►    │  Reverse proxy (prod: Caddy/nginx/ingress)│   web site: single origin for browsers
+ Apps ──── HTTPS ──►     │  vibezone.vn  |  api.vibezone.vn (ADR-0011)│   API site: /api only, apps & gateway
                          └───────┬──────────────────────┬───────────┘
-                                 │ /                    │ /api/*, /hubs/*
+                                 │ /                    │ /api/* (hubs: /api/v1/hubs/*)
                                  ▼                      ▼
                         ┌────────────────┐     ┌──────────────────────┐
                         │  apps/web       │────►│  VibeZone.Api        │  ASP.NET Core (modular monolith)
@@ -72,8 +73,9 @@ Endpoints (Minimal API)  ─►  Application (use cases, DTOs, validation, ports
   real foreign keys to stable keys such as `UserId`/`TrackId`). Trade-off recorded in ADR-0001.
 
 Hosts:
-- `VibeZone.Api` — HTTP API, SignalR hubs, health endpoints, OpenAPI.
-- `VibeZone.Worker` — background processing (media pipeline, outbox dispatch). Same module
+- `VibeZone.Api` — HTTP API, SignalR hub (`/api/v1/hubs/notifications`), health endpoints, OpenAPI, and the
+  outbox dispatcher (its consumers push realtime notifications; ADR-0012).
+- `VibeZone.Worker` — background processing (media pipeline; writes outbox events). Same module
   assemblies, different composition root. Scaled independently; FFmpeg lives only in this image.
 
 ## 4. Frontend

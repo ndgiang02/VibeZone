@@ -1,7 +1,8 @@
 "use client";
 
-import { LogOut, Settings } from "lucide-react";
+import { Bell, Heart, History, LogOut, Settings, Shield, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { ArtistAvatar } from "@/components/media/artist-avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,26 +25,33 @@ export function AccountControls({ variant }: { variant: "sidebar" | "topbar" }) 
   const router = useRouter();
 
   if (me.isPending) {
-    return <Skeleton className={variant === "sidebar" ? "h-10 w-full" : "size-8 rounded-full"} />;
+    return <Skeleton className={variant === "sidebar" ? "h-10 w-full" : "size-9 rounded-full"} />;
   }
 
   if (!me.data) {
     return (
       <div className={cn("flex gap-2", variant === "sidebar" && "flex-col")}>
-        <Button asChild variant={variant === "sidebar" ? "default" : "ghost"} size="sm">
+        <Button
+          asChild
+          variant={variant === "sidebar" ? "default" : "ghost"}
+          size={variant === "sidebar" ? "sm" : "lg"}
+          className={cn(variant === "topbar" && "rounded-full px-4")}
+        >
           <Link href="/login">{t("signIn")}</Link>
         </Button>
-        {variant === "sidebar" ? (
-          <Button asChild variant="outline" size="sm">
-            <Link href="/register">{t("signUp")}</Link>
-          </Button>
-        ) : null}
+        <Button
+          asChild
+          variant={variant === "sidebar" ? "outline" : "default"}
+          size={variant === "sidebar" ? "sm" : "lg"}
+          className={cn(variant === "topbar" && "rounded-full px-4 max-sm:hidden")}
+        >
+          <Link href="/register">{t("signUp")}</Link>
+        </Button>
       </div>
     );
   }
 
   const user = me.data;
-  const initial = (user.displayName || user.handle).charAt(0).toUpperCase();
 
   return (
     <DropdownMenu>
@@ -56,12 +64,12 @@ export function AccountControls({ variant }: { variant: "sidebar" | "topbar" }) 
             variant === "sidebar" ? "w-full p-2" : "p-1",
           )}
         >
-          <span
-            aria-hidden="true"
-            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-semibold text-primary"
-          >
-            {initial}
-          </span>
+          <ArtistAvatar
+            id={user.id}
+            name={user.displayName || user.handle}
+            src={user.avatar?.small}
+            className="size-9 ring-1 ring-primary-border transition-transform duration-200 hover:scale-105"
+          />
           {variant === "sidebar" ? (
             <span className="min-w-0">
               <span className="block truncate text-sm font-medium">{user.displayName}</span>
@@ -73,6 +81,40 @@ export function AccountControls({ variant }: { variant: "sidebar" | "topbar" }) 
       <DropdownMenuContent align={variant === "sidebar" ? "start" : "end"} className="w-56">
         <DropdownMenuLabel className="truncate">@{user.handle}</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/notifications">
+            <Bell className="size-4" aria-hidden="true" />
+            {t("notifications")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="md:hidden">
+          <Link href="/liked">
+            <Heart className="size-4" aria-hidden="true" />
+            {t("favourites")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="md:hidden">
+          <Link href="/history">
+            <History className="size-4" aria-hidden="true" />
+            {t("history")}
+          </Link>
+        </DropdownMenuItem>
+        {user.roles.includes("Moderator") || user.roles.includes("Admin") ? (
+          <DropdownMenuItem asChild>
+            <Link href="/moderation">
+              <Shield className="size-4" aria-hidden="true" />
+              {t("moderation")}
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {user.roles.includes("Admin") ? (
+          <DropdownMenuItem asChild>
+            <Link href="/admin">
+              <ShieldCheck className="size-4" aria-hidden="true" />
+              {t("admin")}
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem asChild>
           <Link href="/settings">
             <Settings className="size-4" aria-hidden="true" />

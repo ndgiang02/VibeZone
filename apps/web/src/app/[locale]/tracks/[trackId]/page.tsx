@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function TrackPage({ params }: PageProps<"/[locale]/tracks/[trackId]">) {
   const { trackId } = await params;
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-7xl">
       <TrackView trackId={trackId} />
     </div>
   );

@@ -179,11 +179,318 @@ namespace VibeZone.Migrations.Migrations
                     b.ToTable("user_tokens", "identity");
                 });
 
+            modelBuilder.Entity("VibeZone.Infrastructure.Outbox.OutboxConsumption", b =>
+                {
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_id");
+
+                    b.Property<string>("Handler")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("handler");
+
+                    b.Property<DateTimeOffset>("ConsumedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("consumed_at");
+
+                    b.HasKey("MessageId", "Handler")
+                        .HasName("pk_outbox_consumptions");
+
+                    b.ToTable("outbox_consumptions", "infra");
+                });
+
+            modelBuilder.Entity("VibeZone.Infrastructure.Outbox.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.Property<DateTimeOffset?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("type");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_outbox_messages");
+
+                    b.HasIndex("NextAttemptAt")
+                        .HasDatabaseName("ix_outbox_messages_due")
+                        .HasFilter("processed_at IS NULL");
+
+                    b.ToTable("outbox_messages", "infra");
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Analytics.Domain.PlayEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ClientTimestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("client_timestamp");
+
+                    b.Property<int>("ListenedMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("listened_ms");
+
+                    b.Property<int>("PositionMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("position_ms");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("received_at");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("session_id");
+
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("track_id");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("type");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_play_events");
+
+                    b.HasIndex("SessionId")
+                        .HasDatabaseName("ix_play_events_session_id");
+
+                    b.HasIndex("TrackId", "ReceivedAt")
+                        .HasDatabaseName("ix_play_events_track_id_received_at");
+
+                    b.ToTable("play_events", "analytics", t =>
+                        {
+                            t.HasCheckConstraint("ck_play_events_type", "type IN ('started', 'progress', 'completed')");
+                        });
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Analytics.Domain.PlaySession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("IsValidListen")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_valid_listen");
+
+                    b.Property<DateTimeOffset>("LastEventAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_event_at");
+
+                    b.Property<int>("ListenedMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("listened_ms");
+
+                    b.Property<string>("ListenerKey")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("listener_key");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("track_id");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateTimeOffset?>("ValidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valid_at");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_play_history");
+
+                    b.HasIndex("UserId", "StartedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_play_history_user_id_started_at")
+                        .HasFilter("user_id IS NOT NULL");
+
+                    b.HasIndex("ListenerKey", "TrackId", "ValidAt")
+                        .HasDatabaseName("ix_play_history_valid_listens")
+                        .HasFilter("is_valid_listen");
+
+                    b.ToTable("play_history", "analytics");
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Analytics.Domain.TrackDailyStat", b =>
+                {
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("track_id");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date")
+                        .HasColumnName("day");
+
+                    b.Property<int>("Likes")
+                        .HasColumnType("integer")
+                        .HasColumnName("likes");
+
+                    b.Property<int>("Plays")
+                        .HasColumnType("integer")
+                        .HasColumnName("plays");
+
+                    b.Property<int>("ValidListens")
+                        .HasColumnType("integer")
+                        .HasColumnName("valid_listens");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("TrackId", "Day")
+                        .HasName("pk_track_daily_stats");
+
+                    b.HasIndex("Day")
+                        .HasDatabaseName("ix_track_daily_stats_day");
+
+                    b.ToTable("track_daily_stats", "analytics", t =>
+                        {
+                            t.HasCheckConstraint("ck_track_daily_stats_counts", "plays >= 0 AND valid_listens >= 0 AND likes >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Catalog.Domain.Album", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ArtistId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("artist_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("kind");
+
+                    b.Property<DateOnly?>("ReleaseDate")
+                        .HasColumnType("date")
+                        .HasColumnName("release_date");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("visibility");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_albums");
+
+                    b.HasIndex("ArtistId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_albums_artist_id_created_at");
+
+                    b.ToTable("albums", "catalog", t =>
+                        {
+                            t.HasCheckConstraint("ck_albums_kind", "kind IN ('album', 'ep', 'single')");
+
+                            t.HasCheckConstraint("ck_albums_visibility", "visibility IN ('public', 'unlisted', 'private')");
+                        });
+                });
+
             modelBuilder.Entity("VibeZone.Modules.Catalog.Domain.Artist", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid?>("AvatarId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("avatar_id");
+
+                    b.Property<Guid?>("BannerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("banner_id");
 
                     b.Property<string>("Bio")
                         .HasMaxLength(1000)
@@ -408,9 +715,17 @@ namespace VibeZone.Migrations.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("AlbumId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("album_id");
+
                     b.Property<Guid>("ArtistId")
                         .HasColumnType("uuid")
                         .HasColumnName("artist_id");
+
+                    b.Property<Guid?>("ArtworkId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("artwork_id");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -448,11 +763,24 @@ namespace VibeZone.Migrations.Migrations
                         .HasColumnType("character varying(16)")
                         .HasColumnName("status");
 
+                    b.Property<string>("TakedownReason")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("takedown_reason");
+
+                    b.Property<DateTimeOffset?>("TakenDownAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("taken_down_at");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)")
                         .HasColumnName("title");
+
+                    b.Property<int?>("TrackNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("track_number");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -479,7 +807,11 @@ namespace VibeZone.Migrations.Migrations
                     b.HasIndex("PublishedAt")
                         .IsDescending()
                         .HasDatabaseName("ix_tracks_new_releases")
-                        .HasFilter("status = 'ready' AND visibility = 'public' AND deleted_at IS NULL");
+                        .HasFilter("status = 'ready' AND visibility = 'public' AND deleted_at IS NULL AND taken_down_at IS NULL");
+
+                    b.HasIndex("AlbumId", "TrackNumber")
+                        .HasDatabaseName("ix_tracks_album_id_track_number")
+                        .HasFilter("album_id IS NOT NULL");
 
                     b.HasIndex("ArtistId", "CreatedAt")
                         .IsDescending(false, true)
@@ -500,6 +832,10 @@ namespace VibeZone.Migrations.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
+
+                    b.Property<Guid?>("AvatarId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("avatar_id");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -734,6 +1070,59 @@ namespace VibeZone.Migrations.Migrations
                     b.ToTable("users", "identity");
                 });
 
+            modelBuilder.Entity("VibeZone.Modules.Media.Domain.ArtistImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ArtistId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("artist_id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(127)
+                        .HasColumnType("character varying(127)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("object_key");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.HasKey("Id")
+                        .HasName("pk_artist_images");
+
+                    b.HasIndex("ObjectKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_artist_images_object_key");
+
+                    b.HasIndex("ArtistId", "Kind")
+                        .IsUnique()
+                        .HasDatabaseName("ix_artist_images_artist_id_kind");
+
+                    b.ToTable("artist_images", "media", t =>
+                        {
+                            t.HasCheckConstraint("ck_artist_images_kind", "kind IN ('bannersmall', 'bannerlarge')");
+                        });
+                });
+
             modelBuilder.Entity("VibeZone.Modules.Media.Domain.MediaAsset", b =>
                 {
                     b.Property<Guid>("Id")
@@ -810,7 +1199,7 @@ namespace VibeZone.Migrations.Migrations
 
                     b.ToTable("media_assets", "media", t =>
                         {
-                            t.HasCheckConstraint("ck_media_assets_kind", "kind IN ('original', 'playbackaac', 'waveformpeaks')");
+                            t.HasCheckConstraint("ck_media_assets_kind", "kind IN ('original', 'playbackaac', 'waveformpeaks', 'artworksmall', 'artworklarge')");
                         });
                 });
 
@@ -928,6 +1317,487 @@ namespace VibeZone.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("VibeZone.Modules.Media.Domain.UserImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(127)
+                        .HasColumnType("character varying(127)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("object_key");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_images");
+
+                    b.HasIndex("ObjectKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_images_object_key");
+
+                    b.HasIndex("UserId", "Kind")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_images_user_id_kind");
+
+                    b.ToTable("user_images", "media", t =>
+                        {
+                            t.HasCheckConstraint("ck_user_images_kind", "kind IN ('avatarsmall', 'avatarlarge')");
+                        });
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Moderation.Domain.AuditLogEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metadata");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("SubjectId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("subject_type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_audit_logs");
+
+                    b.HasIndex("OccurredAt")
+                        .IsDescending()
+                        .HasDatabaseName("ix_audit_logs_occurred_at");
+
+                    b.HasIndex("ActorUserId", "OccurredAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_audit_logs_actor_user_id_occurred_at");
+
+                    b.HasIndex("SubjectType", "SubjectId")
+                        .HasDatabaseName("ix_audit_logs_subject_type_subject_id");
+
+                    b.ToTable("audit_logs", "moderation");
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Moderation.Domain.ContentReport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("details");
+
+                    b.Property<DateTimeOffset?>("HandledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("handled_at");
+
+                    b.Property<Guid?>("HandledByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("handled_by_user_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("ReporterUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reporter_user_id");
+
+                    b.Property<string>("ResolutionNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("resolution_note");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("subject_type");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_content_reports");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_content_reports_status_created_at");
+
+                    b.HasIndex("SubjectType", "SubjectId")
+                        .HasDatabaseName("ix_content_reports_subject_type_subject_id");
+
+                    b.HasIndex("ReporterUserId", "SubjectType", "SubjectId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_content_reports_open_per_reporter")
+                        .HasFilter("status = 'open'");
+
+                    b.ToTable("content_reports", "moderation", t =>
+                        {
+                            t.HasCheckConstraint("ck_content_reports_reason", "reason IN ('copyright', 'abuse', 'spam', 'other')");
+
+                            t.HasCheckConstraint("ck_content_reports_status", "status IN ('open', 'actioned', 'rejected')");
+
+                            t.HasCheckConstraint("ck_content_reports_subject_type", "subject_type IN ('track', 'comment', 'playlist')");
+                        });
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Notifications.Domain.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<Guid>("RecipientUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recipient_user_id");
+
+                    b.Property<Guid>("SourceEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_event_id");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("subject_type");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notifications");
+
+                    b.HasIndex("RecipientUserId")
+                        .HasDatabaseName("ix_notifications_unread")
+                        .HasFilter("read_at IS NULL");
+
+                    b.HasIndex("RecipientUserId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_notifications_recipient_user_id_created_at");
+
+                    b.HasIndex("SourceEventId", "RecipientUserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_notifications_source_event_id_recipient_user_id");
+
+                    b.ToTable("notifications", "notifications", t =>
+                        {
+                            t.HasCheckConstraint("ck_notifications_type", "type IN ('track_liked', 'artist_followed', 'comment_posted', 'comment_replied', 'track_ready', 'track_failed', 'report_resolved', 'content_removed')");
+                        });
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Playlists.Domain.Playlist", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_user_id");
+
+                    b.Property<DateTimeOffset?>("TakenDownAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("taken_down_at");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("title");
+
+                    b.Property<int>("TrackCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("track_count");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("visibility");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_playlists");
+
+                    b.HasIndex("UpdatedAt")
+                        .IsDescending()
+                        .HasDatabaseName("ix_playlists_public")
+                        .HasFilter("visibility = 'public' AND track_count > 0 AND taken_down_at IS NULL");
+
+                    b.HasIndex("OwnerUserId", "UpdatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_playlists_owner_user_id_updated_at");
+
+                    b.ToTable("playlists", "playlists", t =>
+                        {
+                            t.HasCheckConstraint("ck_playlists_track_count", "track_count >= 0");
+
+                            t.HasCheckConstraint("ck_playlists_visibility", "visibility IN ('public', 'private')");
+                        });
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Playlists.Domain.PlaylistTrack", b =>
+                {
+                    b.Property<Guid>("PlaylistId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("playlist_id");
+
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("track_id");
+
+                    b.Property<DateTimeOffset>("AddedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("added_at");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.HasKey("PlaylistId", "TrackId")
+                        .HasName("pk_playlist_tracks");
+
+                    b.HasIndex("TrackId")
+                        .HasDatabaseName("ix_playlist_tracks_track_id");
+
+                    b.HasIndex("PlaylistId", "Position")
+                        .HasDatabaseName("ix_playlist_tracks_playlist_id_position");
+
+                    b.ToTable("playlist_tracks", "playlists", t =>
+                        {
+                            t.HasCheckConstraint("ck_playlist_tracks_position", "position > 0");
+                        });
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Social.Domain.ArtistFollow", b =>
+                {
+                    b.Property<Guid>("FollowerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("follower_user_id");
+
+                    b.Property<Guid>("ArtistId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("artist_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.HasKey("FollowerUserId", "ArtistId")
+                        .HasName("pk_follows");
+
+                    b.HasIndex("ArtistId")
+                        .HasDatabaseName("ix_follows_artist_id");
+
+                    b.HasIndex("FollowerUserId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_follows_follower_user_id_created_at");
+
+                    b.ToTable("follows", "social");
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Social.Domain.Comment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AuthorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("author_user_id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<DateTimeOffset?>("EditedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("edited_at");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_id");
+
+                    b.Property<bool>("RemovedByModeration")
+                        .HasColumnType("boolean")
+                        .HasColumnName("removed_by_moderation");
+
+                    b.Property<int?>("TimestampMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("timestamp_ms");
+
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("track_id");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_comments");
+
+                    b.HasIndex("ParentId")
+                        .HasDatabaseName("ix_comments_parent_id")
+                        .HasFilter("parent_id IS NOT NULL");
+
+                    b.HasIndex("TrackId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_comments_track_id_created_at");
+
+                    b.HasIndex("TrackId", "TimestampMs")
+                        .HasDatabaseName("ix_comments_track_id_timestamp_ms");
+
+                    b.ToTable("comments", "social", t =>
+                        {
+                            t.HasCheckConstraint("ck_comments_body", "char_length(body) BETWEEN 1 AND 1000");
+
+                            t.HasCheckConstraint("ck_comments_timestamp", "timestamp_ms IS NULL OR timestamp_ms >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Social.Domain.TrackLike", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("track_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.HasKey("UserId", "TrackId")
+                        .HasName("pk_likes");
+
+                    b.HasIndex("TrackId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_likes_track_id_created_at");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_likes_user_id_created_at");
+
+                    b.ToTable("likes", "social");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("VibeZone.Modules.Identity.Infrastructure.AppRole", null)
@@ -985,8 +1855,34 @@ namespace VibeZone.Migrations.Migrations
                         .HasConstraintName("fk_user_tokens_users_user_id");
                 });
 
+            modelBuilder.Entity("VibeZone.Infrastructure.Outbox.OutboxConsumption", b =>
+                {
+                    b.HasOne("VibeZone.Infrastructure.Outbox.OutboxMessage", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_outbox_consumptions_outbox_messages_message_id");
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Catalog.Domain.Album", b =>
+                {
+                    b.HasOne("VibeZone.Modules.Catalog.Domain.Artist", null)
+                        .WithMany()
+                        .HasForeignKey("ArtistId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_albums_artist_artist_id");
+                });
+
             modelBuilder.Entity("VibeZone.Modules.Catalog.Domain.Track", b =>
                 {
+                    b.HasOne("VibeZone.Modules.Catalog.Domain.Album", null)
+                        .WithMany()
+                        .HasForeignKey("AlbumId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_tracks_albums_album_id");
+
                     b.HasOne("VibeZone.Modules.Catalog.Domain.Artist", null)
                         .WithMany()
                         .HasForeignKey("ArtistId")
@@ -1019,6 +1915,66 @@ namespace VibeZone.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_user_sessions_users_user_id");
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Notifications.Domain.Notification", b =>
+                {
+                    b.OwnsOne("VibeZone.Modules.Notifications.Domain.NotificationPayload", "Payload", b1 =>
+                        {
+                            b1.Property<Guid>("NotificationId");
+
+                            b1.Property<string>("ArtistSlug");
+
+                            b1.Property<string>("Code")
+                                .HasMaxLength(64);
+
+                            b1.Property<string>("Excerpt")
+                                .HasMaxLength(200);
+
+                            b1.Property<string>("Title")
+                                .HasMaxLength(200);
+
+                            b1.Property<Guid?>("TrackId");
+
+                            b1.HasKey("NotificationId");
+
+                            b1.ToTable("notifications", "notifications");
+
+                            b1
+                                .ToJson("payload")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("NotificationId")
+                                .HasConstraintName("fk_notifications_notifications_id");
+                        });
+
+                    b.Navigation("Payload")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Playlists.Domain.PlaylistTrack", b =>
+                {
+                    b.HasOne("VibeZone.Modules.Playlists.Domain.Playlist", null)
+                        .WithMany("Tracks")
+                        .HasForeignKey("PlaylistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_playlist_tracks_playlists_playlist_id");
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Social.Domain.Comment", b =>
+                {
+                    b.HasOne("VibeZone.Modules.Social.Domain.Comment", null)
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_comments_comments_parent_id");
+                });
+
+            modelBuilder.Entity("VibeZone.Modules.Playlists.Domain.Playlist", b =>
+                {
+                    b.Navigation("Tracks");
                 });
 #pragma warning restore 612, 618
         }

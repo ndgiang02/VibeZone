@@ -62,7 +62,7 @@ internal static class Csrf
             {
                 var tokens = antiforgery.GetAndStoreTokens(http);
                 http.Response.Headers.CacheControl = "no-store";
-                return TypedResults.Ok(new CsrfTokenResponse(tokens.RequestToken!));
+                return ApiResults.Ok(new CsrfTokenResponse(tokens.RequestToken!));
             })
             .WithTags("Auth")
             .WithName("GetCsrfToken")

@@ -16,7 +16,7 @@ public sealed class SessionAndProfileTests(PostgresFixture postgres, MailpitFixt
         phone.Http.DefaultRequestHeaders.UserAgent.ParseAdd("PhoneBrowser/1.0");
         Assert.Equal(HttpStatusCode.NoContent, await phone.LoginAsync(user.Email, user.Password));
 
-        var sessions = (await laptop.GetJsonAsync("/api/v1/me/sessions")).GetProperty("items").EnumerateArray().ToList();
+        var sessions = (await laptop.GetDataAsync("/api/v1/me/sessions")).EnumerateArray().ToList();
         Assert.Equal(2, sessions.Count);
         Assert.Single(sessions, s => s.GetProperty("isCurrent").GetBoolean());
         var phoneSession = Assert.Single(sessions, s => s.GetProperty("userAgent").GetString() == "PhoneBrowser/1.0");
@@ -35,7 +35,7 @@ public sealed class SessionAndProfileTests(PostgresFixture postgres, MailpitFixt
         await TestUsers.SignedInAsync(alice, mail);
         using var bob = _api.CreateApiClient();
         await TestUsers.SignedInAsync(bob, mail);
-        var bobSession = (await bob.GetJsonAsync("/api/v1/me/sessions")).GetProperty("items")[0].GetProperty("id").GetGuid();
+        var bobSession = (await bob.GetDataAsync("/api/v1/me/sessions"))[0].GetProperty("id").GetGuid();
 
         using var attempt = await alice.DeleteAsync($"/api/v1/me/sessions/{bobSession}");
 
@@ -56,8 +56,8 @@ public sealed class SessionAndProfileTests(PostgresFixture postgres, MailpitFixt
 
         using var response = await a.PostAsync("/api/v1/me/sessions/revoke-others");
 
-        Assert.Equal(2, (await response.JsonAsync()).GetProperty("revoked").GetInt32());
-        Assert.Single((await a.GetJsonAsync("/api/v1/me/sessions")).GetProperty("items").EnumerateArray());
+        Assert.Equal(2, (await response.DataAsync()).GetProperty("revoked").GetInt32());
+        Assert.Single((await a.GetDataAsync("/api/v1/me/sessions")).EnumerateArray());
         using (var me = await b.GetAsync("/api/v1/me")) { Assert.Equal(HttpStatusCode.Unauthorized, me.StatusCode); }
         using (var me = await c.GetAsync("/api/v1/me")) { Assert.Equal(HttpStatusCode.Unauthorized, me.StatusCode); }
     }
@@ -70,7 +70,7 @@ public sealed class SessionAndProfileTests(PostgresFixture postgres, MailpitFixt
 
         using var updated = await client.PatchAsync("/api/v1/me/profile", new { displayName = "  Nguyễn   Văn A ", locale = "vi" });
         Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
-        var me = await updated.JsonAsync();
+        var me = await updated.DataAsync();
         Assert.Equal("Nguyễn Văn A", me.GetProperty("displayName").GetString());
         Assert.Equal("vi", me.GetProperty("locale").GetString());
 

@@ -91,14 +91,17 @@ Delivered in slices, each verified before the next.
 - [x] CSRF rejection cases, cookie attributes, session revocation (own vs. others') covered by integration tests
 - [x] Desktop and mobile viewports in e2e; no CSP violations
 
-### M2b — Catalog & search
-- [ ] Artists (self-serve "become an artist"), tracks (metadata, visibility, status machine), albums, genres on tracks
-- [ ] Search: Postgres FTS + trigram over tracks/artists/albums/playlists, pagination
-- [ ] Pages: Home, Discover, Search results, Track detail, Artist profile, Album detail — all states
-- [ ] Dev seed command (clearly labelled, development only): artists + draft tracks (no fake audio, nothing "Ready")
+### M2b — Catalog & search 🟡 (built 2026-10-20 without tests, owner's request — ADR-0010)
+- [x] Artists (self-serve "become an artist"), tracks (metadata, visibility, status machine, edit in Studio), albums
+      (album/EP/single, tracklist order, Studio album manager), genres on tracks (one per track)
+- [x] Search: Postgres FTS + trigram over tracks/artists/albums/playlists, accent-insensitive, pagination
+- [x] Pages: Home, Discover, Search results, Track detail, Artist profile (with albums), Album detail — all states
+- [x] Dev seed command: `dotnet run --project src/VibeZone.Api -- seed-dev` (Development only; demo artists,
+      draft tracks, an album and a playlist each; no audio, nothing Ready)
 
-### M2c — Playlists & library
-- [ ] Playlists CRUD, ordering (drag & keyboard), public/private; Playlist detail; Library page
+### M2c — Playlists & library 🟡 (built 2026-10-20 without tests)
+- [x] Playlists CRUD, ordering (drag & keyboard), public/private; Playlist detail; Library page; "Add to playlist"
+      on track lists, cards and the track page; your playlists in the sidebar
 
 **Acceptance criteria**
 - [x] E2E: register → verify email (Mailpit) → login → logout (vi and en) — M2a
@@ -108,47 +111,65 @@ Delivered in slices, each verified before the next.
 - [x] Rate limit and lockout verified by tests; register/forgot/resend responses don't reveal account existence — M2a
 - [ ] Responsive check at mobile/tablet/desktop widths; keyboard navigation
 
+> 2026-10-22: no build work is left in M2b/M2c — the open items are tests and manual checks, deferred by the owner
+> ("development phase, no tests yet"). M4 was started on the owner's instruction before they were done.
+
 ---
 
-## M3 — Real media & playback 🟡 (implemented, not yet tested)
+## M3 — Real media & playback 🟡 (backend verified by integration tests; browser/e2e not yet run)
 
-Owner asked to build M3 without running tests. Everything below compiles (`dotnet build -warnaserror`,
-`npm run typecheck/lint/build`) but has **not been exercised at runtime**. Items stay `[~]` until verified.
-Includes the minimal catalog slice M3 needs (self-serve artist, tracks); the rest of M2b/M2c is still open.
+Built first without tests (owner's request), then verified on 2026-10-20 with integration tests against
+real Postgres, MinIO and the real worker image (FFmpeg) — see progress.md. Includes the minimal catalog
+slice M3 needs (self-serve artist, tracks); the rest of M2b/M2c is still open.
 
-- [~] `IObjectStorage` (S3 SDK) against MinIO; readiness check for storage
-- [~] Upload API: auth, owner check, size limit while streaming, declared-length check, signature sniff, server-generated keys, SHA-256
-- [~] Upload Studio UI: become an artist, create track, upload with progress/cancel, processing status (polling), delete
-- [~] `VibeZone.Worker` + container with FFmpeg: job claiming (SKIP LOCKED), lease/heartbeat, retries, cancellation, concurrency limit, timeouts
-- [~] `ffprobe` validation (container/codec allow-list, duration limits) — reject invalid files
-- [~] Transcode to AAC-LC/MP4 faststart; waveform peaks (artwork processing deferred)
-- [~] Track state machine Draft → Processing → Ready/Failed/Cancelled
-- [~] Streaming endpoint with Range semantics (200/206/416), authorization before bytes
+- [x] `IObjectStorage` (S3 SDK) against MinIO; readiness check for storage
+- [x] Upload API: auth, owner check, size limit while streaming, declared-length check, signature sniff, server-generated keys, SHA-256
+- [~] Upload Studio UI: become an artist, create track, upload with progress/cancel, processing status (polling), delete (e2e written, not run)
+- [x] `VibeZone.Worker` + container with FFmpeg: job claiming (SKIP LOCKED), lease/heartbeat, retries, cancellation, concurrency limit, timeouts
+      (fixed 2026-10-20: heartbeat vs. commit row-version conflict failed every job longer than lease/3)
+- [x] `ffprobe` validation (container/codec allow-list, duration limits) — reject invalid files
+- [x] Transcode to AAC-LC/MP4 faststart; waveform peaks, at most 1000
+- [x] Cover artwork (ADR-0009): JPEG/PNG/WebP → square JPEG 320/1200 px in the API (metadata stripped,
+      orientation applied); `GET/PUT/DELETE /tracks/{id}/artwork`; shown everywhere `TrackArt` is used
+- [x] One-request upload (ADR-0009): `POST /track-uploads` multipart (details + audio + optional cover),
+      all or nothing; Studio form redesigned around it (drag & drop, cover preview, progress/cancel)
+- [x] Artist avatar + banner (ADR-0009 addendum): `PUT/DELETE /me/artist/{avatar|banner}`, public GET;
+      editable in the Studio profile card, shown on the artist page, track page, artist lists.
+      ADR-0013 (2026-10-23): artist = account — name/URL/picture come from the account; only the banner is artist-only
+- [x] Track state machine Draft → Processing → Ready/Failed/Cancelled
+- [x] Streaming endpoint with Range semantics (200/206/416), authorization before bytes
+- [x] Response envelope `{data, meta}` + paging for growing lists (ADR-0008)
+- [x] Native-app playback: `GET /tracks/{id}/playback` → tokenised stream/waveform URLs (ADR-0008)
 - [~] Global audio player (Zustand store, single `<audio>`): play/pause, next/prev, seek, volume/mute, shuffle,
       repeat off/all/one, queue add/remove/jump, keyboard shortcuts, buffering/error/retry, mobile controls,
       persisted queue/preferences, no autoplay, Media Session
 - [~] wavesurfer.js waveform from real peaks, bound to the global player (see progress.md note)
 - [~] Track detail, artist profile, Home "new releases" (chronological, not personalised)
 
-**Acceptance criteria** (none verified yet)
-- [ ] Integration tests: valid upload → Ready; renamed non-audio file → rejected; oversized → rejected; corrupt → Failed
-- [ ] Range tests: `bytes=0-`, `bytes=100-199`, suffix range, unsatisfiable → 416, no Range → 200; memory stays flat for a large file
-- [ ] Private track stream by non-owner → 404; anonymous public stream works
-- [ ] Browser test with a ≥ 50 MB / ≥ 30 min file: playback starts quickly, seeking works
+**Acceptance criteria**
+- [x] Integration tests: valid upload → Ready; renamed non-audio file → rejected; oversized → rejected; corrupt → Failed
+- [~] Range tests: `bytes=0-`, `bytes=100-199`, suffix range, unsatisfiable → 416, no Range → 200 ✓;
+      "memory stays flat for a large file" ✗ — streaming 48 MB allocated 67 MB in the test process (cause not yet identified)
+- [x] Private track stream by non-owner → 404; anonymous public stream works
+- [~] ≥ 50 MB / ≥ 30 min file: upload → Ready → range seek verified at API level; browser playback not run
 - [ ] E2E: upload in Studio → Ready → play/pause/seek/next with the global player; state survives navigation; keyboard-only operation
-- [ ] Worker killed mid-job → job re-claimed after lease expiry and completes
-- [ ] Docker images (api, worker, web) build; compose stack healthy with worker
+      (`apps/web/e2e/player.spec.ts` written, **not run**)
+- [x] Worker killed mid-job → job re-claimed after lease expiry and completes
+- [~] Docker images: worker image builds (Testcontainers); api/web images and compose stack not re-verified after these changes
+
+> 2026-10-22: the remaining M3 items are verification only (e2e player run, browser playback of long files, image
+> builds) plus the streaming-allocation investigation; deferred with the M2 tests by the owner.
 
 ---
 
-## M4 — Social
+## M4 — Social 🟡 (built 2026-10-22 without automated tests, owner's request — ADR-0012; smoke-tested by hand against the local API)
 
-- [ ] Likes, follows, comments (timed), listening history, recently played
-- [ ] Play events ingestion with idempotency + valid-listen rules; trending from daily stats
-- [ ] Related tracks (genre/artist based — labelled as such, not "personalised")
-- [ ] Notifications (outbox → in-app, SignalR push); Notifications page
-- [ ] Content reports (incl. copyright), moderation queue, takedown, audit log
-- [ ] Admin dashboard (users, roles, reports, tracks, jobs) — admin-only policies
+- [x] Likes, follows (artist profiles), comments (timed, one reply level), listening history, recently played
+- [x] Play events ingestion with idempotency + valid-listen rules; trending from daily stats (Charts page, Home)
+- [x] Related tracks (genre/artist based — labelled as such, not "personalised")
+- [x] Notifications (transactional outbox → in-app, SignalR push); Notifications page and top-bar bell
+- [x] Content reports (incl. copyright), moderation queue, takedown/restore, audit log
+- [x] Admin dashboard (overview, users + roles, tracks, jobs, audit log) — `moderator` / `admin` policies
 
 **Acceptance criteria**
 - [ ] E2E: like/follow → counts and notifications update

@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ArtistPage({ params }: PageProps<"/[locale]/artists/[slug]">) {
   const { slug } = await params;
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-7xl">
       <ArtistView slug={slug} />
     </div>
   );

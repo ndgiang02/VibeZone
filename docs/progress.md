@@ -3,6 +3,296 @@
 Newest first. Each entry records what was done, **how it was verified** (actual commands and
 results), known issues and next steps.
 
+## 2026-10-22 — M4: social, analytics, notifications, moderation, admin (ADR-0012; no automated tests)
+
+Owner's instruction: finish M2/M3 and build M4 without tests for now ("development phase"). M2b/M2c had no
+build work left (only tests/manual checks), M3 only verification — both stay open in the plan; M4 was built.
+
+**Done**
+- Outbox (ADR-0004 implemented): `infra.outbox_messages` + `outbox_consumptions`, `IOutbox`,
+  `IIntegrationEventConsumer<T>`, dispatcher in the API (SKIP LOCKED claims, lease, backoff, dead-letter after 10).
+- Modules `Social` (likes, artist follows, timed comments + replies), `Analytics` (play events, sessions with
+  capped listening time, valid listens, daily stats upsert, history, trending), `Notifications` (8 types, SignalR
+  hub `/api/v1/hubs/notifications`, unread count), `Moderation` (reports, queue, remove/dismiss, restore, audit log).
+- Catalog: track takedown (hidden/unplayable, excluded from lists, search, new releases), `TrackProcessed` event,
+  trending / related / liked / history feeds, `/admin/tracks`. Playlists: takedown. Identity: `/admin/users` +
+  role grant/revoke (audited). Media: `/admin/jobs` (+ summary). Named policies `moderator` / `admin`.
+- Migration `AddSocialAnalyticsNotificationsModeration` (+ hand-written cross-module FKs).
+- Web: like hearts (rows + track page), follow button + follower count, timed comments (pin to the current
+  player position, timestamp chips play from there), report dialog, play reporter on the global player, top-bar
+  notification bell (live via `@microsoft/signalr` 10.0.11), pages /notifications, /liked, /history, /charts,
+  /moderation, /admin; Home "Recently played" + "Trending this week"; related tracks and listen count on the track
+  page; followed artists in Library; sidebar Charts/Favourites/History are real links now, staff links by role;
+  vi + en strings and error codes.
+- Postman collection: +6 folders (104 requests); app guide section for M4; ADR-0012; data-model, security
+  (§12), overview, plan updated; API/worker Dockerfile restore layers include the new projects.
+
+**Verification (actually run)**
+- `dotnet build VibeZone.slnx -warnaserror` ✓; `dotnet format --verify-no-changes` ✓; architecture tests
+  **34/34** ✓ (cheap, no Docker). `bash scripts/db-migrate.sh` applied the migration to the local database ✓.
+- Web: `npm run typecheck` ✓, `npm run lint` ✓, `npm run format:check` ✓, `npm run build` ✓, existing unit tests
+  `npm test` **37/37** ✓ (the i18n placeholder check failed once on new plural strings; fixed).
+- Manual smoke against the API running locally (`dotnet run`, real Postgres/Mailpit/MinIO), two fresh accounts
+  registered and verified through Mailpit: like/unlike counts, liked ids, comment (HTML stays text), follow,
+  report 201 then 409 `report_exists`, non-staff 403 on `/moderation` and `/admin`, play events 202 with duplicate
+  event → `accepted: 0`, valid listen counted after 21 s + 31 s reported (cap works), stats/history/trending
+  updated; with Admin granted in the DB to a test account: report queue, dismiss (409 on second resolve), grant
+  Moderator (audited), removing own Admin → 400, job/outbox summaries; comment report → remove → comment hidden,
+  author got `ContentRemoved`, reporter `ReportResolved` — outbox 6/6 processed, 0 dead. SignalR negotiate through
+  the Next rewrite: 401 anonymous, 200 signed in. Production web build served 200 for the new pages.
+
+**Not run**: integration/e2e tests (none written for M4, by decision), Playwright, browser/visual check of the
+new UI, WebSocket upgrade through the Next dev rewrite (negotiate only), Docker image builds, CI.
+
+**Known issues / limitations**
+- Realtime push is single-instance (needs a SignalR backplane to scale out); the web app polls the unread count
+  every 2 minutes as a fallback.
+- Counts are live `COUNT`s; trending is in-memory paging over the top 100.
+- Pre-existing: a JSON body with a wrongly typed field (e.g. `"userId": ""`) returns 500 instead of 400
+  (`BadHttpRequestException` reaches the exception handler) — seen while smoke-testing verify-email.
+- Account emails still use the in-memory queue, not the outbox.
+- The `app` compose profile containers (api/web/proxy/worker) run old images until rebuilt; they were stopped
+  for this session because they hold port 5080.
+
+**Next**: tests for M2–M4 when the owner wants them (authz matrix incl. IDOR for comments/notifications/reports,
+valid-listen rules, outbox idempotency, e2e for like/follow → notification and report → takedown), then M5.
+
+## 2026-10-21 — Separate API site for apps (ADR-0011)
+
+**Done**: Caddy serves a web site (`WEB_SITE`, unchanged same-origin `/api`) and an API-only site (`API_SITE`,
+`api.<domain>`; locally `API_PUBLIC_PORT` 3001). Postman `baseUrl` and the app guide point at the API site.
+
+**Verification**: **not run** — Docker was stopped. To check: `docker compose --profile app up -d --wait`, then
+`localhost:3001/api/v1/genres` → 200, `localhost:3001/` → 404, `localhost:3000` unchanged.
+
+## 2026-10-21 — App API check, Postman collection complete
+
+**Done**
+- Postman collection covers all 62 OpenAPI operations (70 requests): added account picture (set/get/remove),
+  artist image get + banner remove, search artists/albums; `userId`/`artistId` captured from Me / My artist.
+- Fixed the generator: Health and the Mailpit helper are found by folder name — the index-based lookup had
+  pointed the Playlists folder at `localhost:5080` after new folders were inserted.
+
+**Verification**: manual smoke script (not committed) against the local Compose stack through the proxy
+(`localhost:3000`) with Bearer tokens, as the app calls it: 84 checks — register → Mailpit link → verify → token →
+refresh, account picture, become artist, one-request upload (worker → Ready), cover, playback token URL with
+Range (206), waveform, raw two-step upload + cancel, albums, search (all kinds), playlists (CRUD, reorder,
+containsTrack, private → 404 for anonymous), cleanup, refresh-token reuse → 401, revoke and bearer logout → 401.
+All passed (the sign-out checks re-run after the 1-minute auth rate-limit window; the first run hit 429).
+Test data left: the account `smoke-mvhgqf77@example.test` (no delete-account endpoint).
+
+## 2026-10-20 — M2b/M2c: albums, search, playlists, library, discover, dev seed (no tests)
+
+Owner request: finish M2b, M2c and M3 without writing tests.
+
+**Done**
+- Catalog: albums (album/EP/single, release date, visibility, tracklist order; cover = first track cover);
+  `TrackDto.album/trackNumber`; artist profile lists albums; track metadata editing in the Studio (inline).
+- Search (ADR-0010): `unaccent` + `pg_trgm`, `public.vz_fold`, generated `search_vector` columns, GIN + trigram
+  indexes; `GET /search`, `/search/{tracks|artists|albums}`; public playlist search. Web: /search page fed by the
+  top-bar box (debounced, ?q= in the URL); the old home-page local filter is gone.
+- New Playlists module (schema `playlists`): CRUD, add/remove, reorder (positions swap; hidden tracks keep theirs),
+  `GET /me/playlists?containsTrack=`; Catalog composes `GET /playlists/{id}/tracks` via `IPlaylistReader`.
+  Contracts added: `IUserDirectory` (Identity), `ITrackCatalog.GetArtworkUrlsAsync`.
+- Web: album page, playlist page (owner: edit, delete, drag & drop / arrow buttons / Alt+↑↓ reorder, remove),
+  Library (/library: playlists + create), Discover (/discover: genres, community playlists, new releases), "Add to
+  playlist" menu on track rows, cards and the track page (with quick create), real playlists in the sidebar,
+  Studio album manager. Nav: Discover, Library.
+- Dev seed: `dotnet run --project src/VibeZone.Api -- seed-dev` (Development only).
+- Migrations: `AddAlbumsAndSearch`, `AddPlaylists`.
+
+**Verification**: `dotnet build VibeZone.slnx -warnaserror` ✓; web `typecheck`, `lint`, `format:check` ✓.
+**No tests were written or run** (owner's request): search SQL, migrations on a real database, the playlist
+reorder, the seed command and every new page are unverified. M3's open items are verification-only (e2e
+player spec, browser playback, streaming-memory investigation) and remain open.
+
+**Next**: integration tests (authz matrix for albums/playlists, search accents/typos, reorder), e2e for search →
+track and playlist create → add → reorder → reload (M2 acceptance), run `player.spec.ts`.
+
+## 2026-10-20 — Account pictures
+
+- `PUT/DELETE /me/avatar`, `GET /users/{id}/avatar/{size}`, migration `AddUserAvatars`, `MeDto.avatar`; editor in
+  Settings → Profile; the account button (top bar/sidebar) shows the picture (initials fallback).
+- Verification: `dotnet build -warnaserror` ✓, web typecheck/lint ✓. **No tests run** (owner's request).
+
+## 2026-10-20 — Artist avatar & banner; fix 500 on one-request upload
+
+**Done**
+- Fix: `POST /track-uploads` → 500 (FK 23503): EF inserted `media_assets`/`upload_jobs` before the new
+  `catalog.tracks` row (cross-module FKs aren't in the EF model). Track saved first in an explicit transaction.
+- Artist avatar (square 160/640) and banner (3:1, 800/1600): `PUT/DELETE /me/artist/{avatar|banner}`, public
+  `GET /artists/{id}/{avatar|banner}/{small|large}`, migration `AddArtistImages`, `IArtistCatalog` contract,
+  image processor generalised (`ImageSpec`: aspect ratio, orientation applied before cropping).
+- Web: Studio profile card (banner + avatar, click/drop to change, remove); artist page banner; real avatars
+  in artist lists, search, track page.
+
+**Verification**: `dotnet build -warnaserror` ✓; web `typecheck`, `lint`, `format:check` ✓. **No tests run**
+(owner asked to skip testing) — the processor refactor and new endpoints are unverified by tests.
+
+## 2026-10-20 — One-request track upload, cover artwork, UI motion (ADR-0009)
+
+Owner request: uploads should send the audio, cover and details together (no "create, then upload"),
+tracks need cover images, and the UI should feel smoother.
+
+**Done**
+- API: `POST /api/v1/track-uploads` (multipart, streamed; all or nothing), `GET /tracks/{id}/artwork/{small|large}`,
+  `PUT/DELETE /tracks/{id}/artwork`. Covers re-encoded with SkiaSharp 4.153.1 (square JPEG 320/1200 px, metadata
+  stripped, EXIF orientation applied). `TrackDto.artwork`. Migration `AddTrackArtwork`. The worker keeps covers.
+- Web: Studio form redesigned (audio drop zone with title suggested from the file name, cover picker with
+  preview, progress/cancel, success state); cover change by clicking the art on a Studio row; real covers in
+  cards, lists, track page, player bar, queue and now-playing (gradient fallback, fade-in).
+- Motion: page enter (`[locale]/template.tsx`), staggered list/grid entrances, button press scale, player art
+  transition on track change, striped upload progress; all off under prefers-reduced-motion.
+- Docs: ADR-0009, security.md §10, data-model, API guide, Postman collection, plan. e2e `player.spec.ts`
+  updated to the new flow.
+
+**Verification (actually run)**
+- `dotnet build -warnaserror` ✓; unit tests 87/87 (incl. 9 new artwork processor tests).
+- Web: `typecheck` ✓, `lint` ✓, `format:check` ✓, `npm test` 37/37 (5 new upload form tests).
+- Integration `TrackUploadTests`: the first runs failed 10/12 — every multipart file part was rejected as
+  `multipart_invalid` (`IsFormDisposition()` excludes parts that have a file name). Fixed; the re-run was
+  **stopped at the owner's request**, so the fix is **not verified by integration tests**. Cover
+  replace/remove (incl. cross-user 404) passed in the first run.
+- Not run: full integration suite, e2e, `npm run build`, Docker images (SkiaSharp native lib in the API image).
+
+**Next**: re-run `TrackUploadTests` and the e2e upload/playback spec; build the API image.
+
+## 2026-10-20 — Web UI redesign (Resso-style layout, lime theme)
+
+Owner request: restyle the existing web app after a Resso reference (dark, left sidebar, top search,
+banner + card sections, artists and now-playing panel on the right), primary colour `#A8D64A`, artwork
+and mock data allowed. Frontend only — no API, schema, auth or player-logic changes.
+
+**Done**
+- Theme: tokens in `globals.css` switched to the owner's palette (`#050505` page, `#101010` sidebar,
+  `#151515` cards, `#A8D64A` primary + subtle/border variants); styled `.vz-range` sliders.
+- Shell: new `Sidebar` (icon rail 72 px on tablets, 220 px from lg; lime pill for the current page; planned
+  items Your FM / For you / Charts / library entries shown disabled with "Soon", not links), new `Topbar`
+  (back/forward, search, language, account; guests see Sign in + Create account). Mobile keeps the
+  bottom tab bar; search wraps under the header.
+- Home (`features/home`): banner with the real "play all" over new releases (count · total time); new
+  releases as cards with hover play/queue; "View all / Show less" reveals loaded items (no listing pages
+  exist); artists derived from new releases (link to artist pages) as a side list (xl) or a horizontal
+  rail; `NowPlayingCard` in the side panel reads/commands the existing player store (still one `<audio>`).
+- Search: no search API exists, so the top-bar query (`src/stores/search-store.ts`) filters what the home
+  page has loaded (tracks, artists, genres, showcase items); typing on another page navigates home.
+- Artwork: 16 generated SVG illustrations in `public/artwork` (local, so no CSP change), used for genre tiles,
+  the banner collage and showcase cards, with a gradient fallback on load error. Real tracks keep the
+  `TrackArt` gradient (no artwork upload exists yet).
+- UI showcase (`features/showcase`): sample Most played / Recommended / playlists, and Hot songs / artists
+  only when the catalog is empty. Dev-only (or `NEXT_PUBLIC_SHOWCASE=true`), "Demo"-badged, not playable,
+  fictional names, no play/follower counts. AGENTS.md updated (UI palette, mock-data exception).
+
+**Verification (actually run)**
+- `npm run typecheck` ✓, `npm run lint` ✓, `npm test` **32/32**, `npm run build` ✓.
+- Dev server screenshots at 1440/1280/1024/820/390 px: no horizontal overflow, no page errors (only the
+  existing anonymous `/me` 401). Scripted check: play from a card → one `<audio>`, plays; pause from the
+  now-playing card pauses the shared engine and the player bar follows; search filters and navigates home.
+- Production build: no "Demo" content rendered.
+- Playwright against the Compose API: desktop smoke + auth ✓; mobile smoke + auth ✓ (when re-run serially —
+  the parallel run hit 429s because the Compose API uses the default auth rate limit).
+
+**Known issues / next steps**
+- `e2e/player.spec.ts` (new, never run before) fails on desktop at the ArrowLeft-shortcut step: after
+  `fill()` the Seek slider keeps focus, so ArrowLeft moves the slider by 1 s instead of the 5 s shortcut.
+  The same `<input type=range>` existed before the redesign; the test needs the owner's call (e.g. blur the
+  slider first). Everything before that step (play, pause/resume, seek) passed.
+- `npm run format:check` flags `e2e/player.spec.ts` (pre-existing, untouched).
+- Notifications/Premium were left out of the top bar (no such features). "Soon" items have no pages.
+
+### Follow-up: track detail, artist page, waveform track list
+
+**Done**
+- `TrackList` is now a waveform list: number → play on hover, artwork, title, `MiniWaveform`, duration,
+  add-to-queue; the waveform wraps under the title on phones.
+- `MiniWaveform`: SVG bars from the worker's peaks (never synthesised), fetched when the row nears the
+  viewport. It shows live progress for the current track and a hover time preview. Click seeks, or starts
+  that track (with the list as queue) at the clicked point. It is a keyboard slider (Enter/Space
+  play-pause, arrows ±5 s) and sends commands through the player store only.
+- Track page: hero tinted from the artwork hue (artist avatar + link, date, duration, genre chip, big play,
+  add to queue, owner status), the waveform card (existing wavesurfer), About, "More from {artist}" (≤ 8,
+  this track highlighted), sticky artist card (bio, "View artist").
+- Artist page: hero (large avatar, track count · total time, Play all, Shuffle), track list with
+  waveforms, About card (bio or placeholder, "On VibeZone since" from `createdAt`).
+
+**Verification (actually run)**
+- `npm run typecheck`, `lint`, `format` ✓; `npm test` 32/32; `npm run build` ✓.
+- Dev screenshots of both pages at 1440/1024/390: no horizontal overflow, no page errors. A click in the
+  middle of a 40 s track's mini waveform started it at ~20 s (one `<audio>`, slider `aria-valuenow` 22/40).
+- Playwright, `--workers=1` against the Compose API: 19 passed, 1 skipped, 2 failed. Both failures are
+  `player.spec.ts:102` (ArrowLeft shortcut), after the artist-page steps (play from the new list,
+  pause/resume, seek) had passed. Desktop: the Seek slider keeps focus after `fill()`. Mobile: the assertion
+  expects the time to drop below `beforeShortcut − 2` while playback is only ~1.5 s in. Both are test issues;
+  the test was not changed (owner's call).
+
+## 2026-10-20 — Response envelope, mobile playback URLs, M3 integration tests
+
+Owner request: one common API response format, then finish M3 so playback works in the mobile app too.
+The owner chose to keep Problem Details for errors and to wrap successes in `{data, meta}`.
+Decisions are recorded in ADR-0008. Testing was stopped by the owner before the full run.
+
+**Done**
+- Envelope: `ApiResponse<T>` / `ApiListResponse<T>` + `ApiResults` (`VibeZone.Infrastructure.Web`), applied to
+  every JSON success response (incl. `/auth/csrf`, token endpoints, upload status, waveform). `PageRequest` /
+  `Paged<T>` (SharedKernel); `GET /tracks` (new releases) and `GET /me/tracks` take `page`/`pageSize` (max 50);
+  `limit` on `/tracks` was replaced. Web `unwrap()` returns `data`; API types regenerated; tests use `DataAsync()`.
+- Mobile playback: `GET /tracks/{id}/playback` → `{streamUrl, waveformUrl, contentType, sizeBytes, durationMs,
+  expiresAt}`. The URLs carry `?token=vzp_…` (Data Protection; `Media:PlaybackTokenLifetime`, default 6 h).
+  `/stream` and `/waveform` accept the token and re-check visibility as the viewer it was issued to.
+  New error code `playback_token_invalid` (vi/en).
+- Bug fixes found by the new tests:
+  - Worker: the lease heartbeat updates the job row (new xmin) while the processor holds a stale tracked
+    entity, so every job running longer than lease/3 (~100 s by default) failed with
+    `DbUpdateConcurrencyException` and was retried until `processing_attempts_exhausted`.
+    Fix: `JobRowGate` serialises the heartbeat with the commits, and `FindJobAsync` reloads tracked rows.
+  - Waveform: AAC padding produced >1000 peaks (1004/1007); extra samples now fold into the last bucket.
+- Tests:
+  - Integration, `tests/…/Media/`, serial collection:
+    - The real worker image is built from `src/VibeZone.Worker/Dockerfile` and reaches Postgres/MinIO
+      via `host.docker.internal`.
+    - Audio is generated in code (`TestAudio`): WAV tones, corrupt WAV, renamed PNG.
+    - Classes: `UploadPipelineTests`, `StreamingTests`, `PlaybackTokenTests`, `WorkerRecoveryTests`
+      (docker kill + re-claim), `LargeMediaTests`.
+  - Unit: paging, playback tokens, range parsing.
+  - E2E: `apps/web/e2e/player.spec.ts`.
+- CI:
+  - e2e job: MinIO (`docker run`), worker image build + run, Storage env, worker logs on failure.
+  - Timeouts raised: backend 40 min, e2e 30 min.
+- Docs: ADR-0008, `docs/api/README.md` (response format, just_audio playback), Postman collection
+  regenerated (38 requests), security.md §10, AGENTS.md (API responses), README (test prerequisites).
+
+**Verification (actually run)**
+- `dotnet build VibeZone.slnx -warnaserror` ✓ (after the last code change; integration test project rebuilt too).
+- Unit tests: **76/76 passed**.
+- Web: `npm run typecheck`, `lint`, `format:check` ✓; `npm test` **32/32**.
+- Media integration tests: 4 failures in the first full run (the worker concurrency bug and the peak
+  count). In the second full run (after the fixes), **14/15 passed**:
+  - upload → Ready (AAC/MP4, ~1000 peaks);
+  - rejections: renamed PNG (`unsupported_file_type`), oversized (declared and while streaming), truncated;
+  - corrupt WAV → Failed;
+  - owner-only upload/status/cancel;
+  - Range 200/206/suffix/clamped/416;
+  - private track 404 for others and for anonymous users, including `/playback`;
+  - credential-less playback via token with seek; token stops working once the track turns private;
+  - tampered, foreign and expired tokens → 401;
+  - killed worker → job re-claimed, Completed with 2 attempts.
+- The failing test was the 30-minute file. Its first failure was the test's own wrong assumption (a sine
+  tone encodes far below 256 kbps, so the rendition is < 50 MB); the test was rewritten. The rewritten
+  test then failed on the memory check: streaming 48,105,768 bytes allocated 67,009,704 bytes in the test
+  process. The source of these allocations (API, AWS SDK or TestServer) was being investigated when the
+  owner stopped testing — **unresolved**.
+
+**Not run**
+- Full test suite after the last changes, `dotnet format --verify-no-changes`, Playwright e2e (incl. the new
+  player spec), CI on GitHub, Docker image builds for api/web, compose stack.
+
+**Known issues / next steps**
+- Find the streaming allocation source. Try a direct `IObjectStorage` read vs. through TestServer, or measure
+  the API container under Kestrel. Then fix it, or adjust the check with the owner's agreement.
+- Run the e2e player spec. Playwright's bundled Chromium may lack AAC; if so use the Chrome channel.
+- Playback tokens are not revoked with the session (bounded by the lifetime, see ADR-0008).
+- No Flutter code was run; the Dart snippets in `docs/api/README.md` are illustrative.
+
 ## 2026-10-19 — Native-app token auth (Flutter) + Postman collection
 
 Owner request: email + password sign-in for their existing Flutter app (social logins deferred), plus a

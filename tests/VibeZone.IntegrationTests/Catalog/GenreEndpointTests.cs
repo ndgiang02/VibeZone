@@ -1,7 +1,5 @@
 using System.Net;
-using System.Net.Http.Json;
 using VibeZone.IntegrationTests.Infrastructure;
-using VibeZone.Modules.Catalog.Endpoints;
 
 namespace VibeZone.IntegrationTests.Catalog;
 
@@ -17,10 +15,14 @@ public sealed class GenreEndpointTests(PostgresFixture postgres)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("public, max-age=300", response.Headers.CacheControl?.ToString());
-        var body = await response.Content.ReadFromJsonAsync<GenreListResponse>(TestContext.Current.CancellationToken);
-        Assert.NotNull(body);
-        Assert.Equal(23, body.Items.Count);
-        Assert.Contains(body.Items, g => g.Slug == "v-pop" && g.Name == "V-Pop");
-        Assert.Equal(body.Items.Select(g => g.Name).Order(StringComparer.Ordinal), body.Items.Select(g => g.Name));
+        var body = await response.JsonAsync();
+        var names = body.GetProperty("data").EnumerateArray().Select(g => g.GetProperty("name").GetString()).ToList();
+        Assert.Equal(23, names.Count);
+        Assert.Contains(body.GetProperty("data").EnumerateArray(), g => g.GetProperty("slug").GetString() == "v-pop" && g.GetProperty("name").GetString() == "V-Pop");
+        Assert.Equal(names.Order(StringComparer.Ordinal), names);
+        var meta = body.GetProperty("meta");
+        Assert.Equal(1, meta.GetProperty("page").GetInt32());
+        Assert.Equal(23, meta.GetProperty("total").GetInt32());
+        Assert.False(meta.GetProperty("hasMore").GetBoolean());
     }
 }

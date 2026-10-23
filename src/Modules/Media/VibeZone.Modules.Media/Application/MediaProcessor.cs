@@ -39,7 +39,8 @@ public sealed partial class MediaProcessor(
     };
 
     /// <param name="cancelledByUser">Set by the caller's heartbeat when the API cancelled the job.</param>
-    public async Task<ProcessingOutcome> ProcessAsync(Guid jobId, Func<bool> cancelledByUser, CancellationToken cancellationToken)
+    /// <param name="rowGate">Held by the caller's heartbeat while it extends the lease; held here while committing.</param>
+    public async Task<ProcessingOutcome> ProcessAsync(Guid jobId, Func<bool> cancelledByUser, JobRowGate rowGate, CancellationToken cancellationToken)
     {
         var settings = options.Value;
         var job = await repository.FindJobAsync(jobId, cancellationToken) ?? throw new InvalidOperationException($"Job {jobId} not found.");
@@ -50,7 +51,7 @@ public sealed partial class MediaProcessor(
 
         if (job.AttemptCount > job.MaxAttempts)
         {
-            return await FailAsync(jobId, new MediaProcessingException("processing_attempts_exhausted", true, "Too many attempts."), cancellationToken);
+            return await FailAsync(jobId, rowGate, new MediaProcessingException("processing_attempts_exhausted", true, "Too many attempts."), cancellationToken);
         }
 
         var workDir = Directory.CreateDirectory(Path.Combine(settings.ResolveTempDirectory(), $"job-{jobId:N}")).FullName;
@@ -91,6 +92,7 @@ public sealed partial class MediaProcessor(
             uploaded.Add(waveformKey);
 
             // Commit against fresh rows: the API may have cancelled meanwhile (row versions guard the race).
+            using var commit = await rowGate.EnterAsync(cancellationToken);
             var fresh = await repository.FindJobAsync(jobId, cancellationToken);
             if (fresh is null || fresh.Status != UploadJobStatus.Processing || cancelledByUser())
             {
@@ -99,7 +101,8 @@ public sealed partial class MediaProcessor(
             }
 
             var now = time.GetUtcNow();
-            var replaced = (await repository.ListAssetsAsync(job.TrackId, cancellationToken)).ToList();
+            // Audio assets only: the cover is managed separately (ArtworkService) and survives re-uploads.
+            var replaced = (await repository.ListAssetsAsync(job.TrackId, cancellationToken)).Where(a => !MediaAsset.IsArtwork(a.Kind)).ToList();
             foreach (var old in replaced)
             {
                 repository.Remove(old);
@@ -134,17 +137,17 @@ public sealed partial class MediaProcessor(
         catch (OperationCanceledException) when (timeout.IsCancellationRequested)
         {
             await DeleteQuietlyAsync(uploaded);
-            return await FailAsync(jobId, new MediaProcessingException("processing_timeout", true, "Processing took too long."), cancellationToken);
+            return await FailAsync(jobId, rowGate, new MediaProcessingException("processing_timeout", true, "Processing took too long."), cancellationToken);
         }
         catch (MediaProcessingException ex)
         {
             await DeleteQuietlyAsync(uploaded);
-            return await FailAsync(jobId, ex, cancellationToken);
+            return await FailAsync(jobId, rowGate, ex, cancellationToken);
         }
         catch (Exception ex) when (ex is IOException or HttpRequestException or TimeoutException || ex.GetType().Namespace?.StartsWith("Amazon", StringComparison.Ordinal) == true)
         {
             await DeleteQuietlyAsync(uploaded);
-            return await FailAsync(jobId, new MediaProcessingException("processing_error", false, "Transient processing error.", ex), cancellationToken);
+            return await FailAsync(jobId, rowGate, new MediaProcessingException("processing_error", false, "Transient processing error.", ex), cancellationToken);
         }
         finally
         {
@@ -177,8 +180,9 @@ public sealed partial class MediaProcessor(
         }
     }
 
-    private async Task<ProcessingOutcome> FailAsync(Guid jobId, MediaProcessingException error, CancellationToken cancellationToken)
+    private async Task<ProcessingOutcome> FailAsync(Guid jobId, JobRowGate rowGate, MediaProcessingException error, CancellationToken cancellationToken)
     {
+        using var commit = await rowGate.EnterAsync(cancellationToken);
         var job = await repository.FindJobAsync(jobId, cancellationToken);
         if (job is null || job.Status != UploadJobStatus.Processing)
         {

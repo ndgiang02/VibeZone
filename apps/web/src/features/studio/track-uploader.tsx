@@ -13,6 +13,7 @@ import {
   ACCEPTED_AUDIO,
   MAX_UPLOAD_BYTES,
   type UploadHandle,
+  type UploadStatus,
   uploadTrackAudio,
 } from "@/features/tracks/upload";
 
@@ -28,7 +29,7 @@ export function TrackUploader({ trackId }: { trackId: string }) {
   const queryClient = useQueryClient();
   const inputId = useId();
   const input = useRef<HTMLInputElement>(null);
-  const handle = useRef<UploadHandle | null>(null);
+  const handle = useRef<UploadHandle<UploadStatus> | null>(null);
   const [state, setState] = useState<State>({ kind: "idle" });
   const [dragging, setDragging] = useState(false);
 

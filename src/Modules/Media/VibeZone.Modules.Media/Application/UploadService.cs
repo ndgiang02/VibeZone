@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using VibeZone.Modules.Catalog.Contracts;
@@ -10,6 +9,12 @@ namespace VibeZone.Modules.Media.Application;
 public sealed record UploadRequest(Guid TrackId, Guid UserId, long DeclaredLength, string? FileName, string? ContentType, Stream Body);
 
 /// <summary>
+/// A new track in one request: metadata, the audio (already spooled to disk by the endpoint) and an
+/// optional cover image.
+/// </summary>
+public sealed record NewTrackUpload(Guid UserId, NewTrackDraft Track, SpooledUpload? Audio, string? FileName, string? ContentType, byte[]? Artwork);
+
+/// <summary>
 /// Receives an original upload: owner check → size limits enforced while reading → first-bytes sniff →
 /// private storage under a server-generated key → job queued and track marked Processing (one commit).
 /// </summary>
@@ -17,12 +22,24 @@ public sealed partial class UploadService(
     ITrackCatalog catalog,
     IMediaRepository repository,
     IObjectStorage storage,
+    ArtworkService artwork,
     IOptions<MediaOptions> options,
     TimeProvider time,
     ILogger<UploadService> logger)
 {
     private static readonly DomainError TrackNotFound = DomainError.NotFound("track_not_found", "Track not found.");
 
+    public static DomainError FileTooLarge(long maxBytes, string? field = null) =>
+        DomainError.Validation("file_too_large", $"Files can be at most {maxBytes / (1024 * 1024)} MB.", field);
+
+    private static DomainError UnsupportedFileType(string? field = null) =>
+        DomainError.Validation("unsupported_file_type", "This file doesn't look like a supported audio file.", field);
+
+    private static readonly DomainError Incomplete = DomainError.Validation("upload_incomplete", "The upload was incomplete. Try again.");
+
+    public string TempDirectory => options.Value.ResolveTempDirectory();
+
+    /// <summary>Uploads audio for an existing Draft/Failed/Cancelled track (raw body).</summary>
     public async Task<Result<UploadStatusDto>> StartAsync(UploadRequest request, CancellationToken cancellationToken)
     {
         var settings = options.Value;
@@ -49,58 +66,108 @@ public sealed partial class UploadService(
 
         if (request.DeclaredLength > settings.MaxUploadBytes)
         {
-            return DomainError.Validation("file_too_large", $"Files can be at most {settings.MaxUploadBytes / (1024 * 1024)} MB.");
+            return FileTooLarge(settings.MaxUploadBytes);
         }
 
-        var tempPath = Path.Combine(settings.ResolveTempDirectory(), $"{EntityId.New():N}.upload");
+        SpooledUpload spooled;
         try
         {
-            Spooled spooled;
-            try
-            {
-                spooled = await SpoolAsync(request.Body, tempPath, settings.MaxUploadBytes, cancellationToken);
-            }
-            catch (IOException ex) when (!cancellationToken.IsCancellationRequested)
-            {
-                // The body ended early (client/proxy dropped the connection; Kestrel reports this as an
-                // IOException). A client-side problem, not a server error.
-                LogIncomplete(logger, ex, request.TrackId, request.DeclaredLength);
-                return DomainError.Validation("upload_incomplete", "The upload was incomplete. Try again.");
-            }
+            spooled = await SpooledUpload.CreateAsync(request.Body, settings.ResolveTempDirectory(), settings.MaxUploadBytes, cancellationToken);
+        }
+        catch (IOException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            // The body ended early (client/proxy dropped the connection; Kestrel reports this as an
+            // IOException). A client-side problem, not a server error.
+            LogIncomplete(logger, ex, request.TrackId, request.DeclaredLength);
+            return Incomplete;
+        }
 
-            if (spooled.Error is { } spoolError)
+        using (spooled)
+        {
+            if (spooled.TooLarge)
             {
-                return spoolError;
+                return FileTooLarge(settings.MaxUploadBytes);
             }
 
             if (spooled.Length != request.DeclaredLength)
             {
                 // Protects against silently truncated bodies (e.g. by an intermediate proxy).
-                return DomainError.Validation("upload_incomplete", "The upload was incomplete. Try again.");
+                return Incomplete;
             }
 
             if (!AudioSignature.LooksLikeAudio(spooled.Head))
             {
-                return DomainError.Validation("unsupported_file_type", "This file doesn't look like a supported audio file.");
+                return UnsupportedFileType();
             }
 
-            var key = MediaAsset.NewKey(request.TrackId, MediaAssetKind.Original, string.Empty);
-            await using (var file = File.OpenRead(tempPath))
-            {
-                await storage.PutAsync(key, file, spooled.Length, "application/octet-stream", cancellationToken);
-            }
-
-            var now = time.GetUtcNow();
-            var job = UploadJob.CreateUploaded(request.TrackId, request.UserId, key, spooled.Length, spooled.Sha256, request.FileName, request.ContentType, settings.MaxAttempts, now);
-            repository.Add(job);
+            var job = await QueueAsync(request.TrackId, request.UserId, spooled, request.FileName, request.ContentType, cancellationToken);
             await catalog.StageProcessingAsync(request.TrackId, cancellationToken);
             await repository.SaveChangesAsync(cancellationToken);
             LogQueued(logger, job.Id, request.TrackId, spooled.Length);
             return ToDto(request.TrackId, job);
         }
-        finally
+    }
+
+    /// <summary>
+    /// Creates a track and queues its audio (plus the cover, if any) in one commit: either everything exists
+    /// afterwards or nothing does. Validation order: metadata → audio → cover.
+    /// </summary>
+    public async Task<Result<UploadStatusDto>> CreateTrackAsync(NewTrackUpload request, CancellationToken cancellationToken)
+    {
+        var settings = options.Value;
+        var staged = await catalog.StageNewTrackAsync(request.UserId, request.Track, cancellationToken);
+        if (!staged.IsSuccess)
         {
-            TryDelete(tempPath);
+            return staged.Error!;
+        }
+
+        if (request.Audio is not { Length: > 0 } audio)
+        {
+            return DomainError.Validation("audio_required", "Choose an audio file.", "audio");
+        }
+
+        if (audio.TooLarge)
+        {
+            return FileTooLarge(settings.MaxUploadBytes, "audio");
+        }
+
+        if (!AudioSignature.LooksLikeAudio(audio.Head))
+        {
+            return UnsupportedFileType("audio");
+        }
+
+        var trackId = staged.Value;
+        var written = new List<string>();
+        // The track row must exist before its media rows (cross-module FKs EF doesn't know about), so this
+        // takes two saves; the transaction keeps it all or nothing.
+        await using var transaction = await repository.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await repository.SaveChangesAsync(cancellationToken);
+
+            if (request.Artwork is { } image)
+            {
+                var cover = await artwork.StageAsync(trackId, image, cancellationToken);
+                if (!cover.IsSuccess)
+                {
+                    return cover.Error!; // disposing the transaction rolls the track back
+                }
+
+                written.AddRange(cover.Value.NewKeys);
+            }
+
+            var job = await QueueAsync(trackId, request.UserId, audio, request.FileName, request.ContentType, cancellationToken);
+            written.Add(job.ObjectKey);
+            await catalog.StageProcessingAsync(trackId, cancellationToken);
+            await repository.SaveChangesAsync(cancellationToken);
+            await repository.CommitAsync(transaction, cancellationToken);
+            LogQueued(logger, job.Id, trackId, audio.Length);
+            return ToDto(trackId, job);
+        }
+        catch
+        {
+            await artwork.DeleteQuietlyAsync(written);
+            throw;
         }
     }
 
@@ -139,55 +206,22 @@ public sealed partial class UploadService(
         return job is null ? new UploadStatusDto(trackId, null, null, 0, null, null, null) : ToDto(trackId, job);
     }
 
+    /// <summary>Stores the verified original and stages its job (the caller commits).</summary>
+    private async Task<UploadJob> QueueAsync(Guid trackId, Guid userId, SpooledUpload spooled, string? fileName, string? contentType, CancellationToken cancellationToken)
+    {
+        var key = MediaAsset.NewKey(trackId, MediaAssetKind.Original, string.Empty);
+        await using (var file = File.OpenRead(spooled.Path))
+        {
+            await storage.PutAsync(key, file, spooled.Length, "application/octet-stream", cancellationToken);
+        }
+
+        var job = UploadJob.CreateUploaded(trackId, userId, key, spooled.Length, spooled.Sha256, fileName, contentType, options.Value.MaxAttempts, time.GetUtcNow());
+        repository.Add(job);
+        return job;
+    }
+
     private static UploadStatusDto ToDto(Guid trackId, UploadJob job) =>
         new(trackId, job.Status, job.LastError, job.AttemptCount, job.SizeBytes, job.OriginalFileName, job.UpdatedAt);
-
-    private sealed record Spooled(long Length, string Sha256, byte[] Head, DomainError? Error);
-
-    /// <summary>Copies the body to disk while hashing; stops reading as soon as the limit is exceeded.</summary>
-    private static async Task<Spooled> SpoolAsync(Stream body, string path, long maxBytes, CancellationToken cancellationToken)
-    {
-        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        var head = new byte[AudioSignature.BytesNeeded];
-        var headLength = 0;
-        long total = 0;
-        var buffer = new byte[81920];
-
-        await using var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, buffer.Length, useAsync: true);
-        int read;
-        while ((read = await body.ReadAsync(buffer, cancellationToken)) > 0)
-        {
-            total += read;
-            if (total > maxBytes)
-            {
-                return new Spooled(total, string.Empty, head, DomainError.Validation("file_too_large", "The file is too large."));
-            }
-
-            if (headLength < head.Length)
-            {
-                var take = Math.Min(head.Length - headLength, read);
-                Array.Copy(buffer, 0, head, headLength, take);
-                headLength += take;
-            }
-
-            hash.AppendData(buffer, 0, read);
-            await file.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-        }
-
-        return new Spooled(total, Convert.ToHexStringLower(hash.GetHashAndReset()), head[..headLength], null);
-    }
-
-    private static void TryDelete(string path)
-    {
-        try
-        {
-            File.Delete(path);
-        }
-        catch (IOException)
-        {
-            // Temp directory is cleaned by the OS/container lifecycle; nothing sensitive is lost.
-        }
-    }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Upload for track {TrackId} ended before {DeclaredBytes} bytes were received")]
     private static partial void LogIncomplete(ILogger logger, Exception ex, Guid trackId, long declaredBytes);

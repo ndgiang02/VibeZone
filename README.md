@@ -38,12 +38,14 @@ bash scripts/verify-local-infra.sh             # optional: end-to-end checks of 
 This starts PostgreSQL and Mailpit, runs migrations once (`migrate` exits 0), then the API and the web app:
 
 - Web: http://localhost:3000 (Caddy reverse proxy: `/api` → API, everything else → web; redirects to
-  `/vi`, English at `/en`) · API directly (debugging): http://localhost:5080
+  `/vi`, English at `/en`)
+- API site for native apps / Postman: http://localhost:3001 (`/api/*` only; production `api.<domain>`, ADR-0011)
+  · API container directly (debugging, health): http://localhost:5080
 - **Emails** (account confirmation, password reset) land in Mailpit: http://localhost:8025 — nothing is
   delivered to real inboxes locally.
 - Logs: `docker compose --profile app logs -f api web` · Stop: `docker compose --profile app down`
 - After code changes: re-run the `up … --build` command. Ports are configurable in `.env`
-  (`API_PORT`, `WEB_PORT`); `API_ENVIRONMENT=Development` exposes `/openapi/v1.json`.
+  (`API_PORT`, `WEB_PORT`, `API_PUBLIC_PORT`); `API_ENVIRONMENT=Development` exposes `/openapi/v1.json`.
 - The containerised API and `dotnet run` both use port 5080 — run one at a time.
 
 ## Develop on the host (hot reload)
@@ -75,11 +77,11 @@ Useful endpoints: `GET /health/live`, `GET /health/ready`, `GET /api/v1/genres`,
 | What | Command |
 |---|---|
 | Backend build (warnings = errors) | `dotnet build VibeZone.slnx -warnaserror` |
-| Backend tests (unit, architecture, integration — needs Docker) | `dotnet test --solution VibeZone.slnx` |
+| Backend tests (unit, architecture, integration — needs Docker; the media tests build the worker image and take ~10 min) | `dotnet test --solution VibeZone.slnx` |
 | Backend formatting | `dotnet format VibeZone.slnx --verify-no-changes` |
 | Frontend lint / types / format | `npm run lint`, `npm run typecheck`, `npm run format:check` (in `apps/web`) |
 | Frontend unit tests | `npm test` |
-| End-to-end (real API + DB + mail) | `npm run build && npx playwright test` (Postgres migrated, Mailpit running; stop the `app` profile first — it uses port 5080) |
+| End-to-end (real API + DB + mail + media) | `npm run build && npx playwright test` (Postgres migrated, Mailpit and MinIO running, plus the media worker: `docker compose --profile app up -d --wait worker`; stop the `api`/`web`/`proxy` containers first — the API uses port 5080) |
 | Local infrastructure | `bash scripts/verify-local-infra.sh` |
 
 CI runs all of these on every push/PR: [.github/workflows/ci.yml](.github/workflows/ci.yml).

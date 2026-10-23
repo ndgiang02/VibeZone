@@ -15,7 +15,7 @@ function fakeServer(respond: (call: Call, attempt: number) => Response) {
       const path = new URL(request.url).pathname;
       if (path === "/api/v1/auth/csrf") {
         issued += 1;
-        return jsonResponse({ token: `token-${issued}` });
+        return jsonResponse({ data: { token: `token-${issued}` } });
       }
       const call = { method: request.method, path, csrf: request.headers.get("X-CSRF-TOKEN") };
       calls.push(call);
@@ -27,7 +27,7 @@ function fakeServer(respond: (call: Call, attempt: number) => Response) {
 
 describe("api client CSRF handling", () => {
   it("sends no token on safe requests", async () => {
-    const server = fakeServer(() => jsonResponse({ items: [] }));
+    const server = fakeServer(() => jsonResponse({ data: [] }));
 
     await api.GET("/api/v1/genres");
 

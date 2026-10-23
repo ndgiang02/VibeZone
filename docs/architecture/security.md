@@ -24,7 +24,9 @@ insider with infrastructure access.
 
 ## 3. Trust boundaries
 
-1. Browser ↔ public origin (reverse proxy / Next.js) — untrusted input, TLS.
+1. Browser ↔ public origin (reverse proxy / Next.js) — untrusted input, TLS. Apps and integrations use the
+   separate API site (`api.<domain>`, ADR-0011): same API, same rate limits and authorization; it serves
+   `/api/*` only and has no CORS, so other origins cannot use it with browser cookies.
 2. Next.js server ↔ API — SSR forwards only the user's cookie; API re-authorises everything.
    Native apps (Flutter) ↔ API — bearer access token + rotating refresh token (ADR-0007); the device
    holds the refresh token and must keep it in OS secure storage.
@@ -145,8 +147,8 @@ insider with infrastructure access.
   stack; misconfiguring it in a real deployment would drop the Secure flag. The API logs a warning;
   M5 adds a startup guard for non-local environments.
 - Session revocation and rate limits are per instance until Redis is introduced for scale-out.
-- The email queue is in memory: emails queued during a crash are lost (user can resend). Durable
-  outbox in M4.
+- The email queue is in memory: emails queued during a crash are lost (user can resend). The durable
+  outbox exists since M4 (ADR-0012) but account emails don't go through it yet.
 - Data Protection key ring is stored unencrypted in Postgres (M5: certificate/KMS encryption).
 - No breached-password (HIBP) check yet; no MFA yet.
 - `npm audit` reports GHSA-vfj7-8cjw-p6xm (`braces` ≤ 3.0.3, no patched release exists) through
@@ -161,15 +163,81 @@ insider with infrastructure access.
 - Play-count fraud can be reduced, not eliminated.
 - FFmpeg remains a large attack surface even with sandboxing.
 
-## 10. Media controls (M3 code, not yet runtime-tested)
+## 10. Media controls (M3; verified by integration tests, see progress.md 2026-10-20)
 
 - Uploads: authenticated owner only; size enforced while reading (never trusting `Content-Length`),
   declared size must match bytes received, first-bytes signature sniff, server-generated object keys,
   file name stored for display only; per-IP hourly upload limit; one active job per track (DB constraint).
+- One-request uploads (`POST /track-uploads`, ADR-0009): multipart read as a stream (never buffered by
+  `Request.Form`), text fields capped at 16 KB, unknown or duplicate parts rejected, body limit = audio + cover
+  limits; all-or-nothing commit, written objects deleted on failure. The CSRF token is read from the header
+  only (the form is never parsed for it).
+- Cover images (ADR-0009) — **hostile input parsed by Skia in the API process**: JPEG/PNG/WebP signature
+  allow-list before decoding (SVG, GIF, HEIC… rejected), size limit (10 MB), dimensions checked from the
+  header (min 200 px side, max 40 MP) before pixels are allocated, re-encoded to JPEG from decoded pixels so
+  EXIF/GPS/XMP/comments never reach storage or viewers; original not kept; server-generated keys; served as
+  `image/jpeg` with `nosniff` only to viewers who can see the track (invisible → 404), `Cache-Control: private`.
+- Artist banner: same pipeline and limits; only the owner of the profile can change it
+  (`/me/artist/banner` — no artist id in the URL, so no IDOR surface); served publicly (profiles are public).
+  The artist picture and name are the account's (ADR-0013), so they can only change through the account.
+- Account pictures: `/me/avatar` (own account only), same pipeline; served publicly by user id.
+
+## 11. Catalog, search and playlists (M2b/M2c, ADR-0010; built without tests)
+
+- Albums and playlists follow the track rule: private → owner (and moderators) only, invisible → 404;
+  every write is owner-checked in the Application layer (no ids from the client are trusted for ownership).
+- Album tracklists only accept the artist's own tracks; playlists only accept tracks the user can see.
+  Rendering a playlist re-checks each track's visibility for the viewer, so a public playlist never
+  reveals another artist's private or unready track (only the count of hidden tracks).
+- Search: only listed content; query text is length-capped (100), reduced to letter/digit terms before it
+  becomes a tsquery, and always passed as a SQL parameter.
+- Playlist owners are shown by display name, handle and picture only (`IUserDirectory` exposes nothing else).
+- Dev seed (`seed-dev`) refuses to run outside Development; demo accounts use `@example.test` addresses.
 - Processing: ffprobe gate (container/codec allow-list, duration bounds) before any transcode; FFmpeg via
   `ArgumentList` with server-generated temp paths only; whole-process-tree kill on timeout/cancel; bounded
   stderr capture; worker container non-root with CPU/memory limits; originals never streamed.
 - Streaming/waveform: visibility + Ready check before any byte; invisible tracks → 404;
   `Cache-Control: private` so shared caches never store audio whose visibility may change.
-- Web: artwork placeholders are decorative gradients (no fetched images); descriptions/bios rendered as
+- Playback tokens (ADR-0008): `GET /tracks/{id}/playback` issues `?token=vzp_…` URLs for native players.
+  - Opaque and Data Protection–protected; each names one track and the viewer it was issued to, and
+    expires (default 6 h).
+  - Visibility is re-checked as that viewer on every stream/waveform request, so making a track private
+    or deleting it ends access immediately. Foreign, tampered or expired tokens → 401 `playback_token_invalid`.
+  - Residual risks: a leaked URL works for its holder until it expires; revoking a session does not
+    revoke tokens already issued from it.
+  - Mitigations: request logs record paths without query strings, the `Microsoft.AspNetCore` hosting
+    logs stay at Warning, and the proxy has no access log. Responses are `Cache-Control: no-store`.
+- Worker: lease heartbeats and job commits are serialised per job (both update the row version), so a
+  long transcode can't lose its result to its own heartbeat.
+- Web: covers are `<img>` from our own API (`img-src 'self' blob:`; `blob:` for local previews before
+  upload); without a cover a decorative gradient is shown; descriptions/bios rendered as
   plain text; waveform styles injected with the CSP nonce (`cspNonce`).
+
+## 12. Social, analytics, notifications and moderation (M4, ADR-0012; built without tests)
+
+- **Authorization**: likes and comments require the track to be playable for the caller; reading comments,
+  engagement and stats requires it to be visible (invisible → 404). Comment edits: author only; deletion: author,
+  track owner or moderator (others → 404). Notifications: recipient only (others → 404). Moderation endpoints use
+  the `moderator` policy, user/role administration, jobs, outbox and audit log the `admin` policy
+  (401 anonymous, 403 wrong role). Role changes are limited to Moderator/Admin, can't remove your own Admin,
+  take effect immediately (session cache evicted) and are audited.
+- **New data**: comments and report details are user-generated plain text (≤ 1000 chars), rendered as text,
+  never HTML. Play events store no IP address; anonymous listeners are keyed by a SHA-256 of a random client id
+  the browser keeps (not a credential). Notification payloads hold titles/excerpts/codes only. Admins see
+  account emails in `/admin/users` (staff-only data class). Audit metadata holds ids, roles, reasons and the
+  moderator's note — never secrets.
+- **Abuse limits**: `social` policy (60 writes/min per account, else per IP) on likes, follows, comments and
+  reports; `plays` policy (60 batches/min) on play events; batches ≤ 50 events; one open report per reporter
+  and item; reporters can't report their own content.
+- **Play-count integrity**: event ids are idempotency keys; a session belongs to one listener and one track;
+  listened time is capped by wall-clock time since the session started; one valid listen per listener, track and
+  30 minutes. A determined client can still script listens (residual risk, see §9).
+- **Realtime hub** (`/api/v1/hubs/notifications`): authenticated (cookie or bearer); apps pass the access token as
+  `?access_token=` on hub paths only — the request log records paths without query strings, but reverse-proxy
+  access logs must not log query strings for `/api/v1/hubs/*`. Exempt from the CSRF filter: server → client only,
+  no state-changing hub methods, and cross-site pages can't read negotiate responses. Single instance until a
+  SignalR backplane is added.
+- **Takedown**: a removed track is unplayable and hidden from everyone but its owner and moderators, including
+  search, trending, related, playlists and albums; restore is audited. Removed comments are soft-deleted.
+- **Outbox**: events carry ids and display snapshots, never emails or tokens; failures store only the exception
+  type.

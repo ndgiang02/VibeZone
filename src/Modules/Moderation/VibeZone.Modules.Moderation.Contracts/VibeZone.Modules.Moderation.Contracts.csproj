@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Public surface of the Moderation module for other modules (ADR-0001). No framework dependencies. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\VibeZone.SharedKernel\VibeZone.SharedKernel.csproj" />
+  </ItemGroup>
+</Project>

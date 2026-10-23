@@ -41,8 +41,8 @@ export function Waveform({ track }: { track: Track }) {
     const ws = WaveSurfer.create({
       container: element,
       height: 96,
-      waveColor: cssColor("--subtle-foreground", "#71717a"),
-      progressColor: cssColor("--primary", "#ff6b3d"),
+      waveColor: cssColor("--subtle-foreground", "#6f6f6f"),
+      progressColor: cssColor("--primary", "#a8d64a"),
       cursorColor: "transparent",
       barWidth: 2,
       barGap: 1,
