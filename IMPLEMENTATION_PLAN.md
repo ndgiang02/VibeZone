@@ -134,7 +134,8 @@ slice M3 needs (self-serve artist, tracks); the rest of M2b/M2c is still open.
 - [x] One-request upload (ADR-0009): `POST /track-uploads` multipart (details + audio + optional cover),
       all or nothing; Studio form redesigned around it (drag & drop, cover preview, progress/cancel)
 - [x] Artist avatar + banner (ADR-0009 addendum): `PUT/DELETE /me/artist/{avatar|banner}`, public GET;
-      editable in the Studio profile card, shown on the artist page, track page, artist lists
+      editable in the Studio profile card, shown on the artist page, track page, artist lists.
+      ADR-0013 (2026-10-23): artist = account — name/URL/picture come from the account; only the banner is artist-only
 - [x] Track state machine Draft → Processing → Ready/Failed/Cancelled
 - [x] Streaming endpoint with Range semantics (200/206/416), authorization before bytes
 - [x] Response envelope `{data, meta}` + paging for growing lists (ADR-0008)

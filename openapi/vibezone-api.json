@@ -450,13 +450,13 @@
         }
       }
     },
-    "/api/v1/artists/{artistId}/{slot}/{size}": {
+    "/api/v1/artists/{artistId}/banner/{size}": {
       "get": {
         "tags": [
           "Media"
         ],
-        "summary": "Artist avatar or banner (JPEG); size is 'small' or 'large'. Public. Use the URLs in ArtistDto.avatar / banner.",
-        "operationId": "GetArtistImage",
+        "summary": "Artist banner (JPEG); size is 'small' or 'large'. Public. Use the URLs in ArtistDto.banner.",
+        "operationId": "GetArtistBanner",
         "parameters": [
           {
             "name": "artistId",
@@ -465,15 +465,6 @@
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
-          },
-          {
-            "name": "slot",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "pattern": "^(avatar|banner)$",
-              "type": "string"
             }
           },
           {
@@ -2703,24 +2694,13 @@
         }
       }
     },
-    "/api/v1/me/artist/{slot}": {
+    "/api/v1/me/artist/banner": {
       "put": {
         "tags": [
           "Media"
         ],
-        "summary": "Set or replace the signed-in artist's avatar (square, ≥ 200×200) or banner (3:1, ≥ 600×200): the image as the raw body (JPEG, PNG or WebP, ≤ 10 MB). Center-cropped and re-encoded.",
-        "operationId": "ReplaceArtistImage",
-        "parameters": [
-          {
-            "name": "slot",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "pattern": "^(avatar|banner)$",
-              "type": "string"
-            }
-          }
-        ],
+        "summary": "Set or replace the signed-in artist's banner (3:1, ≥ 600×200): the image as the raw body (JPEG, PNG or WebP, ≤ 10 MB). Center-cropped and re-encoded. The profile picture is the account picture (PUT /me/avatar).",
+        "operationId": "ReplaceArtistBanner",
         "requestBody": {
           "content": {
             "image/jpeg": {
@@ -2778,18 +2758,7 @@
         "tags": [
           "Media"
         ],
-        "operationId": "RemoveArtistImage",
-        "parameters": [
-          {
-            "name": "slot",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "pattern": "^(avatar|banner)$",
-              "type": "string"
-            }
-          }
-        ],
+        "operationId": "RemoveArtistBanner",
         "responses": {
           "204": {
             "description": "No Content"
@@ -5598,24 +5567,10 @@
       },
       "CreateArtistRequest": {
         "required": [
-          "slug",
-          "name",
           "bio"
         ],
         "type": "object",
         "properties": {
-          "slug": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "name": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
           "bio": {
             "type": [
               "null",

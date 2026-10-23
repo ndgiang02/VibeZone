@@ -62,7 +62,8 @@ test("upload in Studio → Ready → play, pause, seek and next with the global 
   test.setTimeout(240_000);
   const assertNoCsp = failOnCspViolations(page);
   const user = newUser("pl");
-  const slug = `a-${user.handle}`.toLowerCase().slice(0, 40);
+  // The artist page lives at the account handle (ADR-0013).
+  const slug = user.handle.toLowerCase();
 
   // Account (API + real email), then sign in through the UI.
   const register = await request.post("/api/v1/auth/register", {
@@ -84,8 +85,6 @@ test("upload in Studio → Ready → play, pause, seek and next with the global 
   await expect(page).toHaveURL(/\/en$/);
 
   await page.goto("/en/studio");
-  await page.getByLabel("Artist name").fill("E2E Artist");
-  await page.getByLabel("Profile URL").fill(slug);
   await page.getByRole("button", { name: "Create artist profile" }).click();
   await expect(page.getByRole("heading", { name: "Upload a track" })).toBeVisible({ timeout: API_TIMEOUT });
 

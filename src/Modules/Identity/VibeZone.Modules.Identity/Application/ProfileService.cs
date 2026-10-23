@@ -19,7 +19,7 @@ public sealed record UserAvatarDto(string Small, string Large);
 
 public sealed record UpdateProfileRequest(string? DisplayName, string? Locale);
 
-public sealed class ProfileService(IUserAccounts accounts, IUserProfiles profiles, TimeProvider time)
+public sealed class ProfileService(IUserAccounts accounts, IUserProfiles profiles, IEnumerable<IPublicProfileListener> listeners, TimeProvider time)
 {
     public async Task<Result<MeDto>> GetMeAsync(Guid userId, CancellationToken cancellationToken)
     {
@@ -50,13 +50,24 @@ public sealed class ProfileService(IUserAccounts accounts, IUserProfiles profile
             return DomainError.Validation("locale_unsupported", "Unsupported language.", "locale");
         }
 
+        var account = await accounts.FindByIdAsync(userId, cancellationToken);
         var profile = await profiles.FindAsync(userId, cancellationToken);
-        if (profile is null)
+        if (account is null || profile is null)
         {
             return DomainError.NotFound("user_not_found", "User not found.");
         }
 
+        var renamed = profile.DisplayName != displayName;
         profile.Update(displayName, request.Locale ?? profile.Locale, time.GetUtcNow());
+        if (renamed)
+        {
+            // The artist profile shows the account's name (ADR-0013): same transaction.
+            foreach (var listener in listeners)
+            {
+                await listener.StageProfileChangedAsync(new PublicProfile(userId, account.Handle, displayName, profile.AvatarId), cancellationToken);
+            }
+        }
+
         await profiles.SaveChangesAsync(cancellationToken);
         return await GetMeAsync(userId, cancellationToken);
     }

@@ -174,7 +174,8 @@
       "displayName": "Display name",
       "language": "Language",
       "languageHint": "Used for the interface and the emails we send you.",
-      "saved": "Profile saved."
+      "saved": "Profile saved.",
+      "artistNote": "Your display name and picture are also your artist name and picture."
     },
     "password": {
       "title": "Password",
@@ -233,9 +234,6 @@
     "track_not_found": "Track not found.",
     "artist_not_found": "Artist not found.",
     "artist_exists": "You already have an artist profile.",
-    "artist_slug_taken": "This profile URL is taken.",
-    "artist_slug_invalid": "Use 3–40 lowercase letters, numbers and single hyphens.",
-    "artist_name_invalid": "Artist name must be 1–80 characters.",
     "artist_bio_too_long": "Bio must be at most 1000 characters.",
     "artist_required": "Create an artist profile first.",
     "track_title_invalid": "Title must be 1–120 characters.",
@@ -408,12 +406,9 @@
     "deleteConfirm": "Delete \"{title}\"? This can't be undone from the studio.",
     "becomeArtist": {
       "title": "Become an artist",
-      "subtitle": "Create your artist profile to upload and share music.",
-      "name": "Artist name",
-      "nameInvalid": "Use 1–80 characters.",
-      "slug": "Profile URL",
-      "slugHint": "3–40 characters: lowercase letters, numbers and single hyphens.",
-      "slugInvalid": "Use 3–40 lowercase letters, numbers and single hyphens.",
+      "subtitle": "Turn on your artist profile to upload and share music.",
+      "sameAccount": "Your artist profile uses this account's display name, username and profile picture. Change them in Settings — changes apply everywhere.",
+      "profileUrl": "Your artist page",
       "bio": "Bio (optional)",
       "bioTooLong": "Use at most 1000 characters.",
       "submit": "Create artist profile"
@@ -471,10 +466,9 @@
       "addBanner": "Add banner",
       "changeBanner": "Change banner",
       "removeBanner": "Remove banner",
-      "changeAvatar": "Change profile picture",
-      "removeAvatar": "Remove profile picture",
       "viewProfile": "View artist page",
-      "hint": "Profile picture: square, at least 200 × 200 px. Banner: 3:1, at least 600 × 200 px. JPEG, PNG or WebP, up to {max} MB."
+      "editInSettings": "Change name and picture in Settings",
+      "hint": "Banner: 3:1, at least 600 × 200 px. JPEG, PNG or WebP, up to {max} MB."
     },
     "albums": {
       "heading": "Albums & EPs",

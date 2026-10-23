@@ -44,7 +44,7 @@ public sealed class TrackUploadTests(MediaFixture media, MailpitFixture mail)
     {
         using var browser = media.Api.CreateApiClient();
         await TestUsers.SignedInAsync(browser, mail);
-        using (var becomeArtist = await browser.PostAsync("/api/v1/me/artist", new { name = "Cookie Artist", slug = $"c-{Guid.NewGuid():N}"[..20] }))
+        using (var becomeArtist = await browser.PostAsync("/api/v1/me/artist", new { bio = "Cookie artist" }))
         {
             Assert.Equal(HttpStatusCode.Created, becomeArtist.StatusCode);
         }

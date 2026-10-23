@@ -62,7 +62,7 @@ export function StudioView() {
   }
 
   if (!artist.data) {
-    return <BecomeArtistForm />;
+    return <BecomeArtistForm me={me.data} />;
   }
 
   return (

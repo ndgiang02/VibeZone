@@ -1,6 +1,7 @@
 using VibeZone.Modules.Catalog.Application.Genres;
 using VibeZone.Modules.Catalog.Contracts;
 using VibeZone.Modules.Catalog.Domain;
+using VibeZone.Modules.Identity.Contracts;
 using VibeZone.SharedKernel;
 
 namespace VibeZone.Modules.Catalog.Application.Tracks;
@@ -8,7 +9,9 @@ namespace VibeZone.Modules.Catalog.Application.Tracks;
 /// <param name="AvatarUrl">Small profile picture (≈160 px), or null.</param>
 public sealed record ArtistRefDto(Guid Id, string Slug, string Name, string? AvatarUrl);
 
-/// <param name="Avatar">Square profile picture: small ≈ 160 px, large ≈ 640 px.</param>
+/// <param name="Slug">The account handle.</param>
+/// <param name="Name">The account display name.</param>
+/// <param name="Avatar">The account picture (square): small ≈ 160 px, large ≈ 640 px.</param>
 /// <param name="Banner">Wide 3:1 page cover: small ≈ 800 px, large ≈ 1600 px wide.</param>
 public sealed record ArtistDto(Guid Id, string Slug, string Name, string? Bio, DateTimeOffset CreatedAt, ArtworkDto? Avatar, ArtworkDto? Banner);
 
@@ -66,7 +69,8 @@ public sealed record SetAlbumTracksRequest(IReadOnlyList<Guid>? TrackIds);
 /// <param name="Albums">Albums listed for the viewer (public ones; all of them for the owner), newest first.</param>
 public sealed record ArtistProfileDto(ArtistDto Artist, IReadOnlyList<TrackDto> Tracks, IReadOnlyList<AlbumDto> Albums);
 
-public sealed record CreateArtistRequest(string? Slug, string? Name, string? Bio);
+/// <summary>Becoming an artist: name, URL and picture come from the account (ADR-0013).</summary>
+public sealed record CreateArtistRequest(string? Bio);
 
 public sealed record SaveTrackRequest(string? Title, string? Description, string? GenreSlug, TrackVisibility Visibility);
 
@@ -82,8 +86,6 @@ public interface ICatalogRepository
     Task<Artist?> FindArtistByUserAsync(Guid userId, CancellationToken cancellationToken);
 
     Task<Artist?> FindArtistBySlugAsync(string slug, CancellationToken cancellationToken);
-
-    Task<bool> ArtistSlugTakenAsync(string slug, CancellationToken cancellationToken);
 
     Task<Genre?> FindGenreAsync(string slug, CancellationToken cancellationToken);
 
@@ -160,7 +162,7 @@ internal static class TrackMapping
             : null;
 
     public static ArtistRefDto ToRef(this Artist artist) =>
-        new(artist.Id, artist.Slug, artist.Name, artist.ToImages(ArtistImageSlot.Avatar)?.Small);
+        new(artist.Id, artist.Slug, artist.Name, artist.ToAvatar()?.Small);
 
     /// <summary><paramref name="tracks"/>: the album's tracks the viewer can see, in order.</summary>
     public static AlbumDto ToDto(this Album album, Artist artist, IReadOnlyList<TrackRow> tracks, bool isOwner) => new(
@@ -178,10 +180,16 @@ internal static class TrackMapping
         isOwner);
 
     public static ArtistDto ToDto(this Artist artist) =>
-        new(artist.Id, artist.Slug, artist.Name, artist.Bio, artist.CreatedAt, artist.ToImages(ArtistImageSlot.Avatar), artist.ToImages(ArtistImageSlot.Banner));
+        new(artist.Id, artist.Slug, artist.Name, artist.Bio, artist.CreatedAt, artist.ToAvatar(), artist.ToBanner());
 
-    private static ArtworkDto? ToImages(this Artist artist, ArtistImageSlot slot) =>
-        (slot == ArtistImageSlot.Avatar ? artist.AvatarId : artist.BannerId) is { } imageId
-            ? new ArtworkDto(ArtistImagePaths.For(artist.Id, slot, imageId, "small"), ArtistImagePaths.For(artist.Id, slot, imageId, "large"))
+    /// <summary>The account picture (ADR-0013).</summary>
+    private static ArtworkDto? ToAvatar(this Artist artist) =>
+        artist.AvatarId is { } imageId
+            ? new ArtworkDto(UserAvatarPaths.For(artist.UserId, imageId, "small"), UserAvatarPaths.For(artist.UserId, imageId, "large"))
+            : null;
+
+    private static ArtworkDto? ToBanner(this Artist artist) =>
+        artist.BannerId is { } imageId
+            ? new ArtworkDto(ArtistImagePaths.Banner(artist.Id, imageId, "small"), ArtistImagePaths.Banner(artist.Id, imageId, "large"))
             : null;
 }

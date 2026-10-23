@@ -56,7 +56,7 @@ public sealed class MediaFixture(PostgresFixture postgres, MailpitFixture mail) 
         var app = new AppUser(http, (await token.DataAsync()).GetProperty("accessToken").GetString()!);
         if (artist)
         {
-            using var created = await app.SendAsync(HttpMethod.Post, "/api/v1/me/artist", new { name = "Test Artist", slug = $"a-{user.Handle}" });
+            using var created = await app.SendAsync(HttpMethod.Post, "/api/v1/me/artist", new { bio = (string?)null });
             Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         }
 

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { api, ensureOk } from "@/lib/api/client";
 import { errorCode } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
-import { authKeys, type Me } from "@/features/auth/api";
+import { authKeys, invalidatePublicIdentity, type Me } from "@/features/auth/api";
 import {
   ACCEPTED_ARTWORK,
   MAX_ARTWORK_BYTES,
@@ -33,7 +33,10 @@ export function AvatarEditor({ me }: { me: Me }) {
   const [error, setError] = useState<string | null>(null);
   const remove = useMutation({
     mutationFn: async () => ensureOk(await api.DELETE("/api/v1/me/avatar")),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: authKeys.me }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: authKeys.me });
+      invalidatePublicIdentity(queryClient);
+    },
   });
 
   useEffect(() => () => handle.current?.abort(), []);
@@ -47,7 +50,10 @@ export function AvatarEditor({ me }: { me: Me }) {
     const current = uploadUserAvatar(file);
     handle.current = current;
     current.promise
-      .then(() => queryClient.invalidateQueries({ queryKey: authKeys.me }))
+      .then(() => {
+        void queryClient.invalidateQueries({ queryKey: authKeys.me });
+        invalidatePublicIdentity(queryClient);
+      })
       .catch((e: unknown) => {
         if (!(e instanceof DOMException && e.name === "AbortError")) setError(tErrors(errorCode(e)));
       })

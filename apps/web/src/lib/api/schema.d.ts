@@ -157,15 +157,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/artists/{artistId}/{slot}/{size}": {
+    "/api/v1/artists/{artistId}/banner/{size}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Artist avatar or banner (JPEG); size is 'small' or 'large'. Public. Use the URLs in ArtistDto.avatar / banner. */
-        get: operations["GetArtistImage"];
+        /** Artist banner (JPEG); size is 'small' or 'large'. Public. Use the URLs in ArtistDto.banner. */
+        get: operations["GetArtistBanner"];
         put?: never;
         post?: never;
         delete?: never;
@@ -827,7 +827,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/artist/{slot}": {
+    "/api/v1/me/artist/banner": {
         parameters: {
             query?: never;
             header?: never;
@@ -835,10 +835,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Set or replace the signed-in artist's avatar (square, ≥ 200×200) or banner (3:1, ≥ 600×200): the image as the raw body (JPEG, PNG or WebP, ≤ 10 MB). Center-cropped and re-encoded. */
-        put: operations["ReplaceArtistImage"];
+        /** Set or replace the signed-in artist's banner (3:1, ≥ 600×200): the image as the raw body (JPEG, PNG or WebP, ≤ 10 MB). Center-cropped and re-encoded. The profile picture is the account picture (PUT /me/avatar). */
+        put: operations["ReplaceArtistBanner"];
         post?: never;
-        delete: operations["RemoveArtistImage"];
+        delete: operations["RemoveArtistBanner"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1575,8 +1575,6 @@ export interface components {
             token: null | string;
         };
         CreateArtistRequest: {
-            slug: null | string;
-            name: null | string;
             bio: null | string;
         };
         CreateReportRequest: {
@@ -2322,13 +2320,12 @@ export interface operations {
             };
         };
     };
-    GetArtistImage: {
+    GetArtistBanner: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 artistId: string;
-                slot: string;
                 size: string;
             };
             cookie?: never;
@@ -4023,13 +4020,11 @@ export interface operations {
             };
         };
     };
-    ReplaceArtistImage: {
+    ReplaceArtistBanner: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                slot: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {
@@ -4069,13 +4064,11 @@ export interface operations {
             };
         };
     };
-    RemoveArtistImage: {
+    RemoveArtistBanner: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                slot: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;

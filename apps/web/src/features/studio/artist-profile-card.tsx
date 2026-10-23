@@ -1,19 +1,18 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Camera, ExternalLink, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { ExternalLink, ImagePlus, Loader2, Settings, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ArtistAvatar, artistHue } from "@/components/media/artist-avatar";
 import { Link } from "@/i18n/navigation";
 import { errorCode } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
-import { invalidateArtistImages, useRemoveArtistImage, type Artist } from "@/features/tracks/api";
+import { invalidateArtistBanner, useRemoveArtistBanner, type Artist } from "@/features/tracks/api";
 import {
   ACCEPTED_ARTWORK,
   MAX_ARTWORK_BYTES,
-  uploadArtistImage,
-  type ArtistImageSlot,
+  uploadArtistBanner,
   type ImageUrls,
   type UploadHandle,
 } from "@/features/tracks/upload";
@@ -21,8 +20,8 @@ import {
 const ARTWORK_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MB = 1024 * 1024;
 
-/** Upload state for one image slot; the API validates, crops and re-encodes (ADR-0009). */
-function useArtistImageUpload(slot: ArtistImageSlot, onError: (message: string | null) => void) {
+/** Banner upload state; the API validates, crops and re-encodes (ADR-0009). */
+function useBannerUpload(onError: (message: string | null) => void) {
   const t = useTranslations("studio.newTrack");
   const tErrors = useTranslations("errors");
   const queryClient = useQueryClient();
@@ -36,10 +35,10 @@ function useArtistImageUpload(slot: ArtistImageSlot, onError: (message: string |
     if (file.size > MAX_ARTWORK_BYTES) return onError(t("artworkTooLarge", { max: MAX_ARTWORK_BYTES / MB }));
     onError(null);
     setPending(true);
-    const current = uploadArtistImage(slot, file);
+    const current = uploadArtistBanner(file);
     handle.current = current;
     current.promise
-      .then(() => invalidateArtistImages(queryClient))
+      .then(() => invalidateArtistBanner(queryClient))
       .catch((error: unknown) => {
         if (!(error instanceof DOMException && error.name === "AbortError"))
           onError(tErrors(errorCode(error)));
@@ -103,16 +102,15 @@ function ImagePickLabel({
 }
 
 /**
- * The artist's public face in the Studio: banner (3:1) and avatar, each replaceable by clicking or dropping
- * an image, and removable. Shows exactly what the artist page will show.
+ * The artist's public face in the Studio, exactly as the artist page shows it. The banner (3:1) is replaced by
+ * clicking or dropping an image; name and picture are the account's and change in Settings (ADR-0013).
  */
 export function ArtistProfileCard({ artist }: { artist: Artist }) {
   const t = useTranslations("studio.profile");
   const tErrors = useTranslations("errors");
   const [error, setError] = useState<string | null>(null);
-  const banner = useArtistImageUpload("banner", setError);
-  const avatar = useArtistImageUpload("avatar", setError);
-  const remove = useRemoveArtistImage();
+  const banner = useBannerUpload(setError);
+  const remove = useRemoveArtistBanner();
   const hue = artistHue(artist.id);
   const [bannerLoaded, setBannerLoaded] = useState<string | null>(null);
   const bannerSrc = artist.banner?.large ?? null;
@@ -164,7 +162,7 @@ export function ArtistProfileCard({ artist }: { artist: Artist }) {
           {bannerSrc ? (
             <button
               type="button"
-              onClick={() => remove.mutate("banner")}
+              onClick={() => remove.mutate()}
               disabled={remove.isPending}
               aria-label={t("removeBanner")}
               title={t("removeBanner")}
@@ -177,54 +175,33 @@ export function ArtistProfileCard({ artist }: { artist: Artist }) {
       </div>
 
       <div className="flex flex-col gap-4 px-5 pb-5 sm:flex-row sm:items-end">
-        <div className="relative -mt-12 w-fit shrink-0">
-          <ImagePickLabel
-            onPick={avatar.start}
-            disabled={avatar.pending}
-            label={t("changeAvatar")}
-            className="group/avatar relative block rounded-full"
-          >
-            <ArtistAvatar
-              id={artist.id}
-              name={artist.name}
-              src={artist.avatar?.large}
-              className="size-24 text-2xl shadow-elevated ring-4 ring-surface transition-transform duration-300 group-hover/avatar:scale-[1.03]"
-            />
-            <span
-              aria-hidden="true"
-              className={cn(
-                "absolute inset-0 flex items-center justify-center rounded-full bg-black/55 text-white transition-opacity duration-200",
-                avatar.pending ? "opacity-100" : "opacity-0 group-hover/avatar:opacity-100",
-              )}
-            >
-              {avatar.pending ? <Loader2 className="size-6 animate-spin" /> : <Camera className="size-6" />}
-            </span>
-          </ImagePickLabel>
-          {artist.avatar ? (
-            <button
-              type="button"
-              onClick={() => remove.mutate("avatar")}
-              disabled={remove.isPending}
-              aria-label={t("removeAvatar")}
-              title={t("removeAvatar")}
-              className="absolute -right-1 bottom-0 flex size-7 animate-in items-center justify-center rounded-full border bg-surface-elevated text-muted-foreground shadow-card transition-colors zoom-in-50 hover:text-foreground"
-            >
-              <Trash2 className="size-3.5" aria-hidden="true" />
-            </button>
-          ) : null}
-        </div>
+        <ArtistAvatar
+          id={artist.id}
+          name={artist.name}
+          src={artist.avatar?.large}
+          className="-mt-12 size-24 shrink-0 text-2xl shadow-elevated ring-4 ring-surface"
+        />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-muted-foreground">{t("publishingAs")}</p>
           <p className="truncate text-xl font-bold tracking-tight">{artist.name}</p>
           <p className="mt-1 text-xs text-subtle-foreground">{t("hint", { max: MAX_ARTWORK_BYTES / MB })}</p>
         </div>
-        <Link
-          href={`/artists/${artist.slug}`}
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 self-start rounded-full border px-3 text-xs font-medium transition-colors hover:bg-surface-hover sm:self-end"
-        >
-          {t("viewProfile")}
-          <ExternalLink className="size-3.5" aria-hidden="true" />
-        </Link>
+        <div className="flex shrink-0 flex-wrap gap-2 self-start sm:self-end">
+          <Link
+            href="/settings"
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors hover:bg-surface-hover"
+          >
+            <Settings className="size-3.5" aria-hidden="true" />
+            {t("editInSettings")}
+          </Link>
+          <Link
+            href={`/artists/${artist.slug}`}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors hover:bg-surface-hover"
+          >
+            {t("viewProfile")}
+            <ExternalLink className="size-3.5" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
       {error || remove.isError ? (
         <p role="alert" className="animate-in px-5 pb-4 text-sm text-destructive fade-in">

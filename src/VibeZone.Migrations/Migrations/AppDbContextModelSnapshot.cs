@@ -1119,7 +1119,7 @@ namespace VibeZone.Migrations.Migrations
 
                     b.ToTable("artist_images", "media", t =>
                         {
-                            t.HasCheckConstraint("ck_artist_images_kind", "kind IN ('avatarsmall', 'avatarlarge', 'bannersmall', 'bannerlarge')");
+                            t.HasCheckConstraint("ck_artist_images_kind", "kind IN ('bannersmall', 'bannerlarge')");
                         });
                 });
 

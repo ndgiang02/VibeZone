@@ -177,18 +177,15 @@ export function isNotFound(error: unknown) {
   return error instanceof ApiError && error.status === 404;
 }
 
-/** Everything that shows artist images: the profile, artist pages and track lists (artist avatars). */
-export function invalidateArtistImages(queryClient: ReturnType<typeof useQueryClient>) {
-  void queryClient.invalidateQueries({ queryKey: trackKeys.myArtist });
+/** The artist profile and artist pages (the banner is shown only there). */
+export function invalidateArtistBanner(queryClient: ReturnType<typeof useQueryClient>) {
   void queryClient.invalidateQueries({ queryKey: ["artists"] });
-  void queryClient.invalidateQueries({ queryKey: trackKeys.all });
 }
 
-export function useRemoveArtistImage() {
+export function useRemoveArtistBanner() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (slot: "avatar" | "banner") =>
-      ensureOk(await api.DELETE("/api/v1/me/artist/{slot}", { params: { path: { slot } } })),
-    onSuccess: () => invalidateArtistImages(queryClient),
+    mutationFn: async () => ensureOk(await api.DELETE("/api/v1/me/artist/banner")),
+    onSuccess: () => invalidateArtistBanner(queryClient),
   });
 }

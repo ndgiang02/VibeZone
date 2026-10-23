@@ -8,6 +8,7 @@ using VibeZone.Modules.Catalog.Application.Tracks;
 using VibeZone.Modules.Catalog.Contracts;
 using VibeZone.Modules.Catalog.Endpoints;
 using VibeZone.Modules.Catalog.Infrastructure;
+using VibeZone.Modules.Identity.Contracts;
 
 namespace VibeZone.Modules.Catalog;
 
@@ -23,6 +24,7 @@ public sealed class CatalogModule : IModule
         services.AddScoped<ICatalogRepository, EfCatalogRepository>();
         services.AddScoped<ITrackCatalog, EfTrackCatalog>();
         services.AddScoped<IArtistCatalog, EfArtistCatalog>();
+        services.AddScoped<IPublicProfileListener, EfArtistProfileSync>();
         services.AddScoped<ArtistService>();
         services.AddScoped<AlbumService>();
         services.AddScoped<SearchService>();

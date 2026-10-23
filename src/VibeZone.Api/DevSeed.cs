@@ -60,7 +60,7 @@ internal static class DevSeed
 
             var userId = created.Value.Id;
             await accounts.ConfirmEmailAsync(userId, await accounts.CreateEmailConfirmationTokenAsync(userId, ct), ct);
-            await artists.CreateForUserAsync(userId, new CreateArtistRequest(handle.Replace('_', '-'), name, "Hồ sơ mẫu cho môi trường phát triển (demo)."), ct);
+            await artists.CreateForUserAsync(userId, new CreateArtistRequest("Hồ sơ mẫu cho môi trường phát triển (demo)."), ct);
 
             var trackIds = new List<Guid>();
             foreach (var title in titles)

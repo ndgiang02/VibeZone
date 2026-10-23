@@ -4,6 +4,7 @@ using VibeZone.Infrastructure.Persistence;
 using VibeZone.Modules.Catalog.Application.Tracks;
 using VibeZone.Modules.Catalog.Contracts;
 using VibeZone.Modules.Catalog.Domain;
+using VibeZone.Modules.Identity.Contracts;
 using VibeZone.SharedKernel;
 
 namespace VibeZone.Modules.Catalog.Infrastructure;
@@ -19,6 +20,7 @@ internal sealed class ArtistConfiguration : IEntityTypeConfiguration<Artist>
         b.Property(a => a.Name).HasMaxLength(Artist.MaxNameLength).IsRequired();
         b.Property(a => a.Bio).HasMaxLength(Artist.MaxBioLength);
         b.Property<uint>("xmin").IsRowVersion();
+        // Slug and name copy the account handle and display name (ADR-0013); the handle is unique too.
         b.HasIndex(a => a.Slug).IsUnique();
         // One artist profile per account. user_id references identity.users; the FK is added in SQL by the
         // migration because the Identity model belongs to another module (ADR-0001: stable-key FKs only).
@@ -85,9 +87,6 @@ internal sealed class EfCatalogRepository(AppDbContext db) : ICatalogRepository
 
     public Task<Artist?> FindArtistBySlugAsync(string slug, CancellationToken cancellationToken) =>
         db.Set<Artist>().AsNoTracking().SingleOrDefaultAsync(a => a.Slug == slug, cancellationToken);
-
-    public Task<bool> ArtistSlugTakenAsync(string slug, CancellationToken cancellationToken) =>
-        db.Set<Artist>().AnyAsync(a => a.Slug == slug, cancellationToken);
 
     public Task<Genre?> FindGenreAsync(string slug, CancellationToken cancellationToken) =>
         db.Set<Genre>().AsNoTracking().SingleOrDefaultAsync(g => g.Slug == slug, cancellationToken);
@@ -352,16 +351,21 @@ internal sealed class EfArtistCatalog(AppDbContext db, TimeProvider time) : IArt
         return artists.ToDictionary(a => a.Id, a => new ArtistSummary(a.Id, a.Slug, a.Name, a.ToRef().AvatarUrl, a.UserId));
     }
 
-    public async Task StageImageAsync(Guid artistId, ArtistImageSlot slot, Guid? imageId, CancellationToken cancellationToken)
+    public async Task StageBannerAsync(Guid artistId, Guid? imageId, CancellationToken cancellationToken)
     {
         var artist = await db.Set<Artist>().FindAsync([artistId], cancellationToken) ?? throw new InvalidOperationException($"Artist {artistId} not found.");
-        if (slot == ArtistImageSlot.Avatar)
+        artist.SetBanner(imageId, time.GetUtcNow());
+    }
+}
+
+/// <summary>Keeps the artist profile's copy of the account's name and picture current (ADR-0013).</summary>
+internal sealed class EfArtistProfileSync(AppDbContext db, TimeProvider time) : IPublicProfileListener
+{
+    public async Task StageProfileChangedAsync(PublicProfile profile, CancellationToken cancellationToken)
+    {
+        if (await db.Set<Artist>().SingleOrDefaultAsync(a => a.UserId == profile.UserId, cancellationToken) is { } artist)
         {
-            artist.SetAvatar(imageId, time.GetUtcNow());
-        }
-        else
-        {
-            artist.SetBanner(imageId, time.GetUtcNow());
+            artist.SyncAccount(profile.DisplayName, profile.AvatarId, time.GetUtcNow());
         }
     }
 }

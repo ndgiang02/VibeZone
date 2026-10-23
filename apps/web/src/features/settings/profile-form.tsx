@@ -66,6 +66,7 @@ export function ProfileForm({ me }: { me: Me }) {
       <TextField
         label={t("displayName")}
         autoComplete="nickname"
+        hint={me.roles.includes("Artist") ? t("artistNote") : undefined}
         error={form.formState.errors.displayName?.message}
         {...form.register("displayName")}
       />

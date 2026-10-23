@@ -24,4 +24,11 @@ internal sealed class EfUserDirectory(AppDbContext db) : IUserDirectory
             r => r.Id,
             r => new UserSummary(r.Id, r.DisplayName, r.UserName ?? string.Empty, r.AvatarId is { } a ? UserAvatarPaths.For(r.Id, a, "small") : null));
     }
+
+    public Task<PublicProfile?> FindProfileAsync(Guid userId, CancellationToken cancellationToken) =>
+        (from u in db.Set<AppUser>().AsNoTracking()
+         join p in db.Set<UserProfile>().AsNoTracking() on u.Id equals p.UserId
+         where u.Id == userId
+         select new PublicProfile(u.Id, u.UserName ?? string.Empty, p.DisplayName, p.AvatarId))
+            .SingleOrDefaultAsync(cancellationToken);
 }

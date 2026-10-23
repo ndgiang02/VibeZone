@@ -35,7 +35,7 @@ ships it. When a migration changes the model, update this file in the same chang
 ### catalog
 | Table | Key columns | Constraints / indexes |
 |---|---|---|
-| `artists` | `id`, `user_id` (FK users), `slug`, `name`, `bio`, `avatar_key`, `banner_key`, `is_verified`, `follower_count`, timestamps, `xmin` | unique `user_id` (one artist profile per account in MVP), unique `slug` |
+| `artists` | `id`, `user_id` (FK users), `slug`, `name`, `bio`, `avatar_key`, `banner_key`, `is_verified`, `follower_count`, timestamps, `xmin` | unique `user_id` (one artist profile per account), unique `slug`. `slug` / `name` / `avatar_id` are copies of the account's handle, display name and picture, kept in sync by Identity in the same transaction (ADR-0013) |
 | `genres` ✅ | `id` int (stable, not generated), `slug` (≤ 64, kebab-case), `name` (≤ 64) | unique `slug`; 23 reference rows |
 | `tracks` | `id`, `artist_id`, `slug`, `title`, `description`, `status`, `visibility`, `duration_ms`, `artwork_key`, `release_date`, `is_explicit`, `play_count`, `like_count`, `comment_count`, `published_at`, timestamps, `deleted_at`, `search_vector` (generated tsvector), `xmin` | `status ∈ {draft, processing, ready, failed, cancelled}`; `visibility ∈ {public, unlisted, private}`; unique `(artist_id, slug)`; index `(artist_id, created_at desc)`; partial index `(published_at desc) where status='ready' and visibility='public' and deleted_at is null`; GIN `search_vector`; GIN trigram on `title` |
 | `track_genres` | `track_id`, `genre_id` | PK `(track_id, genre_id)`; index `genre_id` |
@@ -141,6 +141,8 @@ Migration `AddTracksAndMedia` implements `catalog.artists`, `catalog.tracks`, `m
   `media.artist_images` (`id`, `artist_id` FK → `catalog.artists`, `kind ∈ {avatarsmall, avatarlarge,
   bannersmall, bannerlarge}`, `object_key` unique, `content_type`, `size_bytes`, `created_at`; unique
   `(artist_id, kind)`). Object keys: `artists/{artistId}/{kind}/{id}.jpg`.
+- Migration `UnifyArtistWithAccount` (ADR-0013): existing `artists.slug` / `name` / `avatar_id` rewritten from the
+  account (handle, display name, picture); artist-avatar rows deleted and `artist_images.kind ∈ {bannersmall, bannerlarge}`.
 - Migration `AddAlbumsAndSearch` (ADR-0010): `catalog.albums` (`id`, `artist_id` FK, `title`, `kind ∈ {album, ep, single}`,
   `description`, `release_date` date, `visibility`, timestamps, `deleted_at`, `xmin`; no slug/artwork — the cover is the
   first track's); `tracks.album_id` (FK SET NULL) + `track_number`; extensions `unaccent`, `pg_trgm`; function

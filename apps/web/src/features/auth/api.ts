@@ -12,6 +12,14 @@ export const authKeys = {
   sessions: ["auth", "sessions"] as const,
 };
 
+/**
+ * The account's name and picture are also its artist name and picture (ADR-0013), shown in track lists, artist
+ * pages, comments and playlists: refetch everything that may show them.
+ */
+export function invalidatePublicIdentity(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] !== authKeys.all[0] });
+}
+
 /** The signed-in user, or null when anonymous (401 is an expected answer, not an error). */
 export function useMe() {
   return useQuery({
@@ -87,7 +95,11 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: async (body: Schemas["UpdateProfileRequest"]) =>
       unwrap(await api.PATCH("/api/v1/me/profile", { body })),
-    onSuccess: (me) => queryClient.setQueryData(authKeys.me, me),
+    onSuccess: (me) => {
+      const renamed = queryClient.getQueryData<Me | null>(authKeys.me)?.displayName !== me.displayName;
+      queryClient.setQueryData(authKeys.me, me);
+      if (renamed) invalidatePublicIdentity(queryClient);
+    },
   });
 }
 

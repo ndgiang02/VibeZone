@@ -141,12 +141,11 @@ export function uploadArtwork(trackId: string, image: File): UploadHandle<TrackA
   });
 }
 
-export type ArtistImageSlot = "avatar" | "banner";
 export type ImageUrls = components["schemas"]["ImageUrlsDto"];
 
-/** Sets or replaces the signed-in artist's avatar or banner (raw image body). */
-export function uploadArtistImage(slot: ArtistImageSlot, image: File): UploadHandle<ImageUrls> {
-  return send<ImageUrls>("PUT", `/api/v1/me/artist/${slot}`, image, {
+/** Sets or replaces the signed-in artist's banner (raw image body). Their picture is the account picture. */
+export function uploadArtistBanner(image: File): UploadHandle<ImageUrls> {
+  return send<ImageUrls>("PUT", "/api/v1/me/artist/banner", image, {
     "Content-Type": image.type || "application/octet-stream",
   });
 }

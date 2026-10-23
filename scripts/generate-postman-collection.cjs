@@ -250,8 +250,8 @@ if (other) pm.collectionVariables.set("sessionId", other.id);`),
           events: test(`if (pm.response.code === 200) pm.collectionVariables.set("artistId", pm.response.json().data.id);`),
         }),
         req("Become an artist", "POST", "/api/v1/me/artist", {
-          body: json({ slug: "{{artistSlug}}", name: "App Artist", bio: null }),
-          description: "201. Grants the Artist role (needed to create tracks). 409 if the slug is taken or the user already has one.",
+          body: json({ bio: null }),
+          description: "201. Name, URL slug and picture are the account's display name, handle and picture (ADR-0013) — set artistSlug to your handle. Grants the Artist role (needed to create tracks). 409 artist_exists if the user already has one.",
           events: test(`if (pm.response.code === 201) pm.collectionVariables.set("artistId", pm.response.json().data.id);`),
         }),
         req("My tracks", "GET", "/api/v1/me/tracks", { query: [{ key: "page", value: "1" }, { key: "pageSize", value: "50" }], description: "The artist's own tracks, any status, newest first (paged)." }),
@@ -388,21 +388,15 @@ if (pm.response.code === 202) pm.collectionVariables.set("trackId", pm.response.
         req("Cover image", "GET", "/api/v1/tracks/{{trackId}}/artwork/small", {
           description: "image/jpeg. 'small' (≈320 px) or 'large' (≈1200 px). Use the URLs in track.artwork (they change when the cover changes). Anyone who can see the track; 404 otherwise or without a cover.",
         }),
-        req("Set artist avatar", "PUT", "/api/v1/me/artist/avatar", {
-          headers: [{ key: "Content-Type", value: "image/jpeg" }],
-          body: { mode: "file", file: { src: "" } },
-          description: "Signed-in artist. Raw body = image (JPEG/PNG/WebP, ≥ 200×200, ≤ 10 MB); cropped square. 200 → data: {small, large}. Errors: image_invalid, image_too_small, image_too_large; 404 artist_not_found.",
-        }),
         req("Set artist banner", "PUT", "/api/v1/me/artist/banner", {
           headers: [{ key: "Content-Type", value: "image/jpeg" }],
           body: { mode: "file", file: { src: "" } },
-          description: "Like the avatar, but 3:1 (≥ 600×200). 800/1600 px wide renditions.",
+          description: "Signed-in artist. Raw body = image (JPEG/PNG/WebP, 3:1, ≥ 600×200, ≤ 10 MB); 800/1600 px wide renditions. 200 → data: {small, large}. Errors: image_invalid, image_too_small, image_too_large; 404 artist_not_found. The artist picture is the account picture (PUT /me/avatar).",
         }),
-        req("Remove artist avatar", "DELETE", "/api/v1/me/artist/avatar", { description: "204." }),
         req("Remove artist banner", "DELETE", "/api/v1/me/artist/banner", { description: "204." }),
-        req("Artist image", "GET", "/api/v1/artists/{{artistId}}/avatar/small", {
+        req("Artist banner", "GET", "/api/v1/artists/{{artistId}}/banner/small", {
           auth: noauth,
-          description: "image/jpeg, public. /avatar/{small|large} or /banner/{small|large}. Prefer the URLs in ArtistDto.avatar / banner. 404 without an image.",
+          description: "image/jpeg, public. /banner/{small|large}. Prefer the URLs in ArtistDto.banner. 404 without a banner. The artist picture is the account picture (ArtistDto.avatar).",
         }),
         req("Upload audio", "PUT", "/api/v1/tracks/{{trackId}}/upload", {
           headers: [

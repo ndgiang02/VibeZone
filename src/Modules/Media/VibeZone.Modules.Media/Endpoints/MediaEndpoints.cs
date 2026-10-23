@@ -37,15 +37,15 @@ internal static class MediaEndpoints
             .WithSummary("Account picture (JPEG); size is 'small' or 'large'. Use the URLs in MeDto.avatar.");
 
         var myArtist = api.MapGroup("/me/artist").WithTags("Media").RequireAuthorization();
-        myArtist.MapPut("/{slot:regex(^(avatar|banner)$)}", ReplaceArtistImage).WithName("ReplaceArtistImage").RequireRateLimiting(RateLimitPolicies.Uploads)
+        myArtist.MapPut("/banner", ReplaceArtistBanner).WithName("ReplaceArtistBanner").RequireRateLimiting(RateLimitPolicies.Uploads)
             .Accepts<Stream>("image/jpeg", "image/png", "image/webp")
             .Produces<ApiResponse<ImageUrlsDto>>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
-            .WithSummary("Set or replace the signed-in artist's avatar (square, ≥ 200×200) or banner (3:1, ≥ 600×200): the image as the raw body (JPEG, PNG or WebP, ≤ 10 MB). Center-cropped and re-encoded.");
-        myArtist.MapDelete("/{slot:regex(^(avatar|banner)$)}", RemoveArtistImage).WithName("RemoveArtistImage")
+            .WithSummary("Set or replace the signed-in artist's banner (3:1, ≥ 600×200): the image as the raw body (JPEG, PNG or WebP, ≤ 10 MB). Center-cropped and re-encoded. The profile picture is the account picture (PUT /me/avatar).");
+        myArtist.MapDelete("/banner", RemoveArtistBanner).WithName("RemoveArtistBanner")
             .Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status404NotFound);
-        api.MapGet("/artists/{artistId:guid}/{slot:regex(^(avatar|banner)$)}/{size}", GetArtistImage).WithTags("Media").WithName("GetArtistImage")
+        api.MapGet("/artists/{artistId:guid}/banner/{size}", GetArtistBanner).WithTags("Media").WithName("GetArtistBanner")
             .Produces(StatusCodes.Status200OK, contentType: "image/jpeg").ProducesProblem(StatusCodes.Status404NotFound)
-            .WithSummary("Artist avatar or banner (JPEG); size is 'small' or 'large'. Public. Use the URLs in ArtistDto.avatar / banner.");
+            .WithSummary("Artist banner (JPEG); size is 'small' or 'large'. Public. Use the URLs in ArtistDto.banner.");
 
         var tracks = api.MapGroup("/tracks/{trackId:guid}").WithTags("Media");
 
@@ -201,9 +201,7 @@ internal static class MediaEndpoints
         return image.IsSuccess ? new ObjectStreamResult(storage, image.Value) : image.Error!.ToProblem();
     }
 
-    private static ArtistImageSlot ParseSlot(string slot) => slot == "avatar" ? ArtistImageSlot.Avatar : ArtistImageSlot.Banner;
-
-    private static async Task<IResult> ReplaceArtistImage(string slot, HttpRequest request, ArtistImageService images, ICurrentUser user, IOptions<MediaOptions> options, CancellationToken ct)
+    private static async Task<IResult> ReplaceArtistBanner(HttpRequest request, ArtistImageService images, ICurrentUser user, IOptions<MediaOptions> options, CancellationToken ct)
     {
         var maxBytes = options.Value.MaxArtworkBytes;
         if (request.HttpContext.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
@@ -227,15 +225,15 @@ internal static class MediaEndpoints
 
         return image is null
             ? ArtistImageService.TooLarge(maxBytes).ToProblem()
-            : (await images.ReplaceAsync(user.RequireUserId(), ParseSlot(slot), image, ct)).ToResult(ApiResults.Ok);
+            : (await images.ReplaceAsync(user.RequireUserId(), image, ct)).ToResult(ApiResults.Ok);
     }
 
-    private static async Task<IResult> RemoveArtistImage(string slot, ArtistImageService images, ICurrentUser user, CancellationToken ct) =>
-        (await images.RemoveAsync(user.RequireUserId(), ParseSlot(slot), ct)).ToResult(TypedResults.NoContent);
+    private static async Task<IResult> RemoveArtistBanner(ArtistImageService images, ICurrentUser user, CancellationToken ct) =>
+        (await images.RemoveAsync(user.RequireUserId(), ct)).ToResult(TypedResults.NoContent);
 
-    private static async Task<IResult> GetArtistImage(Guid artistId, string slot, string size, ArtistImageService images, IObjectStorage storage, CancellationToken ct)
+    private static async Task<IResult> GetArtistBanner(Guid artistId, string size, ArtistImageService images, IObjectStorage storage, CancellationToken ct)
     {
-        var image = await images.ResolveAsync(artistId, ParseSlot(slot), size, ct);
+        var image = await images.ResolveAsync(artistId, size, ct);
         return image.IsSuccess ? new ObjectStreamResult(storage, image.Value) : image.Error!.ToProblem();
     }
 

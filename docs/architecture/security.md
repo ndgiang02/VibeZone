@@ -177,8 +177,9 @@ insider with infrastructure access.
   header (min 200 px side, max 40 MP) before pixels are allocated, re-encoded to JPEG from decoded pixels so
   EXIF/GPS/XMP/comments never reach storage or viewers; original not kept; server-generated keys; served as
   `image/jpeg` with `nosniff` only to viewers who can see the track (invisible → 404), `Cache-Control: private`.
-- Artist avatar/banner: same pipeline and limits; only the owner of the profile can change them
-  (`/me/artist/...` — no artist id in the URL, so no IDOR surface); served publicly (profiles are public).
+- Artist banner: same pipeline and limits; only the owner of the profile can change it
+  (`/me/artist/banner` — no artist id in the URL, so no IDOR surface); served publicly (profiles are public).
+  The artist picture and name are the account's (ADR-0013), so they can only change through the account.
 - Account pictures: `/me/avatar` (own account only), same pipeline; served publicly by user id.
 
 ## 11. Catalog, search and playlists (M2b/M2c, ADR-0010; built without tests)

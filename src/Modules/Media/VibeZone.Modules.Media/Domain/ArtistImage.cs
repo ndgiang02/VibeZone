@@ -4,13 +4,11 @@ namespace VibeZone.Modules.Media.Domain;
 
 public enum ArtistImageKind
 {
-    AvatarSmall,
-    AvatarLarge,
     BannerSmall,
     BannerLarge,
 }
 
-/// <summary>A stored rendition of an artist's avatar or banner (JPEG made by the API from the upload).</summary>
+/// <summary>A stored rendition of an artist's banner (JPEG made by the API from the upload).</summary>
 public sealed class ArtistImage
 {
     private ArtistImage() { }

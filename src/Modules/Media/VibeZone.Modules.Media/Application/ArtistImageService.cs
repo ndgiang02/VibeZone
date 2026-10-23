@@ -9,9 +9,9 @@ namespace VibeZone.Modules.Media.Application;
 public sealed record ImageUrlsDto(string Small, string Large);
 
 /// <summary>
-/// The signed-in artist's avatar and banner. Same pipeline as track covers (ADR-0009): decoded and
-/// re-encoded by the API, stored privately under server keys, original not kept; public to everyone (artist
-/// profiles are public).
+/// The signed-in artist's banner. Same pipeline as track covers (ADR-0009): decoded and re-encoded by the API,
+/// stored privately under server keys, original not kept; public to everyone (artist profiles are public). The
+/// artist's picture is the account picture (<see cref="UserAvatarService"/>, ADR-0013).
 /// </summary>
 public sealed class ArtistImageService(
     IArtistCatalog catalog,
@@ -28,7 +28,7 @@ public sealed class ArtistImageService(
     public static DomainError TooLarge(long maxBytes) =>
         DomainError.Validation("image_too_large", $"Images can be at most {maxBytes / (1024 * 1024)} MB.");
 
-    public async Task<Result<ImageUrlsDto>> ReplaceAsync(Guid userId, ArtistImageSlot slot, byte[] image, CancellationToken cancellationToken)
+    public async Task<Result<ImageUrlsDto>> ReplaceAsync(Guid userId, byte[] image, CancellationToken cancellationToken)
     {
         var settings = options.Value;
         if (await catalog.FindArtistIdForUserAsync(userId, cancellationToken) is not { } artistId)
@@ -41,8 +41,7 @@ public sealed class ArtistImageService(
             return TooLarge(settings.MaxArtworkBytes);
         }
 
-        var spec = slot == ArtistImageSlot.Avatar ? ImageSpec.Avatar(settings.MinArtworkSide) : ImageSpec.Banner(settings.MinArtworkSide);
-        var rendered = processor.Render(image, spec, settings.MaxArtworkPixels);
+        var rendered = processor.Render(image, ImageSpec.Banner(settings.MinArtworkSide), settings.MaxArtworkPixels);
         if (!rendered.IsSuccess)
         {
             // The processor speaks in track-cover terms; artist images have their own codes.
@@ -50,10 +49,9 @@ public sealed class ArtistImageService(
             return error with { Code = error.Code.Replace("artwork_", "image_", StringComparison.Ordinal) };
         }
 
-        var (smallKind, largeKind) = Kinds(slot);
         var now = time.GetUtcNow();
-        var small = ArtistImage.Create(artistId, smallKind, rendered.Value.Small.Length, now);
-        var large = ArtistImage.Create(artistId, largeKind, rendered.Value.Large.Length, now);
+        var small = ArtistImage.Create(artistId, ArtistImageKind.BannerSmall, rendered.Value.Small.Length, now);
+        var large = ArtistImage.Create(artistId, ArtistImageKind.BannerLarge, rendered.Value.Large.Length, now);
         var written = new List<string>();
         try
         {
@@ -64,7 +62,7 @@ public sealed class ArtistImageService(
                 written.Add(row.ObjectKey);
             }
 
-            var replaced = (await repository.ListArtistImagesAsync(artistId, cancellationToken)).Where(i => i.Kind == smallKind || i.Kind == largeKind).ToList();
+            var replaced = await repository.ListArtistImagesAsync(artistId, cancellationToken);
             foreach (var old in replaced)
             {
                 repository.Remove(old);
@@ -72,7 +70,7 @@ public sealed class ArtistImageService(
 
             repository.Add(small);
             repository.Add(large);
-            await catalog.StageImageAsync(artistId, slot, large.Id, cancellationToken);
+            await catalog.StageBannerAsync(artistId, large.Id, cancellationToken);
             await repository.SaveChangesAsync(cancellationToken);
             await artwork.DeleteQuietlyAsync(replaced.Select(i => i.ObjectKey));
         }
@@ -82,43 +80,36 @@ public sealed class ArtistImageService(
             throw;
         }
 
-        return new ImageUrlsDto(ArtistImagePaths.For(artistId, slot, large.Id, "small"), ArtistImagePaths.For(artistId, slot, large.Id, "large"));
+        return new ImageUrlsDto(ArtistImagePaths.Banner(artistId, large.Id, "small"), ArtistImagePaths.Banner(artistId, large.Id, "large"));
     }
 
-    public async Task<Result> RemoveAsync(Guid userId, ArtistImageSlot slot, CancellationToken cancellationToken)
+    public async Task<Result> RemoveAsync(Guid userId, CancellationToken cancellationToken)
     {
         if (await catalog.FindArtistIdForUserAsync(userId, cancellationToken) is not { } artistId)
         {
             return Result.Failure(ArtistNotFound);
         }
 
-        var (smallKind, largeKind) = Kinds(slot);
-        var images = (await repository.ListArtistImagesAsync(artistId, cancellationToken)).Where(i => i.Kind == smallKind || i.Kind == largeKind).ToList();
+        var images = await repository.ListArtistImagesAsync(artistId, cancellationToken);
         foreach (var image in images)
         {
             repository.Remove(image);
         }
 
-        await catalog.StageImageAsync(artistId, slot, null, cancellationToken);
+        await catalog.StageBannerAsync(artistId, null, cancellationToken);
         await repository.SaveChangesAsync(cancellationToken);
         await artwork.DeleteQuietlyAsync(images.Select(i => i.ObjectKey));
         return Result.Success();
     }
 
-    public async Task<Result<ArtistImage>> ResolveAsync(Guid artistId, ArtistImageSlot slot, string size, CancellationToken cancellationToken)
+    public async Task<Result<ArtistImage>> ResolveAsync(Guid artistId, string size, CancellationToken cancellationToken)
     {
-        var (smallKind, largeKind) = Kinds(slot);
         ArtistImageKind? kind = size switch
         {
-            "small" => smallKind,
-            "large" => largeKind,
+            "small" => ArtistImageKind.BannerSmall,
+            "large" => ArtistImageKind.BannerLarge,
             _ => null,
         };
         return kind is { } k && await repository.FindArtistImageAsync(artistId, k, cancellationToken) is { } image ? image : ImageNotFound;
     }
-
-    private static (ArtistImageKind Small, ArtistImageKind Large) Kinds(ArtistImageSlot slot) =>
-        slot == ArtistImageSlot.Avatar
-            ? (ArtistImageKind.AvatarSmall, ArtistImageKind.AvatarLarge)
-            : (ArtistImageKind.BannerSmall, ArtistImageKind.BannerLarge);
 }

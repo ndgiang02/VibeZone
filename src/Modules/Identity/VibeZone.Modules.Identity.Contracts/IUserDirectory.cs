@@ -7,4 +7,7 @@ public sealed record UserSummary(Guid Id, string DisplayName, string Handle, str
 public interface IUserDirectory
 {
     Task<IReadOnlyDictionary<Guid, UserSummary>> GetAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken);
+
+    /// <summary>The account's public identity, or null if the user doesn't exist.</summary>
+    Task<PublicProfile?> FindProfileAsync(Guid userId, CancellationToken cancellationToken);
 }

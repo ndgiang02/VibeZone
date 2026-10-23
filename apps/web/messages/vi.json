@@ -174,7 +174,8 @@
       "displayName": "Tên hiển thị",
       "language": "Ngôn ngữ",
       "languageHint": "Dùng cho giao diện và các email chúng tôi gửi bạn.",
-      "saved": "Đã lưu hồ sơ."
+      "saved": "Đã lưu hồ sơ.",
+      "artistNote": "Tên hiển thị và ảnh đại diện cũng là tên và ảnh nghệ sĩ của bạn."
     },
     "password": {
       "title": "Mật khẩu",
@@ -233,9 +234,6 @@
     "track_not_found": "Không tìm thấy bài hát.",
     "artist_not_found": "Không tìm thấy nghệ sĩ.",
     "artist_exists": "Bạn đã có hồ sơ nghệ sĩ.",
-    "artist_slug_taken": "Địa chỉ hồ sơ này đã có người dùng.",
-    "artist_slug_invalid": "Dùng 3–40 ký tự gồm chữ thường, số và dấu gạch ngang đơn.",
-    "artist_name_invalid": "Tên nghệ sĩ phải có 1–80 ký tự.",
     "artist_bio_too_long": "Giới thiệu tối đa 1000 ký tự.",
     "artist_required": "Hãy tạo hồ sơ nghệ sĩ trước.",
     "track_title_invalid": "Tên bài phải có 1–120 ký tự.",
@@ -408,15 +406,12 @@
     "deleteConfirm": "Xóa \"{title}\"? Bạn không thể hoàn tác trong studio.",
     "becomeArtist": {
       "title": "Trở thành nghệ sĩ",
-      "subtitle": "Tạo hồ sơ nghệ sĩ để tải lên và chia sẻ âm nhạc.",
-      "name": "Tên nghệ sĩ",
-      "nameInvalid": "Dùng 1–80 ký tự.",
-      "slug": "Địa chỉ hồ sơ",
-      "slugHint": "3–40 ký tự: chữ thường, số và dấu gạch ngang đơn.",
-      "slugInvalid": "Dùng 3–40 ký tự gồm chữ thường, số và dấu gạch ngang đơn.",
+      "subtitle": "Bật hồ sơ nghệ sĩ để tải lên và chia sẻ âm nhạc.",
+      "sameAccount": "Hồ sơ nghệ sĩ dùng chính tên hiển thị, tên người dùng và ảnh đại diện của tài khoản này. Đổi chúng trong Cài đặt — thay đổi áp dụng ở mọi nơi.",
+      "profileUrl": "Trang nghệ sĩ của bạn",
       "bio": "Giới thiệu (không bắt buộc)",
       "bioTooLong": "Dùng tối đa 1000 ký tự.",
-      "submit": "Tạo hồ sơ nghệ sĩ"
+      "submit": "Bật hồ sơ nghệ sĩ"
     },
     "newTrack": {
       "heading": "Tải bài hát lên",
@@ -471,10 +466,9 @@
       "addBanner": "Thêm ảnh bìa",
       "changeBanner": "Đổi ảnh bìa",
       "removeBanner": "Xóa ảnh bìa",
-      "changeAvatar": "Đổi ảnh đại diện",
-      "removeAvatar": "Xóa ảnh đại diện",
       "viewProfile": "Xem trang nghệ sĩ",
-      "hint": "Ảnh đại diện: vuông, tối thiểu 200 × 200 px. Ảnh bìa: tỉ lệ 3:1, tối thiểu 600 × 200 px. JPEG, PNG hoặc WebP, tối đa {max} MB."
+      "editInSettings": "Đổi tên và ảnh đại diện trong Cài đặt",
+      "hint": "Ảnh bìa: tỉ lệ 3:1, tối thiểu 600 × 200 px. JPEG, PNG hoặc WebP, tối đa {max} MB."
     },
     "albums": {
       "heading": "Album & EP",

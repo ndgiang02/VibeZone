@@ -162,9 +162,11 @@ Albums, search and playlists (ADR-0010):
   `POST /playlists/{id}/tracks` `{trackId}`, `DELETE /playlists/{id}/tracks/{trackId}`,
   `PUT /playlists/{id}/tracks/order` `{trackIds}`, `GET /me/playlists?containsTrack=`.
 
-Artist images (signed-in artist): `PUT /api/v1/me/artist/avatar` (square, ≥ 200 × 200) or
-`/banner` (3:1, ≥ 600 × 200) with the image as the raw body; `DELETE` the same path removes it.
-`ArtistDto.avatar` / `banner` = `{small, large} | null`; track lists carry `artist.avatarUrl`.
+Artist profile = the account (ADR-0013): `POST /api/v1/me/artist` `{ bio }` turns it on; its name, URL slug and
+picture are the account's display name, handle and picture (change them with `PATCH /me/profile` and
+`PUT /me/avatar`). Banner (signed-in artist): `PUT /api/v1/me/artist/banner` (3:1, ≥ 600 × 200) with the image as
+the raw body; `DELETE` the same path removes it. `ArtistDto.avatar` / `banner` = `{small, large} | null`; track
+lists carry `artist.avatarUrl`.
 
 Upload audio for an existing track (a Draft, or again after `Failed`/`Cancelled`):
 

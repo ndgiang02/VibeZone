@@ -1,66 +1,44 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Mic2 } from "lucide-react";
+import { Mic2, Settings } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { FormMessage } from "@/components/forms/form-message";
 import { SubmitButton } from "@/components/forms/submit-button";
-import { TextField } from "@/components/forms/text-field";
+import { ArtistAvatar } from "@/components/media/artist-avatar";
 import { Label } from "@/components/ui/label";
+import { Link } from "@/i18n/navigation";
 import type { ErrorCode } from "@/lib/api/errors";
 import { applyServerErrors } from "@/features/auth/server-errors";
+import type { Me } from "@/features/auth/api";
 import { useCreateArtist } from "@/features/tracks/api";
 
-/** URL-safe slug suggestion from a display name (diacritics stripped, e.g. "Sơn Tùng" → "son-tung"). */
-export function slugify(name: string) {
-  return name
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
-}
-
-export function BecomeArtistForm() {
+/**
+ * Turns on the artist profile. Nothing to re-enter: the profile is this account's public face — its display name,
+ * username (the page URL) and picture (ADR-0013).
+ */
+export function BecomeArtistForm({ me }: { me: Me }) {
   const t = useTranslations("studio.becomeArtist");
+  const tNav = useTranslations("nav");
   const tErrors = useTranslations("errors");
   const create = useCreateArtist();
   const [formError, setFormError] = useState<ErrorCode | null>(null);
-  const [slugEdited, setSlugEdited] = useState(false);
-  const schema = z.object({
-    name: z.string().trim().min(1, t("nameInvalid")).max(80, t("nameInvalid")),
-    slug: z
-      .string()
-      .trim()
-      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, t("slugInvalid"))
-      .min(3, t("slugInvalid"))
-      .max(40, t("slugInvalid")),
-    bio: z.string().max(1000, t("bioTooLong")),
-  });
+  const schema = z.object({ bio: z.string().max(1000, t("bioTooLong")) });
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", slug: "", bio: "" },
+    defaultValues: { bio: "" },
   });
 
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await create.mutateAsync({ ...values, bio: values.bio || null });
+      await create.mutateAsync({ bio: values.bio || null });
     } catch (error) {
-      setFormError(applyServerErrors(error, ["name", "slug", "bio"], form.setError, (c) => tErrors(c)));
+      setFormError(applyServerErrors(error, ["bio"], form.setError, (c) => tErrors(c)));
     }
-  });
-
-  const nameField = form.register("name", {
-    onChange: (event: { target: { value: string } }) => {
-      if (!slugEdited) form.setValue("slug", slugify(event.target.value), { shouldValidate: false });
-    },
   });
 
   return (
@@ -72,17 +50,30 @@ export function BecomeArtistForm() {
           <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
       </div>
+      <div className="flex items-center gap-4 rounded-xl border bg-surface-elevated p-4">
+        <ArtistAvatar
+          id={me.id}
+          name={me.displayName || me.handle}
+          src={me.avatar?.small}
+          className="size-14 shrink-0 text-lg"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold">{me.displayName}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {t("profileUrl")}: /artists/{me.handle}
+          </p>
+        </div>
+        <Link
+          href="/settings"
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors hover:bg-surface-hover"
+        >
+          <Settings className="size-3.5" aria-hidden="true" />
+          {tNav("settings")}
+        </Link>
+      </div>
+      <p className="text-xs text-muted-foreground">{t("sameAccount")}</p>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {formError ? <FormMessage tone="error">{tErrors(formError)}</FormMessage> : null}
-        <TextField label={t("name")} error={form.formState.errors.name?.message} {...nameField} />
-        <TextField
-          label={t("slug")}
-          hint={t("slugHint")}
-          autoCapitalize="none"
-          spellCheck={false}
-          error={form.formState.errors.slug?.message}
-          {...form.register("slug", { onChange: () => setSlugEdited(true) })}
-        />
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="artist-bio">{t("bio")}</Label>
           <textarea

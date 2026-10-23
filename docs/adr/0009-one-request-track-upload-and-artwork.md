@@ -61,6 +61,9 @@ everything is sent together. Tracks also had no cover image (placeholders only).
 
 ## Addendum (2026-10-20): artist avatar and banner
 
+> The artist avatar was removed by ADR-0013 (2026-10-23): the artist picture is the account picture. Only the
+> banner remains, at `/me/artist/banner` and `/artists/{artistId}/banner/{size}`.
+
 Same pipeline for artist profile images, with an `ImageSpec` per use (aspect ratio, minimum size, two widths):
 avatar square 160/640 px (min 200 × 200), banner 3:1 800/1600 px wide (min 600 × 200). Stored in
 `media.artist_images` (kinds `avatarsmall|avatarlarge|bannersmall|bannerlarge`, FK → `catalog.artists` added by
