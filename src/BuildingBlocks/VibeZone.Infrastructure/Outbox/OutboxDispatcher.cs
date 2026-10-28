@@ -33,9 +33,22 @@ internal sealed partial class OutboxDispatcher(
             try
             {
                 var ids = await ClaimAsync(stoppingToken);
-                foreach (var id in ids)
+                var dispatched = 0;
+                try
                 {
-                    await DispatchAsync(id, stoppingToken);
+                    for (; dispatched < ids.Count; dispatched++)
+                    {
+                        await DispatchAsync(ids[dispatched], stoppingToken);
+                    }
+                }
+                finally
+                {
+                    // Stopping mid-batch: hand the rest (and the interrupted one) back now instead of after the lease,
+                    // so another instance picks them up right away. Consumption markers make re-running safe.
+                    if (dispatched < ids.Count)
+                    {
+                        await ReleaseAsync(ids.Skip(dispatched).ToList());
+                    }
                 }
 
                 if (ids.Count < BatchSize)
@@ -72,6 +85,24 @@ internal sealed partial class OutboxDispatcher(
                 FOR UPDATE SKIP LOCKED)
             RETURNING id AS "Value"
             """).ToListAsync(cancellationToken);
+    }
+
+    private async Task ReleaseAsync(List<Guid> ids)
+    {
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            using var scope = scopes.CreateScope();
+            var now = time.GetUtcNow();
+            await scope.ServiceProvider.GetRequiredService<AppDbContext>().Set<OutboxMessage>()
+                .Where(m => ids.Contains(m.Id) && m.ProcessedAt == null)
+                .ExecuteUpdateAsync(u => u.SetProperty(m => m.NextAttemptAt, now), timeout.Token);
+        }
+        catch (Exception ex)
+        {
+            // Not fatal: the lease expires and the messages are claimed again.
+            LogReleaseFailed(logger, ex, ids.Count);
+        }
     }
 
     private async Task DispatchAsync(Guid messageId, CancellationToken cancellationToken)
@@ -160,6 +191,9 @@ internal sealed partial class OutboxDispatcher(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Outbox handler {Handler} failed for {EventType} {MessageId} (attempt {Attempt})")]
     private static partial void LogHandlerFailed(ILogger logger, Exception ex, string eventType, Guid messageId, string handler, int attempt);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not release {Count} claimed outbox messages; they are retried when the lease expires")]
+    private static partial void LogReleaseFailed(ILogger logger, Exception ex, int count);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "After-commit action failed for {EventType} {MessageId}")]
     private static partial void LogAfterCommitFailed(ILogger logger, Exception ex, string eventType, Guid messageId);

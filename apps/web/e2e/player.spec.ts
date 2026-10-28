@@ -109,6 +109,8 @@ test("upload in Studio → Ready → play, pause, seek and next with the global 
     await player.getByRole("slider", { name: "Seek" }).fill("20");
     await expect.poll(async () => (await audioState(page)).time).toBeGreaterThanOrEqual(20);
   }
+  // Shortcuts are global, but a focused control (the seek slider just used) keeps its own arrow keys.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   const beforeShortcut = (await audioState(page)).time;
   await page.locator("body").press("ArrowLeft");
   await expect.poll(async () => (await audioState(page)).time).toBeLessThan(beforeShortcut - 2);

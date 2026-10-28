@@ -3,6 +3,46 @@
 Newest first. Each entry records what was done, **how it was verified** (actual commands and
 results), known issues and next steps.
 
+## 2026-10-28 — M2–M4 verification: tests written and run, bugs fixed
+
+**Done**
+- Integration tests: `PlaylistTests`, `SearchTests`, `CatalogAuthorizationTests` (tracks/albums IDOR → 404),
+  `SocialTests`, `PlayEventTests`, `ModerationTests` (401/403 for every staff endpoint, takedown → unplayable →
+  audited → restore, role grant/revoke, CLI grant), malformed bodies → 400; unit `ValidListenRuleTests`.
+- E2E: `catalog.spec.ts` (search without accents → track page; playlist create → add → reorder by mouse and keyboard
+  → reload), `social.spec.ts` (like/follow → counts + artist notifications; report → moderator removes → track gone,
+  stream 404, audit entry, reporter notified); helpers in `e2e/content.ts`. `player.spec.ts` run for the first time.
+- Operator command `grant-role <email> <Moderator|Admin>` (bootstraps the first Admin; audited `via=cli`).
+- **Fixes found by the tests**
+  - Malformed JSON / wrongly typed fields / missing body returned 500 → 400 `request_invalid` (413
+    `request_too_large`) Problem Details.
+  - A reply notifying two people shared one owned-JSON payload instance between rows → EF error; new instance each.
+  - Outbox dispatcher kept claimed-but-undispatched messages leased for 2 min when the host stopped (deploys,
+    restarts: notifications delayed) → releases them on shutdown.
+  - Framework 415 (body type the endpoint doesn't accept) had no `code` → `unsupported_media_type`; the upload test
+    expected `multipart_required`, which routing never lets through — test corrected to the real contract.
+  - Test infrastructure: media fixture raises the 30/hour upload limit (the suite uploads more than that from one
+  IP); Playwright timeouts 60 s / 10 s (account flows timed out only when run next to the FFmpeg-heavy specs);
+  e2e race fixes (wait for the like request before navigating; blur the seek slider before global shortcuts).
+
+**Verification (actually run)**
+- `dotnet build VibeZone.slnx -warnaserror` ✓ · `dotnet format --verify-no-changes` ✓ · unit **97/97** ✓ ·
+  architecture **34/34** ✓.
+- Integration (Testcontainers): non-media **95/95** ✓; media **29/29** ✓ excluding `LargeMediaTests`. First full run
+  (before the fixes) was 116/123.
+- `LargeMediaTests` ✗ — **known, pre-existing**: streaming 48 MB allocated 67.5 MB in the test process (upload →
+  Ready → range seek of the 30-min file pass; only the allocation assertion fails). Cause still not identified.
+- Web: typecheck ✓, lint ✓, format ✓, `npm test` **38/38** ✓, `npm run build` ✓.
+- `npx playwright test` against the real API, Postgres, Mailpit, MinIO and the rebuilt worker container:
+  **29 passed, 1 skipped by design** (desktop + mobile). `social.spec.ts` also passed with `--repeat-each 2`.
+
+**Known issues / limitations**
+- Streaming-allocation item above (M3).
+- Responsive: desktop and phone widths are exercised by every e2e; tablet width not checked.
+- Docker images for api/web not rebuilt in this session (worker image was).
+
+**Next**: decide on the streaming-allocation investigation, then M5 (production hardening) when the owner starts it.
+
 ## 2026-10-22 — M4: social, analytics, notifications, moderation, admin (ADR-0012; no automated tests)
 
 Owner's instruction: finish M2/M3 and build M4 without tests for now ("development phase"). M2b/M2c had no

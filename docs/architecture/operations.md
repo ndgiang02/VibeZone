@@ -85,6 +85,14 @@ keys live in `infra.data_protection_keys`; deleting them signs everyone out and 
   The API never auto-migrates in production. Destructive migrations require an expand/contract
   plan and a backup taken immediately before.
 
+## Operator commands
+
+- **First Admin**: `dotnet run --project src/VibeZone.Api -- grant-role <email> <Moderator|Admin>` (in the API image:
+  `dotnet VibeZone.Api.dll grant-role …`). Runs against the configured database in any environment, needs a
+  confirmed account, is idempotent and audited (`role_granted`, `via=cli`); the account's existing sessions get the
+  role immediately. Every later role change goes through the admin dashboard.
+- **Dev seed**: `dotnet run --project src/VibeZone.Api -- seed-dev` (Development only).
+
 ## Planned runbooks (M5, `docs/runbooks/`)
 
 Database outage · storage outage · failed transcoding · queue backlog · deployment rollback ·

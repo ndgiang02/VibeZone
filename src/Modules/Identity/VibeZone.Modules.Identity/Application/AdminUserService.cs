@@ -67,6 +67,31 @@ public sealed class AdminUserService(IUserAdministration users, IAuditLog audit)
         return await users.FindAsync(userId, cancellationToken) is { } updated ? updated : UserNotFound;
     }
 
+    /// <summary>
+    /// Operator command (<c>grant-role</c>): grants a staff role without a signed-in admin, e.g. the very first Admin.
+    /// Audited with the user as actor and <c>via=cli</c>. Only confirmed accounts.
+    /// </summary>
+    public async Task<Result<AdminUserDto>> GrantFromCommandLineAsync(Account? account, string role, CancellationToken cancellationToken)
+    {
+        if (NormalizeRole(role) is not { } name || !AssignableRoles.Contains(name))
+        {
+            return DomainError.Validation("role_not_assignable", "Only Moderator and Admin can be assigned.", "role");
+        }
+
+        if (account is not { EmailConfirmed: true } || await users.FindAsync(account.Id, cancellationToken) is not { } user)
+        {
+            return UserNotFound;
+        }
+
+        if (!user.Roles.Contains(name))
+        {
+            audit.Stage(user.Id, AuditActions.RoleGranted, "user", user.Id.ToString(), new Dictionary<string, string> { ["role"] = name, ["via"] = "cli" });
+            await users.SetRoleAsync(user.Id, name, true, cancellationToken);
+        }
+
+        return await users.FindAsync(user.Id, cancellationToken) is { } updated ? updated : UserNotFound;
+    }
+
     private static string? NormalizeRole(string? role) =>
         Roles.All.FirstOrDefault(r => string.Equals(r, role?.Trim(), StringComparison.OrdinalIgnoreCase));
 }

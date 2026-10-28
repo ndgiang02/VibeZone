@@ -15,6 +15,10 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   // Each worker runs a browser next to the API, Next.js and Docker; more than a few starves an 8 GB machine.
   workers: process.env.CI ? 2 : 3,
+  // Specs that upload media keep the worker (FFmpeg) busy next to the browsers; under that load the default 30 s /
+  // 5 s left the account flows timing out on an 8 GB machine while passing on their own.
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: `http://localhost:${webPort}`,

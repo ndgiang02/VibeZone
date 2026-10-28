@@ -33,7 +33,9 @@ public sealed class MediaFixture(PostgresFixture postgres, MailpitFixture mail) 
     public async ValueTask InitializeAsync()
     {
         await Storage.InitializeAsync();
-        Api = new ApiFactory(postgres.ConnectionString, Storage.Settings, mail);
+        // Every media test uploads from the same test-server IP; the production limit (30/hour) would throttle the suite.
+        var settings = new Dictionary<string, string>(Storage.Settings) { ["RateLimiting:UploadsPerHour"] = "100000" };
+        Api = new ApiFactory(postgres.ConnectionString, settings, mail);
         Worker = await MediaWorkerContainer.StartAsync(postgres.ConnectionString, Storage, Lease);
     }
 

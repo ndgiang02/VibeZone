@@ -98,4 +98,7 @@ public static class ResponseExtensions
         var json = await response.JsonAsync();
         return json.TryGetProperty("code", out var code) ? code.GetString() : null;
     }
+
+    /// <summary>The <c>id</c> of every element of a JSON array, in order.</summary>
+    public static List<Guid> Ids(this JsonElement array) => [.. array.EnumerateArray().Select(e => e.GetProperty("id").GetGuid())];
 }

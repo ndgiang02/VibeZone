@@ -40,16 +40,17 @@ public sealed class NotificationHandlers(INotificationRepository repository, INo
 
     public Task HandleAsync(CommentPosted e, IntegrationEventContext context, CancellationToken cancellationToken)
     {
-        var payload = new NotificationPayload { Title = e.TrackTitle, TrackId = e.TrackId, Excerpt = e.Excerpt };
+        // A new instance per notification: the payload is an owned (JSON) entity and can't be shared between rows.
+        NotificationPayload Payload() => new() { Title = e.TrackTitle, TrackId = e.TrackId, Excerpt = e.Excerpt };
         // A reply notifies the replied-to author; the track owner hears about it once (as a reply if it's theirs).
         if (e.ParentAuthorUserId is { } parentAuthor && parentAuthor != e.AuthorUserId)
         {
-            Notify(context, parentAuthor, NotificationType.CommentReplied, e.AuthorUserId, "comment", e.CommentId, payload);
+            Notify(context, parentAuthor, NotificationType.CommentReplied, e.AuthorUserId, "comment", e.CommentId, Payload());
         }
 
         if (e.TrackOwnerUserId != e.AuthorUserId && e.TrackOwnerUserId != e.ParentAuthorUserId)
         {
-            Notify(context, e.TrackOwnerUserId, NotificationType.CommentPosted, e.AuthorUserId, "comment", e.CommentId, payload);
+            Notify(context, e.TrackOwnerUserId, NotificationType.CommentPosted, e.AuthorUserId, "comment", e.CommentId, Payload());
         }
 
         return Task.CompletedTask;

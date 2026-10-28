@@ -182,7 +182,7 @@ insider with infrastructure access.
   The artist picture and name are the account's (ADR-0013), so they can only change through the account.
 - Account pictures: `/me/avatar` (own account only), same pipeline; served publicly by user id.
 
-## 11. Catalog, search and playlists (M2b/M2c, ADR-0010; built without tests)
+## 11. Catalog, search and playlists (M2b/M2c, ADR-0010; covered by integration + e2e tests since 2026-10-28)
 
 - Albums and playlists follow the track rule: private → owner (and moderators) only, invisible → 404;
   every write is owner-checked in the Application layer (no ids from the client are trusted for ownership).
@@ -213,7 +213,7 @@ insider with infrastructure access.
   upload); without a cover a decorative gradient is shown; descriptions/bios rendered as
   plain text; waveform styles injected with the CSP nonce (`cspNonce`).
 
-## 12. Social, analytics, notifications and moderation (M4, ADR-0012; built without tests)
+## 12. Social, analytics, notifications and moderation (M4, ADR-0012; covered by integration + e2e tests since 2026-10-28)
 
 - **Authorization**: likes and comments require the track to be playable for the caller; reading comments,
   engagement and stats requires it to be visible (invisible → 404). Comment edits: author only; deletion: author,
@@ -241,3 +241,8 @@ insider with infrastructure access.
   search, trending, related, playlists and albums; restore is audited. Removed comments are soft-deleted.
 - **Outbox**: events carry ids and display snapshots, never emails or tokens; failures store only the exception
   type.
+- **Role bootstrap**: the `grant-role` operator command needs database access (same as the app), only grants
+  Moderator/Admin to confirmed accounts, and is audited with `via=cli`. Its log line names the user id, not the email.
+- **Malformed requests**: unreadable JSON, wrongly typed fields and missing bodies return 400 `request_invalid`
+  (413 `request_too_large`) and a body the endpoint doesn't accept 415 `unsupported_media_type`, all as Problem
+  Details without echoing the request — previously some of these surfaced as 500.

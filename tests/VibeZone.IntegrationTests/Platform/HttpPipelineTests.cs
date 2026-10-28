@@ -74,6 +74,28 @@ public sealed class HttpPipelineTests(PostgresFixture postgres)
         Assert.Equal(HttpStatusCode.OK, health.StatusCode);
     }
 
+    [Theory]
+    [InlineData("""{ "userId": "", "token": "x" }""")] // wrongly typed field
+    [InlineData("""{ "userId": """)] // unreadable JSON
+    [InlineData("")] // missing body
+    public async Task Malformed_request_bodies_return_400_problem_details_not_500(string body)
+    {
+        await using var api = new ApiFactory(postgres.ConnectionString);
+        using var client = api.CreateApiClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/verify-email")
+        {
+            Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json"),
+        };
+        request.Headers.Add("X-CSRF-TOKEN", await client.FetchCsrfAsync());
+
+        using var response = await client.Http.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("request_invalid", await response.ProblemCodeAsync());
+        Assert.DoesNotContain("userId", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
+    }
+
     private static string? Header(HttpResponseMessage response, string name) =>
         response.Headers.TryGetValues(name, out var values) ? string.Join(",", values) : null;
 }

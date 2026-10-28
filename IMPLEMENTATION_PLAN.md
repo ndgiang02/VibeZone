@@ -91,7 +91,7 @@ Delivered in slices, each verified before the next.
 - [x] CSRF rejection cases, cookie attributes, session revocation (own vs. others') covered by integration tests
 - [x] Desktop and mobile viewports in e2e; no CSP violations
 
-### M2b — Catalog & search 🟡 (built 2026-10-20 without tests, owner's request — ADR-0010)
+### M2b — Catalog & search ✅ (built 2026-10-20 without tests — ADR-0010; verified 2026-10-28)
 - [x] Artists (self-serve "become an artist"), tracks (metadata, visibility, status machine, edit in Studio), albums
       (album/EP/single, tracklist order, Studio album manager), genres on tracks (one per track)
 - [x] Search: Postgres FTS + trigram over tracks/artists/albums/playlists, accent-insensitive, pagination
@@ -99,24 +99,24 @@ Delivered in slices, each verified before the next.
 - [x] Dev seed command: `dotnet run --project src/VibeZone.Api -- seed-dev` (Development only; demo artists,
       draft tracks, an album and a playlist each; no audio, nothing Ready)
 
-### M2c — Playlists & library 🟡 (built 2026-10-20 without tests)
+### M2c — Playlists & library ✅ (verified 2026-10-28)
 - [x] Playlists CRUD, ordering (drag & keyboard), public/private; Playlist detail; Library page; "Add to playlist"
       on track lists, cards and the track page; your playlists in the sidebar
 
 **Acceptance criteria**
 - [x] E2E: register → verify email (Mailpit) → login → logout (vi and en) — M2a
-- [ ] E2E: search → open track detail (Ready fixtures inserted by the test only)
-- [ ] E2E: create playlist → add tracks → reorder → reload persists order
-- [ ] Authorization tests: private playlist/track of another user → 404; non-owner edit → 404
+- [x] E2E: search → open track detail (`catalog.spec.ts`; tracks uploaded through the API and converted by the real worker)
+- [x] E2E: create playlist → add tracks → reorder (mouse + keyboard) → reload persists order (`catalog.spec.ts`)
+- [x] Authorization tests: private playlist/track/album of another user → 404; non-owner edit → 404 (`PlaylistTests`, `CatalogAuthorizationTests`)
 - [x] Rate limit and lockout verified by tests; register/forgot/resend responses don't reveal account existence — M2a
-- [ ] Responsive check at mobile/tablet/desktop widths; keyboard navigation
+- [~] Responsive check: every e2e runs at desktop and mobile (Pixel 7) widths ✓; keyboard reorder and player shortcuts ✓; tablet width not checked
 
 > 2026-10-22: no build work is left in M2b/M2c — the open items are tests and manual checks, deferred by the owner
 > ("development phase, no tests yet"). M4 was started on the owner's instruction before they were done.
 
 ---
 
-## M3 — Real media & playback 🟡 (backend verified by integration tests; browser/e2e not yet run)
+## M3 — Real media & playback 🟡 (verified by integration + e2e tests 2026-10-28; streaming-memory item open)
 
 Built first without tests (owner's request), then verified on 2026-10-20 with integration tests against
 real Postgres, MinIO and the real worker image (FFmpeg) — see progress.md. Includes the minimal catalog
@@ -124,7 +124,7 @@ slice M3 needs (self-serve artist, tracks); the rest of M2b/M2c is still open.
 
 - [x] `IObjectStorage` (S3 SDK) against MinIO; readiness check for storage
 - [x] Upload API: auth, owner check, size limit while streaming, declared-length check, signature sniff, server-generated keys, SHA-256
-- [~] Upload Studio UI: become an artist, create track, upload with progress/cancel, processing status (polling), delete (e2e written, not run)
+- [x] Upload Studio UI: become an artist, create track, upload with progress/cancel, processing status (polling), delete (upload → Ready covered by `player.spec.ts`)
 - [x] `VibeZone.Worker` + container with FFmpeg: job claiming (SKIP LOCKED), lease/heartbeat, retries, cancellation, concurrency limit, timeouts
       (fixed 2026-10-20: heartbeat vs. commit row-version conflict failed every job longer than lease/3)
 - [x] `ffprobe` validation (container/codec allow-list, duration limits) — reject invalid files
@@ -152,8 +152,8 @@ slice M3 needs (self-serve artist, tracks); the rest of M2b/M2c is still open.
       "memory stays flat for a large file" ✗ — streaming 48 MB allocated 67 MB in the test process (cause not yet identified)
 - [x] Private track stream by non-owner → 404; anonymous public stream works
 - [~] ≥ 50 MB / ≥ 30 min file: upload → Ready → range seek verified at API level; browser playback not run
-- [ ] E2E: upload in Studio → Ready → play/pause/seek/next with the global player; state survives navigation; keyboard-only operation
-      (`apps/web/e2e/player.spec.ts` written, **not run**)
+- [x] E2E: upload in Studio → Ready → play/pause/seek/next with the global player; state survives navigation; keyboard-only operation
+      (`apps/web/e2e/player.spec.ts`, desktop + mobile, 2026-10-28)
 - [x] Worker killed mid-job → job re-claimed after lease expiry and completes
 - [~] Docker images: worker image builds (Testcontainers); api/web images and compose stack not re-verified after these changes
 
@@ -162,7 +162,7 @@ slice M3 needs (self-serve artist, tracks); the rest of M2b/M2c is still open.
 
 ---
 
-## M4 — Social 🟡 (built 2026-10-22 without automated tests, owner's request — ADR-0012; smoke-tested by hand against the local API)
+## M4 — Social ✅ (built 2026-10-22 — ADR-0012; verified by integration + e2e tests 2026-10-28)
 
 - [x] Likes, follows (artist profiles), comments (timed, one reply level), listening history, recently played
 - [x] Play events ingestion with idempotency + valid-listen rules; trending from daily stats (Charts page, Home)
@@ -172,10 +172,10 @@ slice M3 needs (self-serve artist, tracks); the rest of M2b/M2c is still open.
 - [x] Admin dashboard (overview, users + roles, tracks, jobs, audit log) — `moderator` / `admin` policies
 
 **Acceptance criteria**
-- [ ] E2E: like/follow → counts and notifications update
-- [ ] E2E: report a track → moderator sees it → takedown makes it unplayable → audited
-- [ ] Duplicate play events don't double-count; valid-listen rule tests
-- [ ] Admin endpoints reject non-admins (tests for every endpoint)
+- [x] E2E: like/follow → counts and notifications update (`social.spec.ts`)
+- [x] E2E: report a track → moderator sees it → takedown makes it unplayable → audited (`social.spec.ts`)
+- [x] Duplicate play events don't double-count; valid-listen rule tests (`PlayEventTests`, `ValidListenRuleTests`)
+- [x] Admin endpoints reject non-admins (tests for every endpoint: `ModerationTests`)
 
 ---
 

@@ -108,7 +108,9 @@ public sealed class TrackUploadTests(MediaFixture media, MailpitFixture mail)
 
         Assert.Equal(HttpStatusCode.Forbidden, notArtist.StatusCode);
         Assert.Equal("artist_required", await notArtist.ProblemCodeAsync());
-        Assert.Equal("multipart_required", await json.ProblemCodeAsync());
+        // Routing rejects a body the endpoint doesn't accept before the handler runs.
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, json.StatusCode);
+        Assert.Equal("unsupported_media_type", await json.ProblemCodeAsync());
         Assert.Equal(HttpStatusCode.Unauthorized, noAuth.StatusCode);
     }
 

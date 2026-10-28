@@ -62,7 +62,11 @@ if (!generatingOpenApiDocument)
 
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = ctx =>
-    ctx.ProblemDetails.Extensions["traceId"] = System.Diagnostics.Activity.Current?.TraceId.ToString() ?? ctx.HttpContext.TraceIdentifier);
+{
+    ctx.ProblemDetails.Extensions["traceId"] = System.Diagnostics.Activity.Current?.TraceId.ToString() ?? ctx.HttpContext.TraceIdentifier;
+    VibeZone.Api.Web.BadRequests.AddFrameworkCode(ctx.ProblemDetails);
+});
+builder.Services.AddVibeZoneBadRequestHandling();
 builder.Services.AddOpenApi("v1");
 var cookieSecurity = CookieSecurity.From(builder.Configuration);
 builder.Services.AddVibeZoneAntiforgery(cookieSecurity);
@@ -78,6 +82,11 @@ var app = builder.Build();
 if (args.Contains(VibeZone.Api.DevSeed.Command))
 {
     return await VibeZone.Api.DevSeed.RunAsync(app);
+}
+
+if (args.Contains(VibeZone.Api.GrantRoleCommand.Command))
+{
+    return await VibeZone.Api.GrantRoleCommand.RunAsync(app, args);
 }
 
 if (!cookieSecurity.Secure)
