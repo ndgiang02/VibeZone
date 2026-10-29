@@ -33,7 +33,10 @@ insider with infrastructure access.
 3. API ↔ PostgreSQL / Redis / object storage — credentials from env/secret manager, private network.
 4. Worker ↔ uploaded media — **hostile input parsed by FFmpeg**; highest-risk boundary.
 5. API/Worker ↔ external services (SMTP, OAuth providers) — outbound only.
-6. CI/CD ↔ registry/production — supply chain.
+6. CI/CD ↔ registry/production — supply chain. Images are built only by CI on `main`, signed keylessly (cosign) with
+   SBOM/provenance; the deploy verifies the signatures, reaches AWS via GitHub OIDC (role limited to SSM Run Command
+   on the one instance, `production` environment only) and the host reads secrets from SSM Parameter Store with its
+   instance role. No long-lived AWS keys, no inbound SSH (ADR-0014).
 
 ## 4. STRIDE analysis
 
@@ -155,7 +158,10 @@ insider with infrastructure access.
   dev-only tooling (`eslint-config-next`, `shadcn` CLI). Not shipped in the production bundle
   (`npm audit --omit=dev` is clean; CI enforces that) and only processes repository-defined globs.
   Re-check when upstream publishes a fix.
-- GitHub Actions are pinned to major tags; SHA pinning + Dependabot in M5.
+- GitHub Actions are pinned to major tags (Dependabot updates them since M5); SHA pinning still open.
+- Single production host (ADR-0014): Postgres shares the machine with FFmpeg; a worker escape reaches the instance
+  role (media bucket, backup writes, SSM `/vibezone/prod` reads). Mitigated by non-root, no-new-privileges and
+  CPU/memory limits; a separate host or narrower worker credentials when budget allows.
 - `System.Security.Cryptography.Pkcs` is pinned to 10.0.13 (transitive via MailKit 4.18, which references a
   vulnerable 10.0.0). Remove the pin once MailKit ships a fixed dependency.
 - MinIO community image is maintained by a third party (see ADR-0003); local-only exposure.
@@ -243,6 +249,15 @@ insider with infrastructure access.
   type.
 - **Role bootstrap**: the `grant-role` operator command needs database access (same as the app), only grants
   Moderator/Admin to confirmed accounts, and is audited with `via=cli`. Its log line names the user id, not the email.
+- **Staff invitations** (`POST /admin/users`, Admin only, CSRF-protected): creates a Moderator/Admin account with
+  **no password** and an unconfirmed email, then emails a single-use link (`/accept-invite?userId&token`, Identity
+  user token bound to the security stamp, 24 h). Admins never see or set the password. `POST /auth/accept-invite`
+  (rate-limited) only works for an account that has no password yet, sets it, and confirms the email (the link proves
+  the mailbox); setting the password changes the security stamp, which spends the token. An existing email is refused
+  (`email_taken`, safe to reveal to admins, who can search users) so an invitation can never take over an account.
+  Audited as `user_invited`. Until accepted the account can't sign in; an expired link falls back to verify-email +
+  forgot-password. Risk accepted: an admin who mistypes an email gives that mailbox's owner the role — the pending
+  account shows as "not verified" in the user list and the role can be revoked.
 - **Malformed requests**: unreadable JSON, wrongly typed fields and missing bodies return 400 `request_invalid`
   (413 `request_too_large`) and a body the endpoint doesn't accept 415 `unsupported_media_type`, all as Problem
   Details without echoing the request — previously some of these surfaced as 500.

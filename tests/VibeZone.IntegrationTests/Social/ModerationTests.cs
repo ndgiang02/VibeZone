@@ -24,6 +24,7 @@ public sealed class ModerationTests : IAsyncDisposable
         { "GET", "/api/v1/admin/tracks" },
         { "GET", "/api/v1/admin/audit-log" },
         { "GET", "/api/v1/admin/users" },
+        { "POST", "/api/v1/admin/users" },
         { "PUT", $"/api/v1/admin/users/{Guid.NewGuid()}/roles/Moderator" },
         { "DELETE", $"/api/v1/admin/users/{Guid.NewGuid()}/roles/Moderator" },
         { "GET", "/api/v1/admin/jobs" },

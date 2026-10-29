@@ -38,6 +38,14 @@ internal sealed class AccountEmails(IEmailSender queue, IOptions<PublicUrlOption
         return SendAsync(account.Email, "password-changed", t.ChangedSubject, t.ChangedIntro, t.ChangedAction, link, t.ChangedFooter, cancellationToken);
     }
 
+    public Task SendStaffInviteAsync(Account account, string locale, string role, string token, CancellationToken cancellationToken)
+    {
+        var link = urls.Value.Link(locale, "accept-invite", new Dictionary<string, string> { ["userId"] = account.Id.ToString(), ["token"] = token });
+        var t = Text(locale);
+        var intro = string.Format(System.Globalization.CultureInfo.InvariantCulture, t.InviteIntro, role == Roles.Admin ? t.AdminRole : t.ModeratorRole, account.Handle);
+        return SendAsync(account.Email, "staff-invite", t.InviteSubject, intro, t.InviteAction, link, t.InviteFooter, cancellationToken);
+    }
+
     private async Task SendAsync(string to, string template, string subject, string intro, string action, string link, string footer, CancellationToken cancellationToken)
     {
         var text = $"{intro}\n\n{action}: {link}\n\n{footer}\n\n— VibeZone";
@@ -71,7 +79,8 @@ internal sealed class AccountEmails(IEmailSender queue, IOptions<PublicUrlOption
         string ExistsSubject, string ExistsIntro, string ExistsAction,
         string ResetSubject, string ResetIntro, string ResetAction, string ResetFooter,
         string ChangedSubject, string ChangedIntro, string ChangedAction, string ChangedFooter,
-        string IgnoreFooter)
+        string IgnoreFooter,
+        string InviteSubject, string InviteIntro, string InviteAction, string InviteFooter, string AdminRole, string ModeratorRole)
     {
         public static readonly Texts En = new(
             "Confirm your VibeZone email",
@@ -89,7 +98,13 @@ internal sealed class AccountEmails(IEmailSender queue, IOptions<PublicUrlOption
             "Your password was just changed and other devices were signed out. If this was you, no action is needed.",
             "Reset password",
             "If you didn't change it, reset your password immediately to secure your account.",
-            "If this wasn't you, you can safely ignore this email.");
+            "If this wasn't you, you can safely ignore this email.",
+            "You're invited to the VibeZone team",
+            "An administrator created a VibeZone account for you as {0} (handle @{1}). Choose a password to activate it.",
+            "Choose a password",
+            "This link expires in 24 hours and can be used once. If it expired, use \"Forgot password\" on the sign-in page. If you weren't expecting this, ignore this email.",
+            "Admin",
+            "Moderator");
 
         public static readonly Texts Vi = new(
             "Xác nhận email VibeZone của bạn",
@@ -107,7 +122,13 @@ internal sealed class AccountEmails(IEmailSender queue, IOptions<PublicUrlOption
             "Mật khẩu của bạn vừa được thay đổi và các thiết bị khác đã bị đăng xuất. Nếu đó là bạn, bạn không cần làm gì thêm.",
             "Đặt lại mật khẩu",
             "Nếu bạn không thực hiện thay đổi này, hãy đặt lại mật khẩu ngay để bảo vệ tài khoản.",
-            "Nếu đó không phải bạn, bạn có thể bỏ qua email này.");
+            "Nếu đó không phải bạn, bạn có thể bỏ qua email này.",
+            "Bạn được mời tham gia đội ngũ VibeZone",
+            "Quản trị viên đã tạo cho bạn một tài khoản VibeZone với vai trò {0} (tên người dùng @{1}). Hãy đặt mật khẩu để kích hoạt tài khoản.",
+            "Đặt mật khẩu",
+            "Liên kết có hiệu lực trong 24 giờ và chỉ dùng được một lần. Nếu đã hết hạn, hãy dùng \"Quên mật khẩu\" ở trang đăng nhập. Nếu bạn không mong đợi email này, hãy bỏ qua.",
+            "Quản trị viên",
+            "Kiểm duyệt viên");
     }
 }
 

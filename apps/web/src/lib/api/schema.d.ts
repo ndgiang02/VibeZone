@@ -375,6 +375,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/accept-invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Staff invitation: choose the first password with the emailed user id + token; confirms the email. Then sign in. */
+        post: operations["AcceptInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/reset-password": {
         parameters: {
             query?: never;
@@ -549,7 +566,8 @@ export interface paths {
         /** Admins. Newest first (paged). q matches handle, display name or email; role filters by role. */
         get: operations["AdminListUsers"];
         put?: never;
-        post?: never;
+        /** Admins. Create a Moderator/Admin account and email the invitee a link to choose a password (audited). */
+        post: operations["AdminInviteUser"];
         delete?: never;
         options?: never;
         head?: never;
@@ -581,7 +599,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all genres, ordered by name. */
+        /** List all genres, ordered by name, each with up to three covers of its newest public tracks. */
         get: operations["ListGenres"];
         put?: never;
         post?: never;
@@ -1287,6 +1305,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AcceptInviteRequest: {
+            /** Format: uuid */
+            userId: string;
+            token: null | string;
+            password: null | string;
+        };
         AddPlaylistTrackRequest: {
             /** Format: uuid */
             trackId: string;
@@ -1382,8 +1406,8 @@ export interface components {
             data: components["schemas"]["FollowedArtistDto"][];
             meta: components["schemas"]["ListMeta"];
         };
-        ApiListResponseOfGenreDto: {
-            data: components["schemas"]["GenreDto"][];
+        ApiListResponseOfGenreSummaryDto: {
+            data: components["schemas"]["GenreSummaryDto"][];
             meta: components["schemas"]["ListMeta"];
         };
         ApiListResponseOfGuid: {
@@ -1612,6 +1636,11 @@ export interface components {
             slug: string;
             name: string;
         };
+        GenreSummaryDto: {
+            slug: string;
+            name: string;
+            covers: string[];
+        };
         HistoryEntryDto: {
             /** Format: date-time */
             playedAt: string;
@@ -1622,6 +1651,13 @@ export interface components {
         ImageUrlsDto: {
             small: string;
             large: string;
+        };
+        InviteStaffRequest: {
+            email: null | string;
+            handle: null | string;
+            displayName: null | string;
+            role: null | string;
+            locale: null | string;
         };
         JobSummaryDto: {
             counts: {
@@ -2795,6 +2831,46 @@ export interface operations {
             };
         };
     };
+    AcceptInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     ResetPassword: {
         parameters: {
             query?: never;
@@ -3236,6 +3312,66 @@ export interface operations {
             };
         };
     };
+    AdminInviteUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteStaffRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponseOfAdminUserDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     AdminGrantRole: {
         parameters: {
             query?: never;
@@ -3369,7 +3505,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiListResponseOfGenreDto"];
+                    "application/json": components["schemas"]["ApiListResponseOfGenreSummaryDto"];
                 };
             };
         };

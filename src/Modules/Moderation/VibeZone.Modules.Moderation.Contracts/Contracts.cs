@@ -15,6 +15,7 @@ public static class AuditActions
 {
     public const string RoleGranted = "role_granted";
     public const string RoleRevoked = "role_revoked";
+    public const string UserInvited = "user_invited";
     public const string ReportDismissed = "report_dismissed";
     public const string ContentRemoved = "content_removed";
     public const string ContentRestored = "content_restored";

@@ -1,0 +1,102 @@
+name: Deploy
+
+# Manual, approved deploy of one commit to the production host (ADR-0014, docs/runbooks/deploy-aws.md).
+# Run it from the Actions tab on main; to roll back, enter an older commit sha. The images for that commit must
+# have been published (and signed) by CI. The `production` environment holds the AWS settings below and, on a
+# public repository, required reviewers (the approval step).
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full commit sha to deploy (empty = the selected branch head). An older sha rolls back.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+  id-token: write # GitHub OIDC → AWS role; no stored AWS keys
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://${{ vars.WEB_DOMAIN }}
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+      REGISTRY: ghcr.io/${{ github.repository_owner }}
+    steps:
+      - name: Resolve commit
+        id: commit
+        env:
+          INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          sha="${INPUT_SHA:-$GITHUB_SHA}"
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha must be a full 40-character commit sha"; exit 1; }
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: sigstore/cosign-installer@v3
+      - name: Images exist and were signed by CI on main
+        env:
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          for name in api migrator worker web; do
+            cosign verify "$REGISTRY/vibezone-$name:$SHA" \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+              --certificate-identity "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/ci.yml@refs/heads/main" \
+              > /dev/null
+            echo "verified vibezone-$name:$SHA"
+          done
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy on the instance (SSM Run Command)
+        env:
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          script="git -C /opt/vibezone fetch --quiet origin && git -C /opt/vibezone checkout --quiet --detach $SHA && /opt/vibezone/scripts/deploy/deploy.sh $SHA"
+          cmd_id="$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --comment "deploy ${SHA:0:12}" \
+            --parameters "$(jq -nc --arg s "$script" '{commands: [$s], executionTimeout: ["1500"]}')" \
+            --query Command.CommandId --output text)"
+          echo "SSM command $cmd_id"
+
+          status=Pending
+          for _ in $(seq 1 150); do
+            sleep 10
+            status="$(aws ssm get-command-invocation --command-id "$cmd_id" --instance-id "$INSTANCE_ID" \
+              --query Status --output text 2>/dev/null || echo Pending)"
+            case "$status" in Success|Failed|Cancelled|TimedOut) break ;; esac
+          done
+
+          aws ssm get-command-invocation --command-id "$cmd_id" --instance-id "$INSTANCE_ID" \
+            --query '[StandardOutputContent, StandardErrorContent]' --output text
+          echo "status: $status"
+          [ "$status" = Success ]
+
+      - name: Smoke test
+        env:
+          WEB_DOMAIN: ${{ vars.WEB_DOMAIN }}
+          API_DOMAIN: ${{ vars.API_DOMAIN }}
+        run: |
+          curl -fsS --retry 5 --retry-delay 5 -o /dev/null "https://$WEB_DOMAIN/"
+          curl -fsS --retry 5 --retry-delay 5 -o /dev/null "https://$API_DOMAIN/api/v1/genres"
+          echo "web and api reachable over HTTPS"

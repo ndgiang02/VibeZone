@@ -50,6 +50,15 @@ export function useSetRole() {
   });
 }
 
+export function useInviteStaff() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: Schemas["InviteStaffRequest"]) =>
+      unwrap(await api.POST("/api/v1/admin/users", { body })),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: adminKeys.all }),
+  });
+}
+
 export function useAdminTracks(q: string, takenDown: boolean | null, page: number) {
   return useQuery({
     queryKey: adminKeys.tracks(q, takenDown, page),

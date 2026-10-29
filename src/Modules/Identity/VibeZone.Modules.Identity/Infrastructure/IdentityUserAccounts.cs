@@ -12,6 +12,8 @@ internal sealed class IdentityUserAccounts(
     AppDbContext db,
     TimeProvider time) : IUserAccounts
 {
+    private const string InvitePurpose = "StaffInvite";
+
     // A real hash of a random password, computed once: verifying against it costs the same as a real login.
     private static readonly Lazy<string> DummyHash = new(() => new PasswordHasher<AppUser>().HashPassword(new AppUser(), Guid.NewGuid().ToString()));
 
@@ -27,7 +29,7 @@ internal sealed class IdentityUserAccounts(
         var user = new AppUser { UserName = account.Handle, Email = account.Email, CreatedAt = now };
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var result = await users.CreateAsync(user, account.Password);
+        var result = account.Password is null ? await users.CreateAsync(user) : await users.CreateAsync(user, account.Password);
         if (!result.Succeeded)
         {
             return MapErrors(result);
@@ -108,6 +110,23 @@ internal sealed class IdentityUserAccounts(
         return Result.Failure(result.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.PasswordMismatch))
             ? DomainError.Validation("current_password_incorrect", "Current password is incorrect.", "currentPassword")
             : MapErrors(result, "newPassword"));
+    }
+
+    public async Task<string> CreateInviteTokenAsync(Guid userId, CancellationToken cancellationToken) =>
+        await users.GenerateUserTokenAsync(await RequireAsync(userId), TokenOptions.DefaultProvider, InvitePurpose);
+
+    public async Task<Result> AcceptInviteAsync(Guid userId, string token, string password, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId.ToString());
+        if (user is null || await users.HasPasswordAsync(user) || !await users.VerifyUserTokenAsync(user, TokenOptions.DefaultProvider, InvitePurpose, token))
+        {
+            return Result.Failure(AccountService.InvalidToken);
+        }
+
+        // Saved together with the password; the new security stamp spends the token.
+        user.EmailConfirmed = true;
+        var result = await users.AddPasswordAsync(user, password);
+        return result.Succeeded ? Result.Success() : Result.Failure(MapErrors(result));
     }
 
     public Task<IReadOnlyList<string>> GetRolesAsync(Guid userId, CancellationToken cancellationToken) =>

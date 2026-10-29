@@ -39,6 +39,9 @@ export const libraryNav = [
 
 export type UpcomingKey = "yourFm" | "forYou" | "ranking" | "downloads";
 
+/** Hidden for now: the "Soon" entries cluttered the sidebar. Flip to show the roadmap again. */
+export const showUpcoming = false;
+
 /**
  * Planned destinations without a page yet. Rendered as disabled "Soon" entries (never links), so the
  * sidebar shows the roadmap without pretending the feature works. Move an item to a real list in the

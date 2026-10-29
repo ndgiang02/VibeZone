@@ -11,6 +11,9 @@ public sealed record EmailOnlyRequest(string? Email, string? Locale);
 
 public sealed record ResetPasswordRequest(string? Email, string? Token, string? NewPassword);
 
+/// <summary>Accepting a staff invitation: the link's user id and token, and the first password.</summary>
+public sealed record AcceptInviteRequest(Guid UserId, string? Token, string? Password);
+
 public sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
 
 /// <summary>
@@ -140,6 +143,18 @@ public sealed class AccountService(
         await sessions.RevokeAllAsync(account.Id, exceptSessionId: null, time.GetUtcNow(), cancellationToken);
         await emails.SendPasswordChangedAsync(account, await LocaleOfAsync(account.Id, null, cancellationToken), cancellationToken);
         return Result.Success();
+    }
+
+    public async Task<Result> AcceptInviteAsync(AcceptInviteRequest request, CancellationToken cancellationToken)
+    {
+        if (Validation.Password(request.Password) is { } invalid)
+        {
+            return Result.Failure(invalid);
+        }
+
+        return string.IsNullOrEmpty(request.Token)
+            ? Result.Failure(InvalidToken)
+            : await accounts.AcceptInviteAsync(request.UserId, request.Token, request.Password!, cancellationToken);
     }
 
     public async Task<Result> ChangePasswordAsync(Guid userId, Guid currentSessionId, ChangePasswordRequest request, CancellationToken cancellationToken)

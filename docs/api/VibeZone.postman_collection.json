@@ -115,6 +115,10 @@
       "value": ""
     },
     {
+      "key": "inviteToken",
+      "value": ""
+    },
+    {
       "key": "newPassword",
       "value": "another long passphrase 2"
     },
@@ -264,6 +268,7 @@
                   "    if (param(\"userId\")) pm.collectionVariables.set(\"userId\", param(\"userId\"));",
                   "    if (link.includes(\"verify-email\")) pm.collectionVariables.set(\"verifyToken\", param(\"token\"));",
                   "    if (link.includes(\"reset-password\")) pm.collectionVariables.set(\"resetToken\", param(\"token\"));",
+                  "    if (link.includes(\"accept-invite\")) pm.collectionVariables.set(\"inviteToken\", param(\"token\"));",
                   "    pm.test(\"link parsed\", () => pm.expect(param(\"token\")).to.not.be.empty);",
                   "  });",
                   "}"
@@ -635,6 +640,43 @@
             },
             "description": "204. Signs out ALL sessions (web and app). 400 token_invalid, password_too_short, password_too_long."
           }
+        },
+        {
+          "name": "Accept staff invitation",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"token\": \"{{inviteToken}}\",\n  \"password\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/accept-invite",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "accept-invite"
+              ]
+            },
+            "description": "A Moderator/Admin created by an admin (Admin → Invite staff) sets the first password from the emailed link https://<web>/{locale}/accept-invite?userId=…&token=… (24 h, single use). Confirms the email; then sign in. 400 token_invalid, password_too_short. Use the Mailpit helper with {{email}} = the invitee to grab inviteToken locally."
+          }
         }
       ]
     },
@@ -914,7 +956,7 @@
                 "genres"
               ]
             },
-            "description": "Public reference data: data[] {slug, name}, meta."
+            "description": "Public reference data: data[] {slug, name, covers[]}, meta. covers = small cover URLs of up to 3 of the genre's newest public tracks (newest first; relative to baseUrl), for a stacked-artwork tile; [] when none."
           }
         },
         {
@@ -3014,6 +3056,40 @@
                 }
               ]
             }
+          }
+        },
+        {
+          "name": "Invite staff",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new-mod@example.test\",\n  \"handle\": \"newmod\",\n  \"displayName\": \"New Mod\",\n  \"role\": \"Moderator\",\n  \"locale\": \"vi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users"
+              ]
+            },
+            "description": "201 AdminUserDto. Creates a Moderator/Admin account without a password and emails the invitee a link to choose one (see Auth → Accept staff invitation). 409 email_taken (grant the role instead), 409 handle_taken, 400 role_not_assignable / email_invalid / handle_invalid. Audited user_invited."
           }
         },
         {

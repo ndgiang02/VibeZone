@@ -1,0 +1,26 @@
+# Weekly dependency updates (M5). Grouped so each ecosystem opens at most one PR per week; CI must pass.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      nuget: { patterns: ["*"] }
+
+  - package-ecosystem: npm
+    directory: /apps/web
+    schedule: { interval: weekly }
+    groups:
+      npm: { patterns: ["*"] }
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      actions: { patterns: ["*"] }
+
+  - package-ecosystem: docker
+    directories: ["/src/VibeZone.Api", "/src/VibeZone.Worker", "/apps/web"]
+    schedule: { interval: weekly }
+    groups:
+      base-images: { patterns: ["*"] }

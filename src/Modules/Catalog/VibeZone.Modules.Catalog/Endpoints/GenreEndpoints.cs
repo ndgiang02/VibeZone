@@ -15,10 +15,10 @@ internal static class GenreEndpoints
 
         genres.MapGet("/", ListGenres)
             .WithName("ListGenres")
-            .WithSummary("List all genres, ordered by name.");
+            .WithSummary("List all genres, ordered by name, each with up to three covers of its newest public tracks.");
     }
 
-    private static async Task<Ok<ApiListResponse<GenreDto>>> ListGenres(IGenreQueries queries, HttpContext http, CancellationToken cancellationToken)
+    private static async Task<Ok<ApiListResponse<GenreSummaryDto>>> ListGenres(IGenreQueries queries, HttpContext http, CancellationToken cancellationToken)
     {
         var items = await queries.ListAsync(cancellationToken);
         http.Response.Headers.CacheControl = "public, max-age=300";

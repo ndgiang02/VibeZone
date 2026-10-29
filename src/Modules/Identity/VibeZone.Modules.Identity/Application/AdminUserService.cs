@@ -1,3 +1,4 @@
+using VibeZone.Modules.Identity.Domain;
 using VibeZone.Modules.Moderation.Contracts;
 using VibeZone.SharedKernel;
 
@@ -29,7 +30,11 @@ public interface IUserAdministration
     Task SetRoleAsync(Guid userId, string role, bool member, CancellationToken cancellationToken);
 }
 
-public sealed class AdminUserService(IUserAdministration users, IAuditLog audit)
+/// <param name="Role">Moderator or Admin.</param>
+/// <param name="Locale">Language of the invitation email (and the new profile).</param>
+public sealed record InviteStaffRequest(string? Email, string? Handle, string? DisplayName, string? Role, string? Locale);
+
+public sealed class AdminUserService(IUserAdministration users, IUserAccounts accounts, IAccountEmails emails, IAuditLog audit)
 {
     /// <summary>Roles staff can assign. Artist comes with an artist profile (self-serve) and isn't assigned by hand.</summary>
     public static readonly IReadOnlyList<string> AssignableRoles = [Roles.Moderator, Roles.Admin];
@@ -65,6 +70,46 @@ public sealed class AdminUserService(IUserAdministration users, IAuditLog audit)
         }
 
         return await users.FindAsync(userId, cancellationToken) is { } updated ? updated : UserNotFound;
+    }
+
+    /// <summary>
+    /// Creates a staff account with the role and emails the invitee a single-use link to choose a password. The
+    /// account has no password (it can't sign in) and an unconfirmed email until the link is used; admins never
+    /// see or set it. Audited as <c>user_invited</c>.
+    /// </summary>
+    public async Task<Result<AdminUserDto>> InviteAsync(Guid actorUserId, InviteStaffRequest request, CancellationToken cancellationToken)
+    {
+        var role = NormalizeRole(request.Role);
+        var email = Validation.NormalizeEmail(request.Email);
+        var handle = Handle.Normalize(request.Handle);
+        var displayName = UserProfile.NormalizeDisplayName(string.IsNullOrWhiteSpace(request.DisplayName) ? handle : request.DisplayName);
+        var locale = Locales.Normalize(request.Locale);
+        var invalid = Validation.Email(email) ?? Handle.Validate(handle) ?? UserProfile.ValidateDisplayName(displayName)
+            ?? (role is not null && AssignableRoles.Contains(role) ? null : DomainError.Validation("role_not_assignable", "Only Moderator and Admin can be assigned.", "role"));
+        if (invalid is not null)
+        {
+            return invalid;
+        }
+
+        // Admins can already look accounts up by email, so saying it exists leaks nothing.
+        if (await accounts.FindByEmailAsync(email, cancellationToken) is not null)
+        {
+            return DomainError.Conflict("email_taken", "An account with this email already exists. Grant the role from the user list.", "email");
+        }
+
+        var created = await accounts.CreateAsync(new NewAccount(email, handle, null, displayName, locale), cancellationToken);
+        if (!created.IsSuccess)
+        {
+            return created.Error;
+        }
+
+        var account = created.Value;
+        audit.Stage(actorUserId, AuditActions.UserInvited, "user", account.Id.ToString(), new Dictionary<string, string> { ["role"] = role! });
+        await users.SetRoleAsync(account.Id, role!, true, cancellationToken);
+
+        var token = await accounts.CreateInviteTokenAsync(account.Id, cancellationToken);
+        await emails.SendStaffInviteAsync(account, locale, role!, token, cancellationToken);
+        return await users.FindAsync(account.Id, cancellationToken) is { } user ? user : UserNotFound;
     }
 
     /// <summary>

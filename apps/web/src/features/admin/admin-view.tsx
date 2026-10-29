@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Flag, ShieldAlert, Users } from "lucide-react";
+import { Activity, Flag, ShieldAlert, UserPlus, Users } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 import { EmptyState, ErrorState, Skeleton } from "@/components/states/states";
@@ -248,6 +248,12 @@ function UsersPanel() {
             </option>
           ))}
         </select>
+        <Button asChild className="ml-auto">
+          <Link href="/admin/invite">
+            <UserPlus aria-hidden="true" />
+            {t("invite")}
+          </Link>
+        </Button>
       </div>
       {setRoleMutation.isError ? (
         <p role="alert" className="text-sm text-destructive">

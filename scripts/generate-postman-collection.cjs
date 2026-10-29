@@ -106,6 +106,7 @@ if (refresh && !url.includes("/auth/") && Date.now() > expiresAt - 30000) {
     { key: "userId", value: "" },
     { key: "verifyToken", value: "" },
     { key: "resetToken", value: "" },
+    { key: "inviteToken", value: "" },
     { key: "newPassword", value: "another long passphrase 2" },
     { key: "artistSlug", value: "appuser" },
     { key: "artistId", value: "", description: "Set by \"My artist profile\" / \"Become an artist\"" },
@@ -150,6 +151,7 @@ if (list.length) {
     if (param("userId")) pm.collectionVariables.set("userId", param("userId"));
     if (link.includes("verify-email")) pm.collectionVariables.set("verifyToken", param("token"));
     if (link.includes("reset-password")) pm.collectionVariables.set("resetToken", param("token"));
+    if (link.includes("accept-invite")) pm.collectionVariables.set("inviteToken", param("token"));
     pm.test("link parsed", () => pm.expect(param("token")).to.not.be.empty);
   });
 }`),
@@ -199,6 +201,11 @@ pm.collectionVariables.set("refreshToken", "");`),
           body: json({ email: "{{email}}", token: "{{resetToken}}", newPassword: "{{newPassword}}" }),
           description: "204. Signs out ALL sessions (web and app). 400 token_invalid, password_too_short, password_too_long.",
         }),
+        req("Accept staff invitation", "POST", "/api/v1/auth/accept-invite", {
+          auth: noauth,
+          body: json({ userId: "{{userId}}", token: "{{inviteToken}}", password: "{{newPassword}}" }),
+          description: "A Moderator/Admin created by an admin (Admin → Invite staff) sets the first password from the emailed link https://<web>/{locale}/accept-invite?userId=…&token=… (24 h, single use). Confirms the email; then sign in. 400 token_invalid, password_too_short. Use the Mailpit helper with {{email}} = the invitee to grab inviteToken locally.",
+        }),
       ],
     },
     {
@@ -239,7 +246,7 @@ if (other) pm.collectionVariables.set("sessionId", other.id);`),
     {
       name: "Catalog",
       item: [
-        req("Genres", "GET", "/api/v1/genres", { auth: noauth, description: "Public reference data: data[] {slug, name}, meta." }),
+        req("Genres", "GET", "/api/v1/genres", { auth: noauth, description: "Public reference data: data[] {slug, name, covers[]}, meta. covers = small cover URLs of up to 3 of the genre's newest public tracks (newest first; relative to baseUrl), for a stacked-artwork tile; [] when none." }),
         req("New releases", "GET", "/api/v1/tracks", { auth: noauth, query: [{ key: "page", value: "1" }, { key: "pageSize", value: "20" }], description: "Public, ready tracks, newest first. data[] + meta {page, pageSize, total, hasMore}; load the next page while hasMore." }),
         req("Track by id", "GET", "/api/v1/tracks/{{trackId}}", {
           description: "Public/unlisted tracks for everyone; private/processing tracks only for the owner (else 404). Includes status, durationMs, playable.",
@@ -552,6 +559,10 @@ Signed-out players may send clientId (a random UUID kept on the device) so their
       description: "Admin role only (403 otherwise).",
       item: [
         req("Users", "GET", "/api/v1/admin/users", { query: [{ key: "q", value: "" }, { key: "role", value: "" }, { key: "page", value: "1" }] }),
+        req("Invite staff", "POST", "/api/v1/admin/users", {
+          body: json({ email: "new-mod@example.test", handle: "newmod", displayName: "New Mod", role: "Moderator", locale: "vi" }),
+          description: "201 AdminUserDto. Creates a Moderator/Admin account without a password and emails the invitee a link to choose one (see Auth → Accept staff invitation). 409 email_taken (grant the role instead), 409 handle_taken, 400 role_not_assignable / email_invalid / handle_invalid. Audited user_invited.",
+        }),
         req("Grant role", "PUT", "/api/v1/admin/users/{{targetUserId}}/roles/Moderator", { description: "Moderator or Admin. Idempotent, audited, effective immediately." }),
         req("Revoke role", "DELETE", "/api/v1/admin/users/{{targetUserId}}/roles/Moderator", { description: "400 role_self_admin when removing your own Admin." }),
         req("All tracks", "GET", "/api/v1/admin/tracks", {

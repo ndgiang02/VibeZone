@@ -1,0 +1,54 @@
+# Edge reverse proxy — production (ADR-0002, ADR-0011, ADR-0014). Same routing as the local Caddyfile, plus
+# automatic HTTPS from Let's Encrypt for both host names:
+#   WEB_DOMAIN (browsers):  /api/*, /hubs/* → API; everything else → Next.js (single origin for cookies).
+#   API_DOMAIN (apps):      /api/*, /hubs/* → API only.
+{
+	admin off
+	email {$ACME_EMAIL}
+	# Caddy is the edge: it ignores incoming X-Forwarded-* and sets fresh ones for the upstreams.
+}
+
+(api_upstream) {
+	@api path /api/* /hubs/*
+	handle @api {
+		# Media:MaxUploadBytes is 200 MB; the API enforces the exact limit while reading.
+		request_body {
+			max_size 210MB
+		}
+		reverse_proxy api:8080 {
+			flush_interval -1
+		}
+	}
+}
+
+(edge_headers) {
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+}
+
+{$WEB_DOMAIN} {
+	import api_upstream
+
+	handle {
+		reverse_proxy web:3000
+	}
+
+	import edge_headers
+}
+
+{$API_DOMAIN} {
+	import api_upstream
+
+	handle {
+		respond 404
+	}
+
+	import edge_headers
+}
+
+# Container healthcheck only; port 8080 is not published.
+:8080 {
+	respond /healthz "ok" 200
+}

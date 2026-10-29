@@ -1041,6 +1041,50 @@
         }
       }
     },
+    "/api/v1/auth/accept-invite": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Staff invitation: choose the first password with the emailed user id + token; confirms the email. Then sign in.",
+        "operationId": "AcceptInvite",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptInviteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/auth/reset-password": {
       "post": {
         "tags": [
@@ -1567,6 +1611,75 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Admins. Create a Moderator/Admin account and email the invitee a link to choose a password (audited).",
+        "operationId": "AdminInviteUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteStaffRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfAdminUserDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/users/{userId}/roles/{role}": {
@@ -1732,7 +1845,7 @@
         "tags": [
           "Catalog"
         ],
-        "summary": "List all genres, ordered by name.",
+        "summary": "List all genres, ordered by name, each with up to three covers of its newest public tracks.",
         "operationId": "ListGenres",
         "responses": {
           "200": {
@@ -1740,7 +1853,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiListResponseOfGenreDto"
+                  "$ref": "#/components/schemas/ApiListResponseOfGenreSummaryDto"
                 }
               }
             }
@@ -4409,6 +4522,32 @@
   },
   "components": {
     "schemas": {
+      "AcceptInviteRequest": {
+        "required": [
+          "userId",
+          "token",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "token": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "password": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AddPlaylistTrackRequest": {
         "required": [
           "trackId"
@@ -4796,7 +4935,7 @@
           }
         }
       },
-      "ApiListResponseOfGenreDto": {
+      "ApiListResponseOfGenreSummaryDto": {
         "required": [
           "data",
           "meta"
@@ -4806,7 +4945,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/GenreDto"
+              "$ref": "#/components/schemas/GenreSummaryDto"
             }
           },
           "meta": {
@@ -5719,6 +5858,28 @@
           }
         }
       },
+      "GenreSummaryDto": {
+        "required": [
+          "slug",
+          "name",
+          "covers"
+        ],
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "covers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "HistoryEntryDto": {
         "required": [
           "playedAt",
@@ -5751,6 +5912,48 @@
           },
           "large": {
             "type": "string"
+          }
+        }
+      },
+      "InviteStaffRequest": {
+        "required": [
+          "email",
+          "handle",
+          "displayName",
+          "role",
+          "locale"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "handle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "role": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "locale": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

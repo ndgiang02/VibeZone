@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 
-export type Genre = components["schemas"]["GenreDto"];
+export type Genre = components["schemas"]["GenreSummaryDto"];
 
 export const genreKeys = { all: ["genres"] as const };
 

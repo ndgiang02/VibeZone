@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { demoPlaylists } from "@/features/showcase/data";
 import { DemoBadge } from "@/features/showcase/demo-badge";
 import { showcaseEnabled } from "@/features/showcase/showcase";
-import { upcomingLibrary, upcomingMenu, type UpcomingKey } from "./nav-items";
+import { showUpcoming, upcomingLibrary, upcomingMenu, type UpcomingKey } from "./nav-items";
 import { NavLinks } from "./nav-links";
 import { SidebarPlaylists } from "./sidebar-playlists";
 import { StaffLinks } from "./staff-links";
@@ -32,14 +32,14 @@ export function Sidebar() {
           <nav aria-label={t("nav.primary")} className="flex flex-col gap-1">
             <NavLinks variant="sidebar" />
             <NavLinks variant="sidebar" list="menu" />
-            <UpcomingList items={upcomingMenu} />
+            {showUpcoming ? <UpcomingList items={upcomingMenu} /> : null}
           </nav>
         </SidebarSection>
 
         <SidebarSection title={t("nav.library")}>
           <nav aria-label={t("nav.library")} className="flex flex-col gap-1">
             <NavLinks variant="sidebar" list="library" />
-            <UpcomingList items={upcomingLibrary} />
+            {showUpcoming ? <UpcomingList items={upcomingLibrary} /> : null}
           </nav>
         </SidebarSection>
 

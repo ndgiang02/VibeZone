@@ -16,6 +16,10 @@ internal static class AdminEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized).ProducesProblem(StatusCodes.Status403Forbidden);
         admin.MapGet("/", List).WithName("AdminListUsers").Produces<ApiListResponse<AdminUserDto>>()
             .WithSummary("Admins. Newest first (paged). q matches handle, display name or email; role filters by role.");
+        admin.MapPost("/", Invite).WithName("AdminInviteUser")
+            .Produces<ApiResponse<AdminUserDto>>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .WithSummary("Admins. Create a Moderator/Admin account and email the invitee a link to choose a password (audited).");
         admin.MapPut("/{userId:guid}/roles/{role}", Grant).WithName("AdminGrantRole")
             .Produces<ApiResponse<AdminUserDto>>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
             .WithSummary("Admins. Grant Moderator or Admin (idempotent, audited).");
@@ -26,6 +30,9 @@ internal static class AdminEndpoints
 
     private static async Task<IResult> List(string? q, string? role, int? page, int? pageSize, AdminUserService admin, CancellationToken ct) =>
         ApiResults.Page(await admin.ListAsync(q, role, new PageRequest(page, pageSize), ct));
+
+    private static async Task<IResult> Invite(InviteStaffRequest request, AdminUserService admin, ICurrentUser user, CancellationToken ct) =>
+        (await admin.InviteAsync(user.RequireUserId(), request, ct)).ToResult(dto => ApiResults.Created($"/api/v1/admin/users?q={Uri.EscapeDataString(dto.Email)}", dto));
 
     private static async Task<IResult> Grant(Guid userId, string role, AdminUserService admin, ICurrentUser user, CancellationToken ct) =>
         (await admin.SetRoleAsync(user.RequireUserId(), userId, role, grant: true, ct)).ToResult(ApiResults.Ok);

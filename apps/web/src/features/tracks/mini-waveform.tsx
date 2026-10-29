@@ -10,6 +10,8 @@ import { durationMsOf, type Track, useWaveform } from "./api";
 const BARS = 64;
 const WIDTH = BARS * 4;
 const HEIGHT = 40;
+/** Bars rise from this line; below it sits their dim reflection. */
+const BASELINE = 26;
 
 /** Max peak per bucket, scaled so the loudest bar fills the height (peaks are 0–1 from the worker). */
 function toBars(peaks: number[]) {
@@ -166,15 +168,20 @@ export function MiniWaveform({
   );
 }
 
+/** Each bar rises from the baseline, with a shorter, faded mirror image below it. */
 function Bars({ bars, className, clipPath }: { bars: number[]; className: string; clipPath?: string }) {
   return (
     <g className={className} clipPath={clipPath}>
       {bars.map((value, i) => {
-        const height = Math.max(2, value * (HEIGHT - 4));
-        return (
-          <rect key={i} x={i * 4 + 0.8} y={(HEIGHT - height) / 2} width={2.4} height={height} rx={1.2} />
-        );
+        const height = Math.max(1.5, value * (BASELINE - 1));
+        return <rect key={i} x={i * 4 + 0.8} y={BASELINE - height} width={2.4} height={height} rx={1.2} />;
       })}
+      <g opacity={0.3}>
+        {bars.map((value, i) => {
+          const height = Math.max(1, value * (HEIGHT - BASELINE - 2));
+          return <rect key={i} x={i * 4 + 0.8} y={BASELINE + 1} width={2.4} height={height} rx={1.2} />;
+        })}
+      </g>
     </g>
   );
 }

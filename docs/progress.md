@@ -3,6 +3,72 @@
 Newest first. Each entry records what was done, **how it was verified** (actual commands and
 results), known issues and next steps.
 
+## 2026-10-29 — M5 (part): CI/CD and AWS deployment prepared; "Soon" menu entries hidden
+
+**Decision taken with project owner**: deploy to AWS on 100 USD credit expiring in ~2 months → one EC2 t4g.medium +
+S3 + SES, no auto scaling (cost ~2× budget, code is single-instance). Repository may be made public. Recorded in
+ADR-0014. Domain not chosen yet.
+
+**Done**
+- `docker-compose.prod.yml` (GHCR images by sha, Caddy auto-HTTPS on 80/443 only, fixed proxy IP for
+  `ReverseProxy:KnownProxies`, `SecureCookies=true`, S3 via instance role, SES SMTP), `infra/caddy/Caddyfile.prod`
+  (+HSTS), `.env.production.example`, `scripts/deploy/{deploy,backup-db}.sh`.
+- `StorageOptions`: access/secret key optional on AWS (SDK default chain = instance role); still required with
+  `ServiceUrl` (MinIO); half a key pair rejected. Unit tests `StorageOptionsTests`.
+- CI: PR image build now includes the worker; new `publish` job on `main` (after e2e): arm64 images → GHCR, sha tag,
+  SBOM + provenance, cosign keyless signature, Trivy gate. `deploy.yml` (manual, `production` environment, cosign
+  verify, GitHub OIDC → SSM Run Command, smoke test). `security.yml` (gitleaks, full history, weekly). Dependabot.
+- Docs: ADR-0014, `docs/runbooks/deploy-aws.md` (AWS setup, IAM policies, deploy, rollback, backup/restore drill,
+  credit-expiry teardown), operations.md, security.md.
+- Web: sidebar "Soon" entries (Your FM, For you, My ranking, Downloads) hidden behind `showUpcoming = false`.
+
+**Verification (actually run)**
+- `dotnet build VibeZone.slnx -warnaserror` ✓ · `dotnet format --verify-no-changes` ✓ · unit **100/100** ·
+  architecture **34/34**.
+- gitleaks v8.21.2 over the full history: 9 commits, **no leaks** (uncommitted changes not scanned).
+- `docker compose -f docker-compose.prod.yml config` with sample values ✓; `caddy validate` (2.11.7) on
+  Caddyfile.prod ✓; shellcheck 0.10.0 on both deploy scripts ✓; actionlint 1.7.4: new workflows clean (one
+  pre-existing SC2034 warning in the e2e MinIO wait loop).
+- Web: `npm run typecheck` ✓, eslint + prettier on `src/components/shell` ✓.
+- **Not run**: the workflows on GitHub (CI has never run there), arm64 image builds, any AWS step, a deploy,
+  a restore drill; integration/e2e suites; browser check of the sidebar.
+
+**Known issues / next**
+- Owner: pick a domain, then follow the runbook §0–3; make the repo and GHCR packages public.
+- M5 still open: authz matrix/CSRF/header/upload-fuzz tests, dashboards/alerts, remaining runbooks, executed restore
+  drill, load tests, startup guard against `SecureCookies=false` outside localhost, Actions SHA pinning.
+
+## 2026-10-29 — Staff invitations, genre cover stacks, waveform redesign (owner's request)
+
+**Done**
+- **Staff invitations**: admin page `/admin/invite` (button "Invite staff" in Admin → Users) creates a Moderator/Admin
+  account and emails the invitee a link to `/accept-invite`, where they choose their password (owner chose "invite by
+  email" over admin-set passwords or a first-run setup page). API `POST /api/v1/admin/users`,
+  `POST /api/v1/auth/accept-invite`; audit action `user_invited`; new error code `email_taken`. The first Admin is
+  still bootstrapped with `grant-role`. Security notes in security.md §12.
+- **Genre tiles**: `GET /api/v1/genres` now returns `covers` (small cover URLs of up to 3 of the genre's newest listed
+  tracks with artwork; schema `GenreSummaryDto`). The tile fans those real covers out as a stack; a genre without
+  any shows only its gradient and a faint icon. The decorative `/public/artwork` pictures are no longer used for genres.
+- **Waveform**: track-page waveform redrawn — thicker rounded bars mirrored around a centre line (bright crest, dim
+  reflection), lime played part, playhead cursor when bound to the player, hover line with time, current/total time
+  labels. List mini-waveforms rise from a baseline with a faded reflection. Still drawn from the worker's peaks only.
+- Postman collection regenerated (104 requests).
+
+**Verification (actually run)**
+- `dotnet build VibeZone.slnx -warnaserror` ✓ · `dotnet format --verify-no-changes` ✓
+- Unit 97/97 · architecture 34/34 · integration without the Media namespace **100/100**, including new
+  `StaffInviteTests` (invite → email → wrong/weak/valid/reused token → sign in with the role → audit; validation and
+  no takeover of existing accounts; no accept for self-registered accounts), `GenreCoverTests` (newest 3 listed covers;
+  private/unlisted/taken-down/no-artwork excluded) and the staff-endpoint 401/403 theory with the new endpoint.
+- Web: typecheck, lint, format ✓ · `npm test` 38/38 · `npm run build` ✓.
+- **Not run**: Playwright e2e (the owner's Compose `app` stack was running on port 5080 and was left untouched);
+  visual check of the new waveform/genre tiles in a browser.
+
+**Known issues / next**
+- No "resend invitation" action; an expired invite goes through verify-email + forgot-password.
+- Genre list is cached 5 min (`public, max-age=300`): a newly removed track's cover can linger that long on a tile
+  (the artwork endpoint itself enforces visibility).
+
 ## 2026-10-28 — M2–M4 verification: tests written and run, bugs fixed
 
 **Done**

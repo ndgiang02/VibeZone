@@ -162,6 +162,16 @@
       "successBody": "You've been signed out of all devices. Sign in with your new password.",
       "successCta": "Sign in",
       "missing": "This reset link is incomplete. Request a new one."
+    },
+    "invite": {
+      "title": "Join the VibeZone team",
+      "subtitle": "Choose a password to activate the staff account an administrator created for you.",
+      "submit": "Activate account",
+      "successTitle": "Your account is ready",
+      "successBody": "Sign in with your email and the password you just chose.",
+      "successCta": "Sign in",
+      "missing": "This invitation link is incomplete. Open the link from the email again.",
+      "expiredHint": "Invitation links last 24 hours. Use “Forgot password” on the sign-in page, or ask an administrator."
     }
   },
   "settings": {
@@ -303,7 +313,8 @@
     "restore_not_supported": "Only tracks and playlists can be restored.",
     "role_not_assignable": "Only Moderator and Admin can be assigned.",
     "role_self_admin": "You can't remove your own Admin role.",
-    "user_not_found": "That user doesn't exist."
+    "user_not_found": "That user doesn't exist.",
+    "email_taken": "An account with this email already exists. Grant the role from the user list."
   },
   "notFound": {
     "title": "Page not found",
@@ -792,7 +803,8 @@
       "unverified": "not verified",
       "selfAdmin": "You can't remove your own Admin role.",
       "grant": "+ {role}",
-      "revoke": "{role} ✓"
+      "revoke": "{role} ✓",
+      "invite": "Invite staff"
     },
     "tracks": {
       "search": "Search by title",
@@ -825,6 +837,21 @@
       "action": "Action",
       "subject": "Subject",
       "details": "Details"
+    },
+    "invite": {
+      "title": "Invite a staff member",
+      "subtitle": "Create a Moderator or Admin account. They get an email to choose their own password — you never see it.",
+      "role": "Role",
+      "roleHint": {
+        "Moderator": "Reviews reports and removes or restores content.",
+        "Admin": "Everything a moderator can do, plus users, roles and system status."
+      },
+      "submit": "Send invitation",
+      "note": "The link in the email works once and expires after 24 hours. The account can't sign in until it's used.",
+      "successTitle": "Invitation sent",
+      "successBody": "{email} will get an email to activate their {role} account.",
+      "another": "Invite someone else",
+      "back": "Back to admin"
     }
   }
 }

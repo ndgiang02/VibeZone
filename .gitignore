@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 # Machine-specific Compose tweaks (e.g. exposing the proxy on a LAN IP)
 docker-compose.override.yml
 *.pfx

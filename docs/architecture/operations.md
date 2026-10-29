@@ -9,9 +9,9 @@ monitoring, runbooks) are planned for M5 and listed here so earlier milestones b
 | Environment | Purpose | State |
 |---|---|---|
 | Local | Docker Compose dependencies + apps run on the host | **Available (M0)** |
-| CI | Build, lint, tests (Testcontainers), e2e, image build — `.github/workflows/ci.yml` | **Defined (M1)**, not yet run on GitHub; hardening in M5 |
-| Staging | Production-like, restore drills, load tests | M5 |
-| Production | TLS, secret manager, monitoring, backups | M5 — not available |
+| CI | Build, lint, tests (Testcontainers), e2e; on `main` publishes signed arm64 images to GHCR — `.github/workflows/ci.yml`; secret scan `security.yml`; Dependabot | **Defined (M1, publish M5)**, not yet run on GitHub |
+| Staging | Production-like, restore drills, load tests | M5 — skipped for now (budget, ADR-0014) |
+| Production | One EC2 host + S3 + SES, `docker-compose.prod.yml`, manual deploy via SSM ([ADR-0014](../adr/0014-single-host-aws-deployment.md), [runbook](../runbooks/deploy-aws.md)) | **Prepared (M5)**, no AWS resources yet |
 
 ## Local dependencies
 
@@ -104,7 +104,8 @@ verified in a non-production environment.
 - `worker` (Compose `app` profile, `src/VibeZone.Worker/Dockerfile`): FFmpeg from Ubuntu 24.04, non-root,
   `cpus: 2`, `mem_limit: 1g`, heartbeat-file healthcheck. Scale by running more worker replicas;
   each runs `Media:MaxConcurrentJobs` (default 2) jobs.
-- Config (API and worker): `Storage:ServiceUrl|Region|Bucket|AccessKey|SecretKey|ForcePathStyle`;
+- Config (API and worker): `Storage:ServiceUrl|Region|Bucket|AccessKey|SecretKey|ForcePathStyle` (keys required with
+  `ServiceUrl`/MinIO; on AWS leave both empty to use the instance role, ADR-0014);
   `Media:MaxUploadBytes` (200 MB), `MinDurationSeconds`/`MaxDurationSeconds` (1 s / 2 h),
   `ProcessingTimeout` (15 min), `MaxAttempts` (3), `LeaseDuration` (5 min), `PollInterval`,
   `WaveformBuckets` (1000), `TempDirectory`, `FfmpegPath`, `FfprobePath`, `HeartbeatFile`,

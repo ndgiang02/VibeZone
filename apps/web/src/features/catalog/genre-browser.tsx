@@ -2,8 +2,9 @@
 
 import { Music } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Artwork } from "@/components/media/artwork";
 import { EmptyState, ErrorState, Skeleton } from "@/components/states/states";
+import { TrackArt } from "@/features/tracks/track-art";
+import { cn } from "@/lib/utils";
 import { type Genre, useGenres } from "./use-genres";
 
 export function GenreBrowser() {
@@ -46,17 +47,49 @@ export function GenreBrowser() {
 }
 
 function GenreTile({ genre }: { genre: Genre }) {
+  const covers = genre.covers ?? [];
   return (
     <div
       className="group relative flex aspect-[4/3] items-start overflow-hidden rounded-xl p-3 shadow-card transition-transform duration-200 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0"
       style={{ background: tileGradient(genre.slug) }}
     >
-      <Artwork
-        src={tileArtwork(genre.slug)}
-        sizes="96px"
-        className="absolute -right-3 -bottom-2 size-[45%] rotate-[18deg] rounded-md shadow-elevated transition-transform duration-300 group-hover:rotate-[12deg]"
-      />
-      <span className="relative text-base font-semibold text-white drop-shadow-sm">{genre.name}</span>
+      {covers.length > 0 ? (
+        <CoverStack covers={covers} />
+      ) : (
+        <Music
+          aria-hidden="true"
+          className="absolute -right-2 -bottom-3 size-[48%] rotate-[18deg] text-white/15 transition-transform duration-300 group-hover:rotate-[10deg] motion-reduce:transition-none"
+        />
+      )}
+      <span className="relative z-10 text-base font-semibold text-white drop-shadow-sm">{genre.name}</span>
+    </div>
+  );
+}
+
+/**
+ * Up to three real covers from the genre's newest tracks, fanned out like a stack of records (the newest on
+ * top). Hovering spreads the fan; reduced motion keeps it still.
+ */
+const FAN = [
+  "z-30 rotate-[8deg] group-hover:translate-x-1 group-hover:rotate-[12deg]",
+  "z-20 -translate-x-[22%] rotate-[-2deg] group-hover:-translate-x-[30%] group-hover:rotate-[-6deg]",
+  "z-10 -translate-x-[44%] rotate-[-12deg] group-hover:-translate-x-[58%] group-hover:rotate-[-18deg]",
+];
+
+function CoverStack({ covers }: { covers: string[] }) {
+  return (
+    <div aria-hidden="true" className="absolute right-3 bottom-3 size-[46%]">
+      {covers.slice(0, FAN.length).map((url, i) => (
+        <TrackArt
+          key={url}
+          id={url}
+          artwork={{ small: url, large: url }}
+          className={cn(
+            "absolute inset-0 size-full rounded-md shadow-elevated ring-1 ring-black/20 transition-transform duration-300 motion-reduce:transition-none",
+            FAN[i],
+          )}
+        />
+      ))}
     </div>
   );
 }
@@ -79,30 +112,6 @@ function slugHash(slug: string) {
     hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
   }
   return hash;
-}
-
-/** Decorative illustrations (see /public/artwork) — mood pictures, not covers. */
-const TILE_ARTWORK = [
-  "aurora",
-  "bass-rings",
-  "chill-sunset",
-  "desert-road",
-  "disco-ball",
-  "edm-stage",
-  "equalizer",
-  "forest-mist",
-  "lofi-room",
-  "neon-grid",
-  "night-drive",
-  "ocean-waves",
-  "palm-sunset",
-  "pop-blobs",
-  "rain-window",
-  "vinyl",
-];
-
-function tileArtwork(slug: string) {
-  return `/artwork/${TILE_ARTWORK[slugHash(slug) % TILE_ARTWORK.length]}.svg`;
 }
 
 /** Deterministic, decorative per-genre colour so tiles are distinguishable. */

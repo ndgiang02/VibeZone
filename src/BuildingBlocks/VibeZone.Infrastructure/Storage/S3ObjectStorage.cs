@@ -10,7 +10,7 @@ using VibeZone.SharedKernel;
 
 namespace VibeZone.Infrastructure.Storage;
 
-public sealed class StorageOptions
+public sealed class StorageOptions : IValidatableObject
 {
     public const string Section = "Storage";
 
@@ -23,14 +23,30 @@ public sealed class StorageOptions
     [Required]
     public string Bucket { get; set; } = string.Empty;
 
-    [Required]
+    /// <summary>
+    /// Static credentials. Required with <see cref="ServiceUrl"/> (MinIO). On AWS leave both empty to use the
+    /// SDK's default chain (EC2 instance role), so no long-lived key is stored on the host.
+    /// </summary>
     public string AccessKey { get; set; } = string.Empty;
 
-    [Required]
     public string SecretKey { get; set; } = string.Empty;
 
     /// <summary>Path-style addressing (bucket in the path) — required by MinIO.</summary>
     public bool ForcePathStyle { get; set; } = true;
+
+    internal bool HasStaticCredentials => !string.IsNullOrWhiteSpace(AccessKey) && !string.IsNullOrWhiteSpace(SecretKey);
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (string.IsNullOrWhiteSpace(AccessKey) != string.IsNullOrWhiteSpace(SecretKey))
+        {
+            yield return new ValidationResult("Set both AccessKey and SecretKey, or neither.", [nameof(AccessKey), nameof(SecretKey)]);
+        }
+        else if (!string.IsNullOrWhiteSpace(ServiceUrl) && !HasStaticCredentials)
+        {
+            yield return new ValidationResult("A custom ServiceUrl (MinIO) requires AccessKey and SecretKey.", [nameof(AccessKey), nameof(SecretKey)]);
+        }
+    }
 }
 
 /// <summary>
@@ -149,7 +165,9 @@ public static class StorageExtensions
                 config.RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(o.Region);
             }
 
-            return new AmazonS3Client(new BasicAWSCredentials(o.AccessKey, o.SecretKey), config);
+            return o.HasStaticCredentials
+                ? new AmazonS3Client(new BasicAWSCredentials(o.AccessKey, o.SecretKey), config)
+                : new AmazonS3Client(config);
         });
         services.AddSingleton<IObjectStorage, S3ObjectStorage>();
         return services;

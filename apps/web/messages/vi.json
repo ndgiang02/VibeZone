@@ -162,6 +162,16 @@
       "successBody": "Bạn đã được đăng xuất khỏi mọi thiết bị. Hãy đăng nhập bằng mật khẩu mới.",
       "successCta": "Đăng nhập",
       "missing": "Liên kết đặt lại không đầy đủ. Hãy yêu cầu liên kết mới."
+    },
+    "invite": {
+      "title": "Tham gia đội ngũ VibeZone",
+      "subtitle": "Đặt mật khẩu để kích hoạt tài khoản quản trị mà quản trị viên đã tạo cho bạn.",
+      "submit": "Kích hoạt tài khoản",
+      "successTitle": "Tài khoản đã sẵn sàng",
+      "successBody": "Hãy đăng nhập bằng email và mật khẩu bạn vừa đặt.",
+      "successCta": "Đăng nhập",
+      "missing": "Liên kết mời không đầy đủ. Hãy mở lại liên kết trong email.",
+      "expiredHint": "Liên kết mời có hiệu lực 24 giờ. Hãy dùng “Quên mật khẩu” ở trang đăng nhập hoặc nhờ quản trị viên hỗ trợ."
     }
   },
   "settings": {
@@ -303,7 +313,8 @@
     "restore_not_supported": "Chỉ có thể khôi phục bài hát và playlist.",
     "role_not_assignable": "Chỉ có thể gán vai trò Moderator và Admin.",
     "role_self_admin": "Bạn không thể tự bỏ vai trò Admin của mình.",
-    "user_not_found": "Người dùng này không tồn tại."
+    "user_not_found": "Người dùng này không tồn tại.",
+    "email_taken": "Email này đã có tài khoản. Hãy cấp vai trò trong danh sách người dùng."
   },
   "notFound": {
     "title": "Không tìm thấy trang",
@@ -792,7 +803,8 @@
       "unverified": "chưa xác minh",
       "selfAdmin": "Bạn không thể tự bỏ vai trò Admin của mình.",
       "grant": "+ {role}",
-      "revoke": "{role} ✓"
+      "revoke": "{role} ✓",
+      "invite": "Mời quản trị"
     },
     "tracks": {
       "search": "Tìm theo tên bài",
@@ -825,6 +837,21 @@
       "action": "Thao tác",
       "subject": "Đối tượng",
       "details": "Chi tiết"
+    },
+    "invite": {
+      "title": "Mời thành viên quản trị",
+      "subtitle": "Tạo tài khoản Kiểm duyệt viên hoặc Quản trị viên. Người được mời sẽ nhận email để tự đặt mật khẩu — bạn không bao giờ thấy mật khẩu đó.",
+      "role": "Vai trò",
+      "roleHint": {
+        "Moderator": "Xử lý báo cáo, gỡ hoặc khôi phục nội dung.",
+        "Admin": "Mọi quyền của kiểm duyệt viên, cùng quản lý người dùng, vai trò và trạng thái hệ thống."
+      },
+      "submit": "Gửi lời mời",
+      "note": "Liên kết trong email chỉ dùng được một lần và hết hạn sau 24 giờ. Tài khoản chưa đăng nhập được cho đến khi kích hoạt.",
+      "successTitle": "Đã gửi lời mời",
+      "successBody": "{email} sẽ nhận email để kích hoạt tài khoản {role}.",
+      "another": "Mời người khác",
+      "back": "Về trang quản trị"
     }
   }
 }

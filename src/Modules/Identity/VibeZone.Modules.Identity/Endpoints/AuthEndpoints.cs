@@ -44,6 +44,8 @@ internal static class AuthEndpoints
             .WithSummary("Sign out a token session by its refresh token. Idempotent.");
 
         auth.MapPost("/forgot-password", ForgotPassword).DisableCsrf().WithName("ForgotPassword").Produces(StatusCodes.Status202Accepted).RequireRateLimiting(RateLimitPolicies.Auth);
+        auth.MapPost("/accept-invite", AcceptInvite).DisableCsrf().WithName("AcceptInvite").Produces(StatusCodes.Status204NoContent).RequireRateLimiting(RateLimitPolicies.Auth)
+            .WithSummary("Staff invitation: choose the first password with the emailed user id + token; confirms the email. Then sign in.");
         auth.MapPost("/reset-password", ResetPassword).DisableCsrf().WithName("ResetPassword").Produces(StatusCodes.Status204NoContent).RequireRateLimiting(RateLimitPolicies.Auth);
     }
 
@@ -58,6 +60,9 @@ internal static class AuthEndpoints
 
     private static async Task<IResult> ForgotPassword(EmailOnlyRequest request, AccountService accounts, CancellationToken ct) =>
         (await accounts.ForgotPasswordAsync(request, ct)).ToResult(() => Results.Accepted());
+
+    private static async Task<IResult> AcceptInvite(AcceptInviteRequest request, AccountService accounts, CancellationToken ct) =>
+        (await accounts.AcceptInviteAsync(request, ct)).ToResult(TypedResults.NoContent);
 
     private static async Task<IResult> ResetPassword(ResetPasswordRequest request, AccountService accounts, CancellationToken ct) =>
         (await accounts.ResetPasswordAsync(request, ct)).ToResult(TypedResults.NoContent);

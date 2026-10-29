@@ -80,6 +80,13 @@ export function useForgotPassword() {
   });
 }
 
+export function useAcceptInvite() {
+  return useMutation({
+    mutationFn: async (body: Schemas["AcceptInviteRequest"]) =>
+      ensureOk(await api.POST("/api/v1/auth/accept-invite", { body })),
+  });
+}
+
 export function useResetPassword() {
   const queryClient = useQueryClient();
   return useMutation({

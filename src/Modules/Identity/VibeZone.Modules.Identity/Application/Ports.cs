@@ -5,7 +5,8 @@ namespace VibeZone.Modules.Identity.Application;
 
 public sealed record Account(Guid Id, string Email, string Handle, bool EmailConfirmed);
 
-public sealed record NewAccount(string Email, string Handle, string Password, string DisplayName, string Locale);
+/// <param name="Password">Null for an invited account: the invitee chooses it when accepting (unusable until then).</param>
+public sealed record NewAccount(string Email, string Handle, string? Password, string DisplayName, string Locale);
 
 public enum PasswordCheckOutcome
 {
@@ -41,6 +42,15 @@ public interface IUserAccounts
     Task<Result> ResetPasswordAsync(Guid userId, string token, string newPassword, CancellationToken cancellationToken);
 
     Task<Result> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken);
+
+    /// <summary>Single-use (bound to the security stamp), valid 24 h. Only for accounts that have no password yet.</summary>
+    Task<string> CreateInviteTokenAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sets the first password of an invited account and confirms its email (the link proved the mailbox).
+    /// Fails with <c>token_invalid</c> for a wrong/expired token or an account that already has a password.
+    /// </summary>
+    Task<Result> AcceptInviteAsync(Guid userId, string token, string password, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<string>> GetRolesAsync(Guid userId, CancellationToken cancellationToken);
 }
@@ -100,6 +110,9 @@ public interface IAccountEmails
     Task SendPasswordResetAsync(Account account, string locale, string token, CancellationToken cancellationToken);
 
     Task SendPasswordChangedAsync(Account account, string locale, CancellationToken cancellationToken);
+
+    /// <param name="role">The staff role the invitee was given (Moderator or Admin).</param>
+    Task SendStaffInviteAsync(Account account, string locale, string role, string token, CancellationToken cancellationToken);
 }
 
 /// <summary>Caps how many emails of one kind a single address can trigger (anti-spam, anti-abuse).</summary>

@@ -51,6 +51,27 @@ export const resetPasswordSchema = (m: ValidationMessages) =>
       path: ["confirmPassword"],
     });
 
+export const acceptInviteSchema = (m: ValidationMessages) =>
+  z
+    .object({ password: password(m), confirmPassword: z.string() })
+    .refine((v) => v.password === v.confirmPassword, {
+      message: m.passwordsMismatch,
+      path: ["confirmPassword"],
+    });
+
+/** Admin inviting a staff member: like registration, without a password (the invitee chooses it). */
+export const inviteStaffSchema = (m: ValidationMessages) =>
+  z.object({
+    email: email(m),
+    handle: z
+      .string()
+      .trim()
+      .transform((v) => v.toLowerCase())
+      .pipe(z.string().regex(HANDLE_PATTERN, m.handle)),
+    displayName: z.string().trim().max(DISPLAY_NAME_MAX, m.displayName),
+    role: z.enum(["Moderator", "Admin"]),
+  });
+
 export const profileSchema = (m: ValidationMessages) =>
   z.object({
     displayName: z.string().trim().min(1, m.displayName).max(DISPLAY_NAME_MAX, m.displayName),
