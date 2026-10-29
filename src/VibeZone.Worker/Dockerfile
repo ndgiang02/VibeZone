@@ -2,7 +2,7 @@
 # Build context: repository root.
 #   docker build -f src/VibeZone.Worker/Dockerfile -t vibezone-worker .
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0.402 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.403 AS build
 WORKDIR /src
 COPY global.json Directory.Build.props Directory.Packages.props ./
 COPY src/BuildingBlocks/VibeZone.SharedKernel/VibeZone.SharedKernel.csproj src/BuildingBlocks/VibeZone.SharedKernel/
@@ -28,7 +28,7 @@ RUN dotnet restore src/VibeZone.Worker/VibeZone.Worker.csproj
 COPY src/ src/
 RUN dotnet publish src/VibeZone.Worker/VibeZone.Worker.csproj -c Release -o /app --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.13 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.14 AS runtime
 # FFmpeg/ffprobe from the distribution (Ubuntu 24.04). Untrusted media is parsed here, so this image runs
 # as non-root, with no-new-privileges and resource limits set by the orchestrator (security.md).
 RUN apt-get update \
