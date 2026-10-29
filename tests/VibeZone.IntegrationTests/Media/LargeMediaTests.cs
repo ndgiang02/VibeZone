@@ -7,7 +7,10 @@ namespace VibeZone.IntegrationTests.Media;
 [Collection(MediaTests.Name)]
 public sealed class LargeMediaTests(MediaFixture media)
 {
-    [Fact]
+    // Explicit (owner's decision, 2026-10-29): the allocation check fails (~67 MB for 48 MB streamed) and its source —
+    // API, AWS SDK or TestServer — is not found yet (progress.md). Kept runnable by hand:
+    //   dotnet test --project tests/VibeZone.IntegrationTests -- --filter-class VibeZone.IntegrationTests.Media.LargeMediaTests --explicit on
+    [Fact(Explicit = true)]
     public async Task Thirty_minute_upload_over_50_mb_becomes_playable_and_streams_without_buffering_in_memory()
     {
         using var artist = await media.UserAsync();

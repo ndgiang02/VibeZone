@@ -107,7 +107,8 @@ token; they contain no secrets.
 
 ## 4. Deploy
 
-1. Push to `main` → CI green → `publish` pushes `ghcr.io/ndgiang02/vibezone-*:<sha>` (arm64, signed).
+1. Push to `main` → CI green → `publish` pushes `ghcr.io/ndgiang02/vibezone-*:<sha>` (arm64, signed; runner
+   options in [github-arm64-runner.md](github-arm64-runner.md)).
 2. Actions → **Deploy** → Run workflow (empty sha = head of `main`) → approve.
 3. The job verifies signatures, runs `deploy.sh` via SSM (writes `.env`, pulls, migrates, `up --wait`) and smoke-tests
    `https://WEB_DOMAIN/` and `https://API_DOMAIN/api/v1/genres`.

@@ -33,6 +33,15 @@ ADR-0014. Domain not chosen yet.
 - **Not run**: the workflows on GitHub (CI has never run there), arm64 image builds, any AWS step, a deploy,
   a restore drill; integration/e2e suites; browser check of the sidebar.
 
+**First CI run on GitHub** (push `a39457b`): frontend ✓, Security ✓, backend ✗ — 262/264, two integration failures:
+- `StreamingTests.Public_track_streams_anonymously_and_appears_in_new_releases`: caused by `GenreCoverTests`, which
+  published its tracks 30 days in the **future** in the shared database, so they topped "new releases". Fixed: they are
+  now published in the past (only that test uses the `reggae` genre). Re-run locally: `GenreCoverTests` +
+  `StreamingTests` **4/4** ✓.
+- `LargeMediaTests` (streaming 48 MB allocated ~67 MB, limit 12 MB): the known, still unresolved M3 issue. **Owner
+  chose to mark it `Explicit`** (not run by CI, runnable with `--explicit on`). Technical debt: find the allocation
+  source (measure under Kestrel), fix it, then make the test non-explicit again.
+
 **Known issues / next**
 - Owner: pick a domain, then follow the runbook §0–3; make the repo and GHCR packages public.
 - M5 still open: authz matrix/CSRF/header/upload-fuzz tests, dashboards/alerts, remaining runbooks, executed restore

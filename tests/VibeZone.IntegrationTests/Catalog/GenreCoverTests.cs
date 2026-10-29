@@ -18,7 +18,8 @@ public sealed class GenreCoverTests : IAsyncDisposable
     {
         var (artist, _, _) = await _content.ArtistAsync();
 
-        // Published "in the future" so these are the genre's newest tracks whatever other tests add to the database.
+        // Only this test uses 'reggae', so ordering inside the genre is ours. Published in the past, never the future:
+        // future tracks would top the shared database's "new releases" for every later test (StreamingTests).
         async Task<Guid> TrackAsync(int minutes, bool artwork = true, string visibility = "Public", bool takenDown = false)
         {
             var id = await _content.ReadyTrackAsync(artist, $"Cover {minutes}", visibility);
@@ -26,7 +27,7 @@ public sealed class GenreCoverTests : IAsyncDisposable
                 """
                 UPDATE catalog.tracks
                 SET genre_id = (SELECT id FROM catalog.genres WHERE slug = 'reggae'),
-                    published_at = now() + interval '30 days' + make_interval(mins => @minutes),
+                    published_at = now() - interval '30 days' + make_interval(mins => @minutes),
                     artwork_id = CASE WHEN @artwork THEN gen_random_uuid() END,
                     taken_down_at = CASE WHEN @takenDown THEN now() END
                 WHERE id = @id
