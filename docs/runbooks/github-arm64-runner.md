@@ -144,6 +144,7 @@ của bạn. Đừng bao giờ dùng máy chủ production làm runner.
 | Container trên máy chủ báo `exec format error` | Image sai kiến trúc so với máy chủ | Kiểm tra theo §6; `platforms` phải khớp máy chủ |
 | Build dưới QEMU rất chậm hoặc lỗi `Segmentation fault` | Giả lập không ổn định với .NET/Node | Chạy lại job; tốt nhất dùng runner ARM64 thật |
 | `docker pull` trên máy chủ báo `no matching manifest for linux/arm64` | Image chỉ có bản amd64 | Build lại với `platforms: linux/arm64` |
+| Bước Scan (Trivy) báo `no child with platform linux/amd64 in index` | Trivy kéo image từ registry và mặc định chọn amd64 | Truyền `--platform` khớp `platforms` của bước build (`linux/arm64`) |
 | `publish` không chạy | Chỉ chạy khi push lên `main` và CI (kể cả e2e) đã xanh | Xem các job trước bị đỏ ở đâu |
 
 Xem thêm: [deploy-aws.md](deploy-aws.md) (toàn bộ quy trình triển khai), [ADR-0014](../adr/0014-single-host-aws-deployment.md).
