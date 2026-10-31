@@ -77,7 +77,7 @@ jobs:
           echo "AWS_DEPLOY_ROLE_ARN: $(sed -E 's/::[0-9]{12}:/::************:/' <<<"${ROLE_ARN:-<empty>}")"
           echo "EC2_INSTANCE_ID set: $([ -n "$INSTANCE_ID" ] && echo yes || echo no)"
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
