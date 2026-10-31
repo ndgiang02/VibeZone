@@ -26,9 +26,9 @@ jobs:
     name: Deploy to production
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment:
-      name: production
-      url: https://${{ vars.WEB_DOMAIN }}
+    #environment:
+    #  name: production
+    #  url: https://${{ vars.WEB_DOMAIN }}
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}
       INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
