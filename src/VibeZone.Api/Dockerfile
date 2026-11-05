@@ -3,7 +3,7 @@
 #   docker build -f src/VibeZone.Api/Dockerfile -t vibezone-api .                         # API (default)
 #   docker build -f src/VibeZone.Api/Dockerfile --target migrator -t vibezone-migrator .   # migrations
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0.402 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.403 AS build
 WORKDIR /src
 
 # Restore in its own layer: only re-runs when project files or package versions change.
@@ -41,7 +41,7 @@ RUN dotnet tool restore \
  && dotnet ef migrations bundle --project src/VibeZone.Migrations --startup-project src/VibeZone.Migrations \
     --configuration Release --output /efbundle
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.13 AS migrator
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.14 AS migrator
 WORKDIR /app
 ENV DOTNET_EnableDiagnostics=0
 COPY --from=bundle /efbundle ./efbundle
@@ -49,7 +49,7 @@ USER $APP_UID
 ENTRYPOINT ["./efbundle"]
 
 # Default (last) stage: the API.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.13 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.14 AS runtime
 WORKDIR /app
 ENV ASPNETCORE_HTTP_PORTS=8080 \
     ASPNETCORE_ENVIRONMENT=Production \
